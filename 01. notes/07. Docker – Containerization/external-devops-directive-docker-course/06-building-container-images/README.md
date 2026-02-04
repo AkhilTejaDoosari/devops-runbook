@@ -15,85 +15,381 @@
 
 # Building Container Images
 
-## Building the Dockerfiles in this Repo
+## 0) Absolute Zero (Before Docker Exists)
 
-Each of the service subdirectories (./api-golang, ./api-node, ./client-react) contain a series of Dockerfiles (`Dockerfile.0` → `Dockerfile.N`) starting with the most simple naive approach, and improving them with each step.
+You have:
 
-The corresponding Makefiles also have a `build-N` target which can be used by:
+* a laptop
+* a folder with your app code (files)
 
-```
-cd api-golang && N=4 make build-N # This would build Dockerfile.4 of the api-golang component
-```
+That’s it.
 
-Each image in the sequence should still function, with the final (highest #) being the one we will actually deploy later in the course.
+No Linux knowledge required.
+No Node knowledge required.
+No Docker knowledge required.
 
 ---
 
-## General Process
+## 1) The Problem (Before Docker)
 
-Dockerfiles generally have steps that are similar to those you would use to get your application running on a server.
+Your app needs **two things** to run:
 
-1) Start with an Operating System
-2) Install the language runtime
-3) Install any application dependencies
-4) Set up the execution environment
-5) Run the application
+1. The app files (your code)
+2. A way to run them (runtime like Node, Python, Java)
 
-***Note:** We can often jump right to #3 by choosing a base image that has the OS and language runtime preinstalled.*
+Right now:
 
-## Writing Good Dockerfiles:
+* both exist **only on your laptop**
 
-Here are some of the techniques demonstrated in the Dockerfiles within this repo:
+You want:
 
-1) **Pinning a specific base image:** By specifying an image tag, you can avoid nasty surprises where the base image
-2) **Choosing a smaller base image:** There are often a variety of base images we can choose from. Choosing a smaller base image will usually reduce the size of your final image.
-3) **Choosing a more secure base image:** Like image size, we should consider the number of vulnerabilities in our base images and the attack surface area. Chaingaurd publishes a number of hardened images (https://www.chainguard.dev/chainguard-images).
-4) **Specifying a working directory:** Many languages have a convention for how/where applications should be installed. Adhering to that convention will make it easier for developers to work with the container.
-5) **Consider layer cache to improve build times:** By undersanding the layered nature of container filesytems and choosing when to copy particular files we can make better use of the Docker caching system.
-6) **Use COPY —link where appropriate:** The `--link` option was added to the `COPY` command in march 2022. It allows you to improve cache behavior in certain situations by copying files into an independent image layer not dependent on its predecessors.
-7) **Use a non-root user within the container:** While containers can utilize a user namespace to differentiate between root inside the container and root on the host, this feature won't always be leveraged and by using a non-root user we improve the default safety of the container. When using Docker Desktop, the Virtual Machine it runs provides an isolation boundary between containers and the host, but if running Docker Engine it is useful to use a user namespace to ensure container isolation (more info here: https://docs.docker.com/engine/security/userns-remap/). This page also provides a good description for why to avoid running as root: https://cloud.google.com/architecture/best-practices-for-operating-containers#avoid_running_as_root.
-8) **Specify the environment correctly:** Only install production dependencies for a production image, and specify any necessary environment variables to configure the language runtime accordingly.
-9) **Avoid assumptions:** Using commands like `EXPOSE <PORT>` make it clear to users how the image is intended to be used and avoids the need for them to make assumptions.
-10) **Use multi-stage builds where sensible:** For some situations, multi-stage builds can vastly reduce the size of the final image and improve build times. Learn about and use multi-stage builds where appropriate.
+* **one package**
+* that contains **everything needed to run the app**
+* so it runs **anywhere**
 
-In general, these techniques impact some combination of (1) build speed, (2) image security, and (3) developer clarity. The following summarizes these impacts:
+That package is called a **Docker image**.
+
+You don’t have it yet.
+
+---
+
+## 2) Docker Cannot Guess Anything
+
+Docker is dumb.
+
+It does NOT know:
+
+* what language your app uses
+* how to start it
+* where files should live
+
+So you must explain **step by step**.
+
+That explanation is written in a file called:
+
+**Dockerfile**
+
+At this point:
+
+* Dockerfile is just a text file
+* nothing runs
+* nothing is built
+
+---
+
+## 3) Two Timelines (THIS IS THE CORE)
+
+### Build-time (docker build)
+
+* FROM
+* WORKDIR
+* RUN
+* COPY
+* ENV
+
+Purpose:
+
+> create an **image**
+
+### Run-time (docker run)
+
+* CMD
+* ENTRYPOINT
+* runtime environment variables
+
+Purpose:
+
+> start a **container** from the image
+
+**Rule**
+
+* If it must exist **before the app starts** → build-time
+* If it runs **when the app starts** → run-time
+
+Never mix these mentally.
+
+---
+
+## 4) First Question Docker Asks → FROM
+
+Docker cannot start from nothing.
+
+So the first line must answer:
+
+> “What should I start from?”
+
+```dockerfile
+FROM node
+```
+
+Plain English:
+
+* “Start from a ready-made environment that already knows how to run Node apps.”
+
+Important:
+
+* You are **not installing Node**
+* You are **borrowing a prepared filesystem**
+* FROM **must be first** (non-negotiable)
+
+---
+
+## 5) WORKDIR — Set the Default Folder (Recommended)
+
+```dockerfile
+WORKDIR /app
+```
+
+Plain English:
+
+* “Inside the image, treat `/app` as the current folder.”
+
+Facts:
+
+* WORKDIR **creates the folder if missing**
+* replaces `cd` (which does NOT persist across layers)
+* prevents path confusion
+
+---
+
+## 6) ENV — Store Configuration (Optional)
+
+```dockerfile
+ENV MONGO_DB_USERNAME=admin \
+    MONGO_DB_PWD=qwerty
+```
+
+Plain English:
+
+* “Store key=value pairs inside the image.”
+
+Facts:
+
+* ENV does **not run anything**
+* values are available at runtime (e.g. `process.env`)
+* runtime env vars override image env vars
+* **not for secrets**
+
+---
+
+## 7) RUN — Build-Time Setup
+
+```dockerfile
+RUN apk add --no-cache curl
+```
+
+Plain English:
+
+* “While building the image, run this command and save the result.”
+
+Facts:
+
+* RUN executes at **build-time**
+* RUN can be used **multiple times**
+* each RUN creates a **layer**
+* use for:
+
+  * OS packages
+  * installing dependencies
+  * downloading files from internet
+  * system setup
+
+**Rule**
+
+* Readability > micro-optimization
+* Combine RUNs only when cleanup matters
+
+---
+
+## 8) COPY — Put Your App Into the Image (Mandatory)
+
+```dockerfile
+COPY . .
+```
+
+Chronological meaning:
+
+* first `.` → your project folder on laptop (build context)
+* second `.` → current folder inside image (`/app` because of WORKDIR)
+
+Plain English:
+
+* “Copy my app files into the image.”
+
+Facts:
+
+* Without COPY, your code never enters Docker
+* Docker can only COPY files **inside build context**
+
+---
+
+## 9) Internet Files Rule (Critical)
+
+* Local files → `COPY`
+* Internet files → `RUN curl / wget`
+* Secrets / dynamic data → runtime, NOT image
+
+Example:
+
+```dockerfile
+RUN curl -fsSL -o /app/file.dat https://example.com/file.dat
+```
+
+Never rely on ADD unless you know exactly why.
+
+---
+
+## 10) EXPOSE — Documentation Only
+
+```dockerfile
+EXPOSE 3000
+```
+
+Facts:
+
+* EXPOSE does **not open ports**
+* EXPOSE does **not publish ports**
+* it is **metadata only**
+
+Real access happens with:
+
+```bash
+docker run -p 3000:3000 image
+```
+
+If you forget EXPOSE, nothing breaks.
+
+---
+
+## 11) CMD — How the App Starts (Run-Time)
+
+```dockerfile
+CMD ["node", "server.js"]
+```
+
+Plain English:
+
+* “When a container starts, run this command.”
+
+Facts:
+
+* CMD does **nothing during build**
+* runs **only at docker run**
+* one image → many containers → same CMD
+* can be overridden at runtime
+
+---
+
+## 12) Build the Image (Nothing Runs Yet)
+
+```bash
+docker build -t chillspot:1.0 .
+```
+
+Meaning:
+
+* `-t` → name the image
+* `chillspot` → image name
+* `1.0` → version tag
+* `.` → build context (files Docker is allowed to COPY)
+
+After this:
+
+* image exists
+* app is NOT running
+
+---
+
+## 13) Verify Image
+
+```bash
+docker images
+```
+
+You should see:
 
 ```
-Legend:
- 🔒 Security
- 🏎️ Build Speed
- 👁️ Clarity
+chillspot   1.0
 ```
-- Pin specific versions [🔒 👁️]
-  - Base images (either major+minor OR SHA256 hash) [🔒 👁️]
-  - System Dependencies [🔒 👁️]
-  - Application Dependencies [🔒 👁️]
-- Use small + secure base images [🔒 🏎️]
-- Protect the layer cache [🏎️ 👁️]
-  - Order commands by frequency of change [🏎️]
-  - COPY dependency requirements file → install deps → copy remaining source code [🏎️]
-  - Use cache mounts [🏎️]
-  - Use COPY --link [🏎️]
-  - Combine steps that are always linked (use heredocs to improve tidiness) [🏎️ 👁️]
-- Be explicit [🔒 👁️]
-  - Set working directory with WORKDIR [👁️]
-  - Indicate standard port with EXPOSE [👁️]
-  - Set default environment variables with ENV [🔒 👁️]
-- Avoid unnecessary files [🔒 🏎️ 👁️]
-  - Use .dockerignore [🔒 🏎️ 👁️]
-  - COPY specific files [🔒 🏎️ 👁️]
-- Use non-root USER [🔒]
-- Install only production dependencies [🔒 🏎️ 👁️]
-- Avoid leaking sensitive information [🔒]
-- Leverage multi-stage builds [🔒 🏎️]
 
-## Additional Features
+---
 
-There are some additional features of Dockerfiles that are not shown in the example applications but are worth knowing about. These are highlighted in `Dockerfile.sample` and the corresponding build / run commands in the `Makefile`
+## 14) Run the Image (FIRST Time Anything Runs)
 
-1) **Parser directives:** Specify the particular Dockefile syntax being used or modify the escape character.
-2) **ARG:** Enables setting variables at build time that do not persist in the final image (but can be seen in the image metadata).
-3) **Heredocs syntax:** Enables multi-line commands within a Dockerfile.
-4) **Mounting secrets:** Allows for providing sensitive credentials required at build time while keeping them out of the final image.
-5) **ENTRYPOINT + CMD:** The interaction between `ENTRYPOINT` and `CMD` can be confusing. Depending on whether arguments are provided at runtime one or more will be used. See the examples by running `make run-sample-entrypoint-cmd`.
-6) **buildx (multi-architecture images):** You can use a feature called `buildx` to create images for multiple architectures from a single Dockerfile. This video goes into depth on that topic: https://www.youtube.com/watch?v=hWSHtHasJUI. The `make  build-multiarch` make target demonstrates using this feature (and the images can be seen here: https://hub.docker.com/r/sidpalas/multi-arch-test/tags).
+```bash
+docker run chillspot:1.0
+```
+
+Now:
+
+* Docker creates a container
+* executes CMD
+* app actually runs
+
+This is the **first moment** anything executes.
+
+---
+
+## 15) Canonical Dockerfile (REFERENCE SHAPE)
+
+```dockerfile
+FROM <base-image>
+
+WORKDIR /app
+
+RUN <install OS deps>
+
+COPY <dependency manifests> ./
+RUN <install app deps>
+
+COPY . .
+
+EXPOSE <app-port>   # documentation only
+
+CMD ["<start-command>"]
+```
+
+---
+
+## 16) The Ordering Law (Memorize This)
+
+> **Stable first. Volatile last.**
+
+Order:
+
+1. Base OS
+2. System dependencies
+3. App dependencies
+4. App source code
+5. Runtime command
+
+Reason:
+
+* Docker caches layers top → bottom
+* changing a layer invalidates everything after it
+
+1) Instruction laws
+- FROM: starting filesystem + tools
+- WORKDIR: default folder (creates it)
+- RUN: build-time execution (can be used multiple times)
+- COPY: bring files from build context
+- ENV: static defaults (not secrets)
+- EXPOSE: metadata only
+- CMD: default runtime command
+
+2) File sourcing rules
+- Local files → COPY
+- Internet files → RUN curl / wget
+- Secrets / dynamic data → runtime, not image
+
+3) OS rule
+Inside Docker = Linux.
+Language tools are portable.
+OS package managers are Linux-specific.
+---
+
+## 17) One-Line Truth (Replace All Other Notes)
+
+> A Dockerfile is a cached, ordered, Linux build recipe that separates build-time from run-time to create reproducible images.
+
+---

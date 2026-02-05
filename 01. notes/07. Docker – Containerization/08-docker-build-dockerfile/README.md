@@ -1,0 +1,388 @@
+[Home](../README.md) |
+[History & Motivation](../01-history-and-motivation/README.md) |
+[Technology Overview](../02-technology-overview/README.md) |
+[Docker Containers](../03-docker-containers/README.md) |
+[Networking](../04-docker-networking/README.md) |
+[Port Binding](../05-docker-port-binding/README.md) |
+[Volumes](../06-docker-volumes/README.md) |
+[Layers](../07-docker-layers/README.md) |
+[Build](../08-docker-build-dockerfile/README.md) |
+[Registry](../09-docker-registry/README.md) |
+[Compose](../10-docker-compose/README.md)
+
+# Docker Build (Dockerfile)
+
+## 0) Absolute Zero (Before Docker Exists)
+
+You have:
+
+* a laptop
+* a folder with your app code (files)
+
+That’s it.
+
+No Linux knowledge required.
+No Node knowledge required.
+No Docker knowledge required.
+
+---
+
+## 1) The Problem (Before Docker)
+
+Your app needs two things to run:
+
+1. The app files (your code)
+2. A way to run them (a runtime like Node, Python, Java)
+
+Right now, both exist only on your laptop.
+
+You want one package that contains everything needed to run the app so it runs anywhere.
+
+That package is a Docker image.
+
+---
+
+## 2) Docker Cannot Guess Anything
+
+Docker does not know:
+
+* what language your app uses
+* how to start it
+* where files should live
+
+So you must explain step by step.
+
+That explanation is written in a text file called a **Dockerfile**.
+
+At this point:
+
+* nothing runs
+* nothing is built
+
+---
+
+## 3) Two Timelines (Core Mental Model)
+
+### Build-time (when you run `docker build`)
+
+Build-time instructions create an **image filesystem** (layers). They permanently change what exists inside the image.
+
+Common build-time instructions:
+
+* `FROM`
+* `WORKDIR`
+* `RUN`
+* `COPY` (and `ADD`, rarely)
+* `ENV` (sets defaults in the image)
+
+### Run-time (when you run `docker run`)
+
+Run-time is when Docker creates a **container** from the image and starts the default process defined by the image.
+
+Run-time is driven by:
+
+* `CMD` / `ENTRYPOINT` (image metadata that defines what starts)
+* runtime environment variables (`docker run -e ...` overrides image `ENV`)
+
+**Rule**
+
+* If it must exist before the app starts → build-time
+* If it happens when the app starts → run-time
+
+Do not mix these mentally.
+
+---
+
+## 4) First Question Docker Asks → `FROM`
+
+Docker cannot start from nothing.
+
+So the first line must answer:
+
+> “What should I start from?”
+
+```dockerfile
+FROM node:20
+````
+
+Plain English:
+
+* “Start from a ready-made environment that already knows how to run Node apps.”
+
+Facts:
+
+* You are not installing Node manually here
+* You are selecting a prepared filesystem
+* `FROM` must be first (non-negotiable)
+
+---
+
+## 5) `WORKDIR` — Set the Default Folder (Recommended)
+
+```dockerfile
+WORKDIR /app
+```
+
+Plain English:
+
+* “Inside the image, treat `/app` as the current folder.”
+
+Facts:
+
+* `WORKDIR` creates the folder if missing
+* it replaces `cd` (which does not persist across layers)
+* it prevents path confusion
+
+---
+
+## 6) `ENV` — Store Defaults (Not Secrets)
+
+```dockerfile
+ENV NODE_ENV=production \
+    PORT=3000
+```
+
+Plain English:
+
+* “Store key=value defaults inside the image.”
+
+Facts:
+
+* `ENV` does not run anything
+* values are available at runtime (e.g., `process.env`)
+* runtime env vars override image env vars
+* do not store secrets in images
+
+---
+
+## 7) `RUN` — Build-Time Setup
+
+`RUN` executes while building the image and saves the result into the next layer.
+
+The command you use depends on the **base image**:
+
+* Alpine images → `apk`
+* Debian/Ubuntu images → `apt-get`
+
+Example (Alpine base):
+
+```dockerfile
+FROM node:20-alpine
+RUN apk add --no-cache curl
+```
+
+Example (Debian base):
+
+```dockerfile
+FROM node:20
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+```
+
+Facts:
+
+* `RUN` executes at build-time
+* each `RUN` creates a layer
+* use it for OS packages, dependency installs, downloads, and setup
+
+Rule:
+
+* Readability > micro-optimization
+* combine `RUN` steps mainly when cleanup matters
+
+---
+
+## 8) `COPY` — Put Your App Into the Image (Normal Path)
+
+```dockerfile
+COPY . .
+```
+
+Chronological meaning:
+
+* first `.` → your project folder on laptop (build context)
+* second `.` → current folder inside image (`/app` because of `WORKDIR`)
+
+Plain English:
+
+* “Copy my app files into the image.”
+
+Facts:
+
+* In normal builds, `COPY` is how your local code enters the image
+* Docker can only copy files inside the build context
+* use a `.dockerignore` to avoid copying junk (`node_modules`, `.git`, build outputs)
+
+---
+
+## 9) File Sourcing Rules (Critical)
+
+* Local files → `COPY`
+* Internet files → `RUN curl` / `RUN wget`
+* Secrets / dynamic data → runtime, not the image
+
+Example:
+
+```dockerfile
+RUN curl -fsSL -o /app/file.dat https://example.com/file.dat
+```
+
+Avoid `ADD` unless you have a specific reason.
+
+---
+
+## 10) `EXPOSE` — Documentation Only
+
+```dockerfile
+EXPOSE 3000
+```
+
+Facts:
+
+* `EXPOSE` does not open ports
+* `EXPOSE` does not publish ports
+* it is metadata only
+
+Real access happens with port binding (covered in Port Binding notes):
+
+```bash
+docker run -p 3000:3000 chillspot:1.0
+```
+
+---
+
+## 11) `CMD` — Default Startup Command (Run-Time)
+
+```dockerfile
+CMD ["node", "server.js"]
+```
+
+Plain English:
+
+* “When a container starts, run this command.”
+
+Facts:
+
+* `CMD` does nothing during build
+* it runs only when a container starts
+* it can be overridden at runtime
+
+---
+
+## 12) Build the Image (Nothing Runs Yet)
+
+```bash
+docker build -t chillspot:1.0 .
+```
+
+Meaning:
+
+* `-t` → tag (name) the image
+* `chillspot` → image name
+* `1.0` → version tag
+* `.` → build context (files Docker is allowed to `COPY`)
+
+After this:
+
+* image exists
+* app is not running
+
+---
+
+## 13) Verify Image
+
+```bash
+docker images
+```
+
+---
+
+## 14) Run the Image (First Time Anything Runs)
+
+```bash
+docker run chillspot:1.0
+```
+
+Now:
+
+* Docker creates a container
+* executes `CMD`
+* the app runs
+
+---
+
+## 15) Canonical Dockerfile Shape (Reference)
+
+```dockerfile
+FROM <base-image>
+
+WORKDIR /app
+
+RUN <install OS deps>
+
+COPY <dependency manifests> ./
+RUN <install app deps>
+
+COPY . .
+
+EXPOSE <app-port>   # metadata only
+
+CMD ["<start-command>"]
+```
+
+Later we use multi-stage builds to keep runtime images small (covered separately).
+
+---
+
+## 16) The Ordering Law (Memorize This)
+
+> **Stable first. Volatile last.**
+
+Order:
+
+1. Base OS
+2. System dependencies
+3. App dependencies
+4. App source code
+5. Runtime command
+
+Reason:
+
+* Docker caches layers top → bottom
+* changing a layer invalidates everything after it
+
+1) Instruction laws
+- FROM: starting filesystem + tools
+- WORKDIR: default folder (creates it)
+- RUN: build-time execution (can be used multiple times)
+- COPY: bring files from build context
+- ENV: static defaults (not secrets)
+- EXPOSE: metadata only
+- CMD: default runtime command
+
+2) File sourcing rules
+- Local files → COPY
+- Internet files → RUN curl / wget
+- Secrets / dynamic data → runtime, not image
+
+3) OS rule
+Inside Docker = Linux.
+Language tools are portable.
+OS package managers are Linux-specific.
+
+---
+
+## 17) Instruction Laws (Quick Reference)
+
+* `FROM` → starting filesystem + tools
+* `WORKDIR` → default folder (creates it)
+* `RUN` → build-time execution (creates a layer)
+* `COPY` → bring local files from build context
+* `ENV` → static defaults (not secrets)
+* `EXPOSE` → metadata only
+* `CMD` → default runtime command
+
+---
+
+## 18) One-Line Truth
+
+> A Dockerfile is a cached, ordered, Linux build recipe that separates build-time from run-time to create reproducible images.

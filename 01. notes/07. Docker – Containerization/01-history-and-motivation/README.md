@@ -169,6 +169,31 @@ Everyone shares the same building, but lives separately.
 - Easy to create, delete, and move apps
 - Perfect for development and modern cloud systems
 
+### VM vs Docker (Mental Model Snapshot)
+
+![VMs vs Docker Containers](./readme-assets/vm-vs-docker.webp)
+
+## VM vs Docker — Resource & Kernel Model
+
+**Virtual Machines:**  
+- Hardware virtualization
+- Guest OS per VM
+- Reserved CPU/RAM
+- Strong isolation
+- Slower, heavier
+
+**Docker Containers:**  
+- OS-level virtualization
+- Shared host kernel
+- No reserved CPU/GPU
+- Process-level isolation
+- Fast, lightweight
+
+**Core Difference:**  
+VMs virtualize hardware.  
+Containers isolate processes.  
+
+
 
 
 ---

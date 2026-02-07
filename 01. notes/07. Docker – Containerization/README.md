@@ -1,3 +1,27 @@
+# Docker — From Fundamentals to Daily Use
+
+This repository documents a **clean, inside-out learning path** for Docker.
+It is designed to build **correct mental models first**, then move toward
+practical, repeatable workflows used in real DevOps environments.
+
+Focus:
+- understand how Docker actually works
+- avoid memorization
+- avoid tutorial noise
+- learn only what is used in practice
+
+---
+
+## How to Use This Repository
+
+Read the sections **in order**.
+
+Each section builds directly on the previous one.  
+If something feels obvious, that means the mental model is working.  
+Do not skip sections unless you already understand them.  
+
+---
+
 ## Table of Contents
 
 01. [History & Motivation](01-history-and-motivation/README.md)  
@@ -9,56 +33,54 @@
 07. [Docker Layers](07-docker-layers/README.md)  
 08. [Docker Build (Dockerfile)](08-docker-build-dockerfile/README.md)  
 09. [Docker Registry (Push / Pull)](09-docker-registry/README.md)  
-10. [Docker Compose](10-docker-compose/README.md)  
+10. [Docker Compose](10-docker-compose/README.md)
 
 ---
 
-## [01 - History and Motivation](01-history-and-motivation/README.md)
+## What This Repository Is (and Is Not)
 
-Examines the evolution of virtualization technologies from bare metal, virtual machines, and containers and the tradeoffs between them.
+**This repository is:**
+- fundamentals-first
+- mental-model driven
+- focused on daily DevOps usage
 
-## [02 - Technology Overview](02-technology-overview/README.md)
+**This repository is NOT:**
+- a certification cram guide
+- a vendor-specific Docker course
+- a Kubernetes course
 
-Explores the three core Linux features that enable containers to function (cgroups, namespaces, and union filesystems), as well as the architecture of the Docker components.
+Those come later.
 
-## [03 - Installation and Set Up](03-installation-and-set-up/README.md)
+---
 
-Covers the steps to install and configure Docker Desktop on your system.
+## What You Should Be Able to Do After This
 
-## [04 - Using 3rd Party Containers](04-using-3rd-party-containers/README.md)
+By the end of this repository, you should be able to:
 
-Before we build our own container images, we can familiarize ourselves with the technology by using publicly available container images. This section covers the nuances of data persistence with containers and then highlights some key use cases for using public container images.
+- explain what a container actually is
+- build Docker images confidently
+- run multi-container systems locally
+- publish and consume images via registries
+- use Docker Compose without guessing
 
-## [05 - Example Web Application](05-example-web-application/README.md)
+If you can do these without memorizing commands, this repository has done its job.
 
-Learning about containerization is interesting, but without a practical example it isn't very useful. In this section we create a 3 tier web application with a React front end client, two apis (node.js + golang), and a database. The application is as simple as possible while still providing a realistic microservice system to containerize.
+---
 
-## [06 - Building Container Images](06-building-container-images/README.md)
+## Credits & Acknowledgements
 
-Demonstrates how to write Dockerfiles and build container images for the components of the example web app. Starting with a naive implementation, we then iterate towards a production ready container image.
+This repository is a **derivative learning work**, rebuilt from scratch with a
+fundamentals-first, mental-model-driven structure.
 
-## [07 - Container Registries](07-container-registries/README.md)
+Reference material and inspiration:
 
-Explains what container registries are and how to use them to share and distribute container images.
+- **Apna College**  
+  Docker tutorial (YouTube):  
+  https://youtu.be/exmSJpJvIPs?si=sI5Ph6CAs64KdQ59  
 
-## [08 - Running Containers](08-running-containers/README.md)
+- **Sid DevOps Directive**  
+  Complete Docker Course (YouTube):  
+  https://youtu.be/RqTEHSBrYFw?si=u_JX-X9Sg_6Ys8Be  
 
-Using the containerized web application from sections 05 and 06, we craft the necessary commands to run our application with Docker and Docker Compose. We also cover the variety of runtime configuration options and when to use them.
-
-## [09 - Container Security](09-container-security/README.md)
-
-Highlights best practices for container image and container runtime security.
-
-## [10 - Interacting with Docker Objects](10-interacting-with-docker-objects/README.md)
-
-Describes how to use Docker to interact with containers, container images, volumes, and networks.
-
-## [11 - Development Workflows](11-development-workflow/README.md)
-
-Establishes tooling and configuration to enable improved developer experience when working with containers.
-
-## [12 - Deploying Containers](12-deploying-containers/README.md)
-
-Demonstrates deploying container applications to production using three different approaches: railway.app, a single node Docker Swarm, and a Kubernetes cluster.
-
-
+All explanations, sequencing, and notes have been rewritten and reorganized to
+match my own learning style and goals.

@@ -27,6 +27,8 @@ Key idea:
 
 ## 2) Visual Mental Model (Runtime vs Image)
 
+![](./readme-assets/container-filesystem.jpg)
+
 ```
 
 ## [ RUNTIME ] -> Writable Container Layer    (DISPOSABLE/Temporary)

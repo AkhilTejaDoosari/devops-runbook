@@ -1,12 +1,5 @@
 # DevOps Directive Kubernetes Course
 
-This is the companion repo to: [Complete Kubernetes Course -- From BEGINNER to PRO
-](https://www.youtube.com/watch?v=2T86xAtR6Fo)
-
-[![thumbnail](./readme-assets/thumbnail.jpg)](https://www.youtube.com/watch?v=2T86xAtR6Fo)
-
-## Using this repo
-
 Each directory within the repo corresponds to one section of the course. You should fork the repo and follow along with the lessons and use/update/modify the code samples as needed.
 
 There are a number of software tools used throughout the course. Instructions on the best way to set them up can be found in [03-installation-and-setup](03-installation-and-setup/README.md).

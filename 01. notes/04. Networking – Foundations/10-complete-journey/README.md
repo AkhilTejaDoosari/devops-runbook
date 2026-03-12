@@ -1130,7 +1130,7 @@ When something doesn't work, **debug layer by layer:**
 └──────────────────────────────────────┘
                 ↑
 ┌──────────────────────────────────────┐
-│ Firewall (sits between layers)      │
+│ Firewall (sits between layers)       │
 │    Are firewall rules correct?       │
 │    Check: Security groups, iptables  │
 └──────────────────────────────────────┘

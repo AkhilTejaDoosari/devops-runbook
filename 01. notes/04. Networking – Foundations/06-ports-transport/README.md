@@ -469,7 +469,7 @@ But: Very fast!
      │                                 │
      │  Connection established         │
      │  Data can now flow              │
-     │<──────────────────────────────>│
+     │<───────────────────────────────>│
 ```
 
 ---

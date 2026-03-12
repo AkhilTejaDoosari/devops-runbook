@@ -407,12 +407,12 @@ Your browser connects to 142.250.190.46
 └──────┬──────────────────┘
        │ 7. Return to client
        ▼
-┌──────────────┐
-│ Your Browser │
-│ Caches answer│
-│ Connects to  │
-│ 142.250.190.46
-└──────────────┘
+┌────────────────┐
+│ Your Browser   │
+│ Caches answer  │
+│ Connects to    │
+│ 142.250.190.46 │
+└────────────────┘
 ```
 
 ---
@@ -841,9 +841,9 @@ sudo /etc/init.d/nscd restart
        .com        .org        .net  (TLDs)
         │           │           │
     ┌───┴───┐       │       ┌───┴───┐
- google.com │  wikipedia  │ github
-            │     .org     │  .net
-        example              │
+ google.com │  wikipedia    │ github
+            │     .org      │  .net
+        example             │
          .com          cloudflare
                          .net
 ```

@@ -47,7 +47,7 @@ This file teaches **how devices with private IPs access the internet** and **how
 
 ```
 ┌─────────────────────────────────────┐
-│           Your Router                │
+│           Your Router               │
 │                                     │
 │  LAN Side (Internal):               │
 │    IP:  192.168.1.1                 │
@@ -267,7 +267,7 @@ Communication successful!
 │  │                     │                                 │
 │  │  NAT Table:         │                                 │
 │  │  192.168.1.45:54321 │                                 │
-│  │    ↔ 203.45.67.89:54321                              │
+│  │    ↔ 203.45.67.89:54321                               │
 │  └─────────────────────┘                                 │
 │        │                                                 │
 │        │ 2. Translated request                           │
@@ -793,13 +793,13 @@ Problem: How do private instances download updates?
 │              │                             │
 │  ┌───────────┼──────────────────────────┐  │
 │  │           │                          │  │
-│  │ Private Subnet: 10.0.2.0/24         │  │
-│  │                                     │  │
-│  │  [EC2: 10.0.2.50]                   │  │
-│  │        │                            │  │
-│  │        │ Default route:             │  │
-│  │        │ 0.0.0.0/0 → 10.0.1.100     │  │
-│  │        │ (NAT Gateway)              │  │
+│  │ Private Subnet: 10.0.2.0/24          │  │
+│  │                                      │  │
+│  │  [EC2: 10.0.2.50]                    │  │
+│  │        │                             │  │
+│  │        │ Default route:              │  │
+│  │        │ 0.0.0.0/0 → 10.0.1.100      │  │
+│  │        │ (NAT Gateway)               │  │
 │  └────────┼─────────────────────────────┘  │
 │           │                                │
 └───────────┼────────────────────────────────┘

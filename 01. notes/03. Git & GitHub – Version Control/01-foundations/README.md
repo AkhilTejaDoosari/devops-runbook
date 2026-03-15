@@ -1,0 +1,428 @@
+[🏠 Home](../README.md) | 
+[Foundations](../01-foundations/README.md) | 
+[Stash & Tags](../02-stash-tags/README.md) | 
+[History & Branching](../03-history-branching/README.md) | 
+[Contribute](../04-contribute/README.md) | 
+[Undo & Recovery](../05-undo-recovery/README.md) | 
+
+# Git Foundations  
+> From Local Control to Remote Collaboration
+
+---
+
+## Table of Contents
+- [0. Introduction – Why Version Control Matters](#0-introduction--why-version-control-matters)  
+- [1. Installing Git – Setting Up Your Environment](#1-installing-git--setting-up-your-environment)  
+- [2. Git Config – Defining Your Identity](#2-git-config--defining-your-identity)  
+- [3. Creating a Repository – The Project’s Birth](#3-creating-a-repository--the-projects-birth)  
+- [4. Understanding Tracked vs Untracked Files](#4-understanding-tracked-vs-untracked-files)  
+- [5. The Staging Environment – The Waiting Room](#5-the-staging-environment--the-waiting-room)  
+- [6. Commit – Capturing Your Project’s Timeline](#6-commit--capturing-your-projects-timeline)  
+- [7. Git Workflow – From Edit to Push](#7-git-workflow--from-edit-to-push)  
+- [8. Best Practices & Troubleshooting](#8-best-practices--troubleshooting)  
+- [9. Mentor Insight](#9-mentor-insight)
+
+---
+
+<details>
+<summary><strong>0. Introduction – Why Version Control Matters</strong></summary>
+
+Before Git, developers kept zipping folders as  
+`project_final.zip → project_final_v2.zip → final_realfinal.zip`.  
+Collaboration was chaos, and history was fragile.
+
+**Git** changed that — it became a *time machine* for code.  
+It tracks *what changed, when, and by whom* — and lets teams roll back or branch without fear.
+
+In DevOps, Git is the **source of truth**.  
+Tools like Jenkins, Docker, and Terraform rely on it to detect, version, and automate infrastructure.
+
+```
+
+Edit → Stage → Commit → Push → Collaborate
+
+```
+
+Git works locally on your machine, but can sync with **remote repositories** on GitHub, GitLab, or Bitbucket.
+
+</details>
+
+---
+
+<details>
+<summary><strong>1. Installing Git – Setting Up Your Environment</strong></summary>
+
+### Windows
+1. Download Git from [git-scm.com](https://git-scm.com).  
+2. Run the installer and click **Next** through default options.  
+3. This installs **Git** and **Git Bash** — a terminal that supports Unix-style commands.  
+4. Verify installation:
+   ```bash
+   git --version
+```
+
+Example output:
+`git version 2.43.0.windows.1`
+
+### macOS
+
+```bash
+brew install git
+```
+
+Or download the `.dmg` from git-scm.com and drag it to Applications.
+
+### Linux (Ubuntu example)
+
+```bash
+sudo apt-get install git
+```
+
+### Default Editor
+
+During install, Git asks for a default editor (e.g., VS Code, Notepad).
+You can change anytime:
+
+```bash
+git config --global core.editor "code --wait"
+```
+
+### PATH Environment
+
+Ensure Git is added to your PATH so you can use it in any terminal.
+Check with:
+
+```bash
+git --version
+```
+
+If not found, restart your terminal or add:
+
+```
+C:\Program Files\Git\bin
+```
+
+to your system PATH.
+
+---
+
+**Common Installation Issues**
+
+| Problem                  | Fix                                        |
+| ------------------------ | ------------------------------------------ |
+| `git: command not found` | Add Git to PATH and reopen terminal.       |
+| Permission denied        | Run as Administrator or use `sudo`.        |
+| Wrong version            | Update using package manager or reinstall. |
+
+</details>
+
+---
+
+<details>
+<summary><strong>2. Git Config – Defining Your Identity</strong></summary>
+
+Before committing, Git must know who you are.
+Each commit carries your name and email — your *digital signature.*
+
+### Set Global Identity
+
+```bash
+git config --global user.name "Akhil Teja Doosari"
+git config --global user.email "doosariakhilteja@gmail.com"
+```
+
+### Check Your Settings
+
+```bash
+git config --list
+```
+
+You’ll see:
+
+```
+user.name=Akhil Teja Doosari
+user.email=doosariakhilteja@gmail.com
+```
+
+---
+
+### Understanding Config Levels
+
+| Level      | Flag       | Location         | Affects      | Typical Use                |
+| ---------- | ---------- | ---------------- | ------------ | -------------------------- |
+| **System** | `--system` | `/etc/gitconfig` | All users    | Company-wide defaults      |
+| **Global** | `--global` | `~/.gitconfig`   | Your user    | Personal identity          |
+| **Local**  | `--local`  | `.git/config`    | Current repo | Project-specific overrides |
+
+**Priority:**
+`Local → Global → System`
+
+Example:
+
+```bash
+git config --local user.email "akhil@company.com"
+```
+
+</details>
+
+---
+
+<details>
+<summary><strong>3. Creating a Repository – The Project’s Birth</strong></summary>
+
+A **repository (repo)** is a folder Git watches for changes.
+
+### Steps
+
+```bash
+mkdir myproject       # Create folder
+cd myproject          # Enter folder
+git init              # Initialize Git
+```
+
+This creates a hidden folder `.git/` containing all version history.
+
+Check it:
+
+```bash
+ls -a
+```
+
+Output:
+
+```
+.  ..  .git
+```
+
+You now have an **empty repository** ready to track files.
+
+</details>
+
+---
+
+<details>
+<summary><strong>4. Understanding Tracked vs Untracked Files</strong></summary>
+
+A new file you create is **untracked** until you tell Git to monitor it.
+
+Example:
+
+```bash
+echo "<h1>Hello Git!</h1>" > index.html
+git status
+```
+
+Output:
+
+```
+Untracked files:
+  index.html
+```
+
+* **Untracked files** — exist in your folder but not yet added.
+* **Tracked files** — Git is monitoring them for changes.
+
+You can view files in the directory:
+
+```bash
+ls
+```
+
+To begin tracking:
+
+```bash
+git add index.html
+```
+
+</details>
+
+---
+
+<details>
+<summary><strong>5. The Staging Environment – The Waiting Room</strong></summary>
+
+The **staging area (index)** is a buffer between your edits and permanent history.
+Think of it as a *checklist before committing.*
+
+| Command                       | Meaning                    |
+| ----------------------------- | -------------------------- |
+| `git add <file>`              | Stage a specific file      |
+| `git add .` or `git add -A`   | Stage all changes          |
+| `git status`                  | Check what’s staged or not |
+| `git restore --staged <file>` | Unstage a file             |
+
+Example:
+
+```bash
+git add index.html
+git status
+```
+
+Output:
+
+```
+Changes to be committed:
+  new file: index.html
+```
+
+If you added the wrong file:
+
+```bash
+git restore --staged index.html
+```
+
+</details>
+
+---
+
+<details>
+<summary><strong>6. Commit – Capturing Your Project’s Timeline</strong></summary>
+
+A **commit** is a snapshot of your staged files — a save point in history.
+
+### Create a Commit
+
+```bash
+git commit -m "Add homepage"
+```
+
+Each commit includes:
+
+* Your name and email
+* Date and message
+* A unique **commit hash**
+
+---
+
+### What’s a Commit Hash?
+
+Every commit is identified by a **SHA-1 hash**, a 40-character fingerprint:
+
+```
+1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+```
+
+Short form (first 7 chars) is enough for reference:
+
+```
+1a2b3c4
+```
+
+Git uses these hashes for everything — branching, tagging, stashing, reverting.
+
+---
+
+### View History
+
+```bash
+git log --oneline
+```
+
+Example:
+
+```
+a12f45c Add homepage
+b78d23d Fix CSS
+c91e7ef Update README
+```
+
+---
+
+### Amend Last Commit (before pushing)
+
+```bash
+git commit --amend -m "Refine homepage layout"
+```
+
+</details>
+
+---
+
+<details>
+<summary><strong>7. Git Workflow – From Edit to Push</strong></summary>
+
+Here’s the natural rhythm of every Git project:
+
+```bash
+git init                      # Create a repo
+git add .                     # Stage all changes
+git commit -m "Initial commit" # Snapshot your work
+git remote add origin https://github.com/username/repo.git
+git push -u origin main       # Push to GitHub
+```
+
+**Flow Diagram:**
+
+<p align="center">
+  <img src="images/workflow.png" alt="Git Workflow" width="420" />
+  <br><em>Figure: Core Git workflow from local edit to remote collaboration</em>
+</p>
+
+**Pulling Updates**
+
+```bash
+git pull
+```
+
+Fetches and merges new changes from the remote repository.
+
+---
+
+**Typical Workflow Summary**
+
+```
+Edit → git status → git add → git commit → git push
+```
+
+</details>
+
+---
+
+<details>
+<summary><strong>8. Best Practices & Troubleshooting</strong></summary>
+
+### Best Practices
+
+* Commit **frequently** with short, meaningful messages.
+* Check status often:
+
+  ```bash
+  git status
+  ```
+* Stage **only** what’s intentional.
+* Push regularly to back up work.
+* Review before committing:
+
+  ```bash
+  git diff
+  ```
+* Keep commits atomic — one logical change per commit.
+
+---
+
+### Common Issues
+
+| Issue                         | Fix                                                |
+| ----------------------------- | -------------------------------------------------- |
+| Accidentally added wrong file | `git restore --staged <file>`                      |
+| Commit message typo           | `git commit --amend`                               |
+| Merge conflicts               | Open files, resolve, then `git add` + `git commit` |
+| Permission denied (push)      | Ensure correct GitHub credentials or SSH setup     |
+| Detached HEAD                 | `git switch <branch>` to return to a branch        |
+
+</details>
+
+---
+
+<details>
+<summary><strong>9. Mentor Insight</strong></summary>
+
+At this stage, Git is your **personal timeline manager** — every edit, every snapshot, every sync.
+You now understand how work flows from *local creation* to *shared collaboration*.
+
+Next, you’ll learn how to **pause work safely and mark milestones** —
+through **Git Stash** and **Git Tags**, the natural continuation of your Inside-Out mastery path.
+
+</details>
+
+---

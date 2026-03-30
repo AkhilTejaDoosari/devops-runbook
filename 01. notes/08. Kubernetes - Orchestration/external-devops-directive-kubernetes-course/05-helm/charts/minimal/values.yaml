@@ -1,6 +1,0 @@
-environment: production
-
-configData:
-  - key: conditionalKey
-    value: "this will be included"
-    enabled: true

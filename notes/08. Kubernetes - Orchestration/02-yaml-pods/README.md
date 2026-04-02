@@ -347,3 +347,5 @@ k9s
 - `Pending` → the Scheduler cannot find a Node to place it on
 
 If you see any of these, run `kubectl describe pod chillspot-api` and scroll to the Events section at the bottom. The answer is always there. → Full troubleshooting toolkit in Phase 5.
+
+→ Ready to practice? [Go to Lab 02](../labs/02-yaml-pods-lab.md)

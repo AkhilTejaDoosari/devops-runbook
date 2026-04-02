@@ -242,3 +242,5 @@ kubectl get pods -n kube-system
 ```
 
 The second command is the key one — you will literally see `etcd`, `kube-apiserver`, `kube-scheduler`, and `kube-controller-manager` running as Pods in the `kube-system` namespace. That is the Manager, alive.
+
+→ Ready to practice? [Go to Lab 01](../labs/01-architecture-lab.md)

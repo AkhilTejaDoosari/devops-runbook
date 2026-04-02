@@ -11,7 +11,7 @@ Every tool and concept here transfers directly from a Minikube laptop to a
 Focus:
 - build correct mental models before touching commands
 - use only job-legal, transferable tooling
-- practice with a real running example (ChillSpot) throughout
+- practice with a real 3-tier running example (webstore) throughout
 - develop muscle memory, not fake confidence from watching videos
 
 ---
@@ -39,6 +39,21 @@ Theory without commands is just reading. Commands without theory is just guessin
 | 05 | [Troubleshooting](05-troubleshooting/README.md) | K8s Probes (Liveness/Readiness), Jobs & CronJobs, DaemonSet, describe & logs. | Intentionally break a Pod (wrong image name) and use `kubectl describe` to find the error. |
 | 06 | [Cloud & EKS](06-cloud/README.md) | AWS EKS, Ingress Controller, HPA, Helm, ArgoCD, Prometheus, Grafana, EFK, Blue-Green Deployment. | Build your EKS cluster on AWS and automate it using ArgoCD and Helm. |
 
+## Labs
+
+Hands-on practice lives in a dedicated folder so theory files stay clean.
+Each lab maps directly to its phase — open it, run it, build muscle memory.
+
+| Lab | File |
+|-----|------|
+| 00 — Setup | [labs/00-setup-lab.md](labs/00-setup-lab.md) |
+| 01 — Architecture | [labs/01-architecture-lab.md](labs/01-architecture-lab.md) |
+| 02 — YAML & Pods | [labs/02-yaml-pods-lab.md](labs/02-yaml-pods-lab.md) |
+| 03 — Deployments | [labs/03-deployments-lab.md](labs/03-deployments-lab.md) |
+| 03.5 — Networking | [labs/03.5-networking-lab.md](labs/03.5-networking-lab.md) |
+| 04 — State & Config | [labs/04-state-lab.md](labs/04-state-lab.md) |
+| 05 — Troubleshooting | [labs/05-troubleshooting-lab.md](labs/05-troubleshooting-lab.md) |
+| 06 — Cloud & EKS | [labs/06-cloud-lab.md](labs/06-cloud-lab.md) |
 ---
 
 ## What You Should Be Able to Do After This
@@ -103,12 +118,12 @@ These are Minikube-only shortcuts. They do not exist in production:
 
 ---
 
-## Running Example — ChillSpot
+## Running Example — Webstore
 
-Throughout every phase, a fictional containerized streaming platform called
-**ChillSpot** serves as the practical example. Every manifest, every Service,
-every Secret is built around ChillSpot — so concepts always have a concrete
-anchor, not just abstract YAML.
+Throughout every phase, a fictional 3-tier e-commerce application called
+**webstore** serves as the practical example — a frontend, a backend API,
+and a database. Every manifest, every Service, every Secret is built around
+webstore — so concepts always have a concrete anchor, not just abstract YAML.
 
 ---
 

@@ -50,7 +50,7 @@ Kubernetes watches the cluster 24/7 and enforces that state automatically.
 | Deploying new version | **Rolling Updates** — swaps containers one by one, zero downtime |
 | Traffic distribution | **Load Balancing** — spreads requests across all running containers |
 
-> **ChillSpot angle:** StarkWolf's ChillSpot streams video to users 24/7. If the streaming service Pod crashes at peak hours, Kubernetes detects it and replaces it before a single user notices the blip.
+> **Webstore angle:** The webstore serves customers 24/7. If the frontend Pod crashes at peak hours, Kubernetes detects it and replaces it before a single user notices the blip.
 
 ---
 
@@ -179,11 +179,11 @@ These components run on every server that executes your application code.
 
 ## 5. How a Deployment Request Flows
 
-When you run `kubectl apply -f chillspot-app.yaml`, here is the exact sequence:
+When you run `kubectl apply -f webstore-frontend-deployment.yaml`, here is the exact sequence:
 ```
 You  
  │  
- │  kubectl apply -f chillspot-app.yaml  
+ │  kubectl apply -f webstore-frontend-deployment.yaml 
  ▼
 API Server  ──── stores request as "PENDING" ────▶ etcd
  │

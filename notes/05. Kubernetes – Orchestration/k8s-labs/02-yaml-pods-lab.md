@@ -1,4 +1,4 @@
-[Home](../README.md) | [Labs Index](./README.md) | [Setup Lab](./00-setup-lab.md) | [Architecture Lab](./01-architecture-lab.md) | [YAML & Pods Lab](./02-yaml-pods-lab.md) | [Deployments Lab](./03-deployments-lab.md) | [Networking Lab](./03.5-networking-lab.md) | [State & Config Lab](./04-state-lab.md) | [Troubleshooting Lab](./05-troubleshooting-lab.md) | [Cloud & EKS Lab](./06-cloud-lab.md)
+[Home](../README.md) | [Labs Index](./README.md) | [Lab 00](./00-setup-lab.md) | [Lab 01](./01-architecture-lab.md) | [Lab 02](./02-yaml-pods-lab.md) | [Lab 03](./03-deployments-lab.md) | [Lab 03.5](./03.5-networking-lab.md) | [Lab 04](./04-state-lab.md) | [Lab 05](./05-troubleshooting-lab.md) | [Lab 06](./06-cicd-lab.md) | [Lab 07](./07-observability-lab.md) | [Lab 08](./08-cloud-lab.md)
 
 ---
 

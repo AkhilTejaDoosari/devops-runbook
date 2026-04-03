@@ -3,7 +3,7 @@
 [Stash & Tags](../02-stash-tags/README.md) | 
 [History & Branching](../03-history-branching/README.md) | 
 [Contribute](../04-contribute/README.md) | 
-[Undo & Recovery](../05-undo-recovery/README.md) | 
+[Undo & Recovery](../05-undo-recovery/README.md)
 
 # Git History & Branching  
 > Working in Parallel and Understanding Project History
@@ -11,185 +11,112 @@
 ---
 
 ## Table of Contents
-1. [Reading Project History – Following Every Change](#1-reading-project-history--following-every-change)  
-2. [Branching Fundamentals – Parallel Timelines in Git](#2-branching-fundamentals--parallel-timelines-in-git)  
-3. [Working with Branches – Create, Switch & Merge](#3-working-with-branches--create-switch--merge)  
-4. [Merging Types & Conflict Resolution](#4-merging-types--conflict-resolution)  
-5. [Managing History – Keeping Your Timeline Clean](#5-managing-history--keeping-your-timeline-clean)  
-6. [Mentor Insight](#6-mentor-insight)
+1. [Reading Project History](#1-reading-project-history)
+2. [Branching Fundamentals](#2-branching-fundamentals)
+3. [Working with Branches – Create, Switch & Merge](#3-working-with-branches--create-switch--merge)
+4. [Merging Types & Conflict Resolution](#4-merging-types--conflict-resolution)
+5. [Rebase – Keeping History Linear](#5-rebase--keeping-history-linear)
+6. [Branching Strategies](#6-branching-strategies)
 
 ---
 
 <details>
-<summary><strong>1. Reading Project History – Following Every Change</strong></summary>
+<summary><strong>1. Reading Project History</strong></summary>
 
-Every Git repository maintains a **complete timeline of your project** — every edit, commit, and merge is recorded permanently.  
-Exploring history is how developers audit progress, find bugs, and understand evolution.
+Every Git repository maintains a **complete timeline** — every edit, commit, and merge is recorded permanently.
 
 ---
 
-### Key Commands for Viewing History
+### Key Commands
+
 | Command | Description |
-|----------|-------------|
-| `git log` | Show full commit history with author, date, and message. |
-| `git log --oneline` | Condensed summary (short hash + message). |
-| `git show <commit>` | Display detailed info and file changes for a specific commit. |
-| `git diff` | Compare unstaged changes with last commit. |
-| `git diff --staged` | Compare staged changes with last commit. |
-| `git log --graph` | ASCII diagram of commit and merge history. |
+|---|---|
+| `git log` | Full commit history with author, date, message |
+| `git log --oneline` | Condensed summary |
+| `git show <commit>` | Detailed info and file changes for one commit |
+| `git diff` | Compare unstaged changes with last commit |
+| `git diff --staged` | Compare staged changes with last commit |
+| `git log --graph --oneline` | ASCII diagram of commit and merge history |
 
 ---
 
-### Viewing the Commit Timeline
-```bash
-git log
-````
-
-Output:
-
-```
-commit 09f4acd3f8836b7f6fc44ad9e012f82faf861803 (HEAD -> main)
-Author: Akhil Teja Doosari <doosariakhilteja@gmail.com>
-Date:   Tue Nov 12 10:30:00 2025 -0500
-
-    Add responsive navbar
-```
-
-* Use **↑/↓** to scroll.
-* Type `/keyword` to search.
-* Press `q` to quit the log view.
-
----
-
-### Summary View (Compact Log)
+### Viewing History
 
 ```bash
 git log --oneline
 ```
 
 Example:
-
 ```
-a91b23c Add responsive navbar  
-b78d23d Fix login bug  
-c11aa8d Initial commit
+a91b23c add webstore api endpoint
+b78d23d fix login bug
+c11aa8d initial commit
 ```
-
-Each line begins with a **short commit hash** — the fingerprint of that snapshot.
-Git uses these hashes for tagging, branching, and rollbacks.
-
----
 
 ### Inspect a Specific Commit
-
-```bash
-git show <commit-hash>
-```
-
-Example:
 
 ```bash
 git show a91b23c
 ```
 
-Shows:
-
-* Author, timestamp, and message
-* Diff of files changed
-
----
+Shows author, timestamp, message, and exact diff.
 
 ### Compare File Versions
 
 ```bash
 git diff              # unstaged changes
-git diff --staged     # staged but uncommitted changes
+git diff --staged     # staged but uncommitted
+git diff 1a2b3c4 9f8e7d6   # two specific commits
 ```
 
-Example:
-
-```bash
-diff --git a/index.html b/index.html
---- a/index.html
-+++ b/index.html
-@@ -5,7 +5,7 @@
--<h1>Old Title</h1>
-+<h1>New Title</h1>
-```
-
-To compare two commits directly:
-
-```bash
-git diff 1a2b3c4 9f8e7d6
-```
-
----
-
-### Graphing History
+### Graph History
 
 ```bash
 git log --graph --oneline
 ```
 
-Output:
-
 ```
-* 7d33e45 Merge branch 'feature/auth'
+* 7d33e45 merge feature/api
 |\
-| * b24aa33 Add password validation
-| * c28ef12 Update login page
-* | a7bc9d2 Improve navbar layout
+| * b24aa33 add order endpoint
+| * c28ef12 add product endpoint
+* | a7bc9d2 fix frontend navbar
 |/
+* 1a2b3c4 initial commit
 ```
-
-This visualizes how branches diverge and converge — your project’s **time map**.
 
 </details>
 
 ---
 
 <details>
-<summary><strong>2. Branching Fundamentals – Parallel Timelines in Git</strong></summary>
+<summary><strong>2. Branching Fundamentals</strong></summary>
 
-In Git, a **branch** is a lightweight pointer to a series of commits — a *parallel universe* where you can experiment freely.
-
-<img src="images/branch-concept.png" alt="Branch Concept" width="850" height="300" />
-
----
+A **branch** is a lightweight pointer to a series of commits — a parallel timeline where you can develop freely without touching the main codebase.
 
 ### Why Branches Exist
 
-* Develop new features safely.
-* Fix bugs without touching main code.
-* Experiment and discard easily.
-* Work in teams without overwriting each other.
-
-Without branching, you’d copy folders (`v1`, `v2`, `v3`) — messy and error-prone.
-With Git, branches keep experiments organized within the same repository.
-
----
+- Develop features without touching working code
+- Fix bugs in isolation
+- Let multiple people work simultaneously
+- Experiment and discard without consequences
 
 ### The HEAD Pointer
 
-`HEAD` tells Git *where you currently are* — the latest commit in your active branch.
+`HEAD` tells Git where you currently are — the latest commit in your active branch.
 Switching branches moves `HEAD` to another line of history.
-
-* Default branch: **main** (formerly **master**).
-* Nothing magical about the name — it’s just convention.
-
----
 
 ### Key Branch Commands
 
-| Command                 | Purpose                        |
-| ----------------------- | ------------------------------ |
-| `git branch`            | List all branches.             |
-| `git branch <name>`     | Create a new branch.           |
-| `git switch <name>`     | Switch to an existing branch.  |
-| `git switch -c <name>`  | Create and switch in one step. |
-| `git branch -m old new` | Rename a branch.               |
-| `git branch -d <name>`  | Delete a branch (merged).      |
-| `git branch -D <name>`  | Force delete (unmerged).       |
+| Command | Purpose |
+|---|---|
+| `git branch` | List all branches |
+| `git branch <name>` | Create a new branch |
+| `git switch <name>` | Switch to a branch |
+| `git switch -c <name>` | Create and switch in one step |
+| `git branch -m old new` | Rename a branch |
+| `git branch -d <name>` | Delete a merged branch |
+| `git branch -D <name>` | Force delete unmerged branch |
 
 </details>
 
@@ -198,94 +125,57 @@ Switching branches moves `HEAD` to another line of history.
 <details>
 <summary><strong>3. Working with Branches – Create, Switch & Merge</strong></summary>
 
-Let’s walk through a real scenario:
-
----
-
-### 1. Create a Feature Branch
+### Real workflow — feature branch
 
 ```bash
-git branch feature/homepage
-git switch feature/homepage
-```
+# Start from main
+git switch main
 
-You’re now in a sandbox — safe to modify code.
+# Create and switch to feature branch
+git switch -c feature/webstore-api
 
-Make changes:
-
-```bash
+# Make changes and commit
 git add .
-git commit -m "Add hero banner"
-```
+git commit -m "add product listing endpoint"
 
----
-
-### 2. Return to Main
-
-```bash
+# Return to main
 git switch main
-```
 
-You’ll see only main’s files — branch work stays isolated.
+# Merge feature back
+git merge feature/webstore-api
+
+# Clean up
+git branch -d feature/webstore-api
+```
 
 ---
 
-### 3. Merge Feature Back to Main
+### Fast-Forward Merge
 
-```bash
-git merge feature/homepage
-```
-
-If main hasn’t changed since you branched, Git performs a **fast-forward merge**:
+If main hasn't changed since you branched — Git simply moves the pointer forward:
 
 ```
-main → feature/homepage → merged cleanly
+Before:  main → A → B
+                         feature → C → D
+
+After merge:  main → A → B → C → D
 ```
 
-History remains linear and clean.
-
-<p align="center">
-  <img src="images/fast-forward-merge.png" alt="Fast Forward Merge" width="750" height="225" />
-</p>
+History stays linear, no merge commit created.
 
 ---
 
-### 4. Divergent Branches → 3-Way Merge
+### 3-Way Merge
 
-If both main and your branch have commits since branching:
+If both main and your branch have new commits since branching — Git creates a **merge commit**:
 
-```bash
-git switch main
-git merge feature/homepage
 ```
+Before:  main → A → B → E
+                         feature → C → D
 
-Git performs a **3-way merge**:
-
-1. Finds common ancestor
-2. Compares changes in both tips
-3. Creates a new **merge commit**
-
-<p align="center">
-  <img src="images/3way-merge.png" alt="3 Way Merge" width="700" height="225" />
-</p>
-
----
-
-### 5. Delete or Keep Branch
-
-Once merged:
-
-```bash
-git branch -d feature/homepage
+After:   main → A → B → E → M  (M is the merge commit)
+                         C → D ↗
 ```
-
-If unmerged but you want to remove:
-
-```bash
-git branch -D feature/homepage
-```
-
-Branches are lightweight — create, merge, and delete freely.
 
 </details>
 
@@ -294,83 +184,167 @@ Branches are lightweight — create, merge, and delete freely.
 <details>
 <summary><strong>4. Merging Types & Conflict Resolution</strong></summary>
 
-Even with Git’s precision, **conflicts** happen when two branches modify the same lines.
+Conflicts happen when two branches modify the same lines in the same file.
 
-Example conflict marker in file:
+### What a conflict looks like
 
 ```text
 <<<<<<< HEAD
-<h1>Homepage</h1>
+api_port=8080
 =======
-<h1>New Homepage</h1>
->>>>>>> feature/homepage
+api_port=9090
+>>>>>>> feature/webstore-api
 ```
 
-You decide which version to keep, edit, then:
+- Everything above `=======` is your current branch (HEAD)
+- Everything below is the incoming branch
 
-```bash
-git add <file>
-git commit
-```
+### Resolve it
 
-Visual tools can help:
-
-* **VS Code Merge Editor** – inline resolution
-* **GitHub web merge** – compare visually
-* **CLI tools** – use `git mergetool`
-
-<p align="center">
-  <img src="images/merge-conflict.png" alt="Merge Conflict" width="700" height="350" />
-</p>
-
----
+1. Edit the file — keep what's correct, delete the markers
+2. Stage the resolved file: `git add <file>`
+3. Complete the merge: `git commit`
 
 ### Best Practices
 
-* Keep branches small and focused.
-* Merge frequently to reduce conflict scope.
-* Communicate with teammates about shared files.
-* Avoid long-lived branches when possible.
+- Keep branches small and focused — smaller diffs = fewer conflicts
+- Merge or rebase frequently to stay in sync with main
+- Communicate with teammates about shared files
 
 </details>
 
 ---
 
 <details>
-<summary><strong>5. Managing History – Keeping Your Timeline Clean</strong></summary>
+<summary><strong>5. Rebase – Keeping History Linear</strong></summary>
 
-When you merge, Git may create a **merge commit** — a checkpoint combining two lines of development.
-These commits preserve collaboration context.
+### What is rebase?
 
-<img src="images/merge-history.png" alt="Merge History" width="750" height="250" />
+Rebase moves your branch's commits so they appear to start from the tip of another branch — creating a **linear history** with no merge commits.
 
----
+**Merge result:**
+```
+main → A → B → E → M (merge commit)
+                C → D ↗
+```
 
-### Merge Commits Explained
+**Rebase result:**
+```
+main → A → B → E → C' → D'
+```
 
-* A **fast-forward** merge moves the branch pointer ahead — no new commit.
-* A **3-way** merge creates a distinct commit joining histories.
-* Merge commits help visualize *when* branches were integrated.
+Your commits (C, D) are rewritten as (C', D') on top of main. Clean, linear history.
 
-To keep your history readable:
+### Basic rebase workflow
 
-* Write clear, meaningful messages for merges.
-* Rebase feature branches (optional advanced cleanup).
-* Delete old branches once merged.
+```bash
+git switch feature/webstore-api
+
+# Rebase onto latest main
+git rebase main
+
+# Fix any conflicts, then:
+git rebase --continue
+
+# Switch to main and fast-forward
+git switch main
+git merge feature/webstore-api
+```
+
+### Merge vs Rebase — when to use which
+
+| | Merge | Rebase |
+|---|---|---|
+| **History** | Preserves full branching history | Creates clean linear history |
+| **Use when** | Merging completed features | Updating a feature branch with latest main |
+| **Safe on shared branches** | ✅ Yes | ❌ No — never rebase pushed commits |
+| **Creates merge commit** | ✅ Yes | ❌ No |
+
+**The golden rule of rebase:**
+Never rebase commits that have already been pushed to a shared remote branch. It rewrites history and causes problems for everyone else.
+
+### Abort a rebase
+
+```bash
+git rebase --abort
+```
+
+Use this if things go wrong — returns you to the state before rebase started.
 
 </details>
 
 ---
 
 <details>
-<summary><strong>6. Mentor Insight</strong></summary>
+<summary><strong>6. Branching Strategies</strong></summary>
 
-History shows *what happened*; branching lets you *shape what happens next.*
-You now understand how to trace, fork, and merge timelines — the foundation of collaborative version control.
+A **branching strategy** is a team agreement on how branches are named, when they're created, and how they flow into production. Interviewers ask about this. Teams fight about this. Know both.
 
-Next, we’ll move beyond local experimentation and explore **team contribution flows**:
-**Forks, clones, and pull requests** — how real collaboration happens in the open-source world.
+---
+
+### Git Flow
+
+The classic strategy. Multiple long-lived branches.
+
+```
+main        — production-ready code only
+develop     — integration branch for features
+feature/*   — individual features branch off develop
+release/*   — stabilization before merging to main
+hotfix/*    — emergency fixes directly off main
+```
+
+**Flow:**
+```
+feature/x → develop → release/1.0 → main
+                                   ↘ tag v1.0
+hotfix/y → main → develop (backport)
+```
+
+**Good for:** Teams with scheduled release cycles, versioned software.
+**Bad for:** Fast-moving teams — too much branch overhead.
+
+---
+
+### Trunk-Based Development
+
+Everyone commits to `main` (the trunk) directly or via very short-lived feature branches (1-2 days max).
+
+```
+main  ← everyone integrates here frequently
+  ↑
+feature branches live < 2 days, then merged
+```
+
+**Good for:** CI-CD pipelines, fast-moving teams, SaaS products.
+**Bad for:** Teams that need long stabilization periods.
+
+---
+
+### Which one does DevOps prefer?
+
+**Trunk-based.** Here's why:
+
+- GitHub Actions and ArgoCD trigger on commits to main
+- Long-lived branches delay integration and create merge hell
+- Feature flags replace the need for long feature branches
+- Most modern DevOps teams (Google, Netflix, Amazon) use trunk-based
+
+You will use **trunk-based** in Phase 06 when you build the CI-CD pipeline.
+
+---
+
+### Branch naming conventions (used in both strategies)
+
+```
+feature/webstore-api-pagination
+fix/webstore-login-timeout
+chore/update-dependencies
+docs/add-api-readme
+release/v1.2.0
+hotfix/fix-payment-crash
+```
 
 </details>
 
----
+→ Ready to practice? [Go to Lab 03](../git-labs/03-history-branching-lab.md)

@@ -3,7 +3,7 @@
 [Stash & Tags](../02-stash-tags/README.md) | 
 [History & Branching](../03-history-branching/README.md) | 
 [Contribute](../04-contribute/README.md) | 
-[Undo & Recovery](../05-undo-recovery/README.md) | 
+[Undo & Recovery](../05-undo-recovery/README.md)
 
 # Git Undo & Recovery  
 > Mastering Revert, Reflog & Amend
@@ -11,31 +11,26 @@
 ---
 
 ## Table of Contents
-1. [When Things Go Wrong – The Need for Recovery](#1-when-things-go-wrong--the-need-for-recovery)  
-2. [Revert – Safely Undoing Published Commits](#2-revert--safely-undoing-published-commits)  
-3. [Amend – Fixing the Most Recent Commit](#3-amend--fixing-the-most-recent-commit)  
-4. [Reset – Moving the Pointer (Local Rollback)](#4-reset--moving-the-pointer-local-rollback)  
-5. [Reflog – Recovering Lost Work](#5-reflog--recovering-lost-work)  
-6. [Best Practices & Guardrails](#6-best-practices--guardrails)  
-7. [Mentor Insight](#7-mentor-insight)
+1. [When Things Go Wrong – The Need for Recovery](#1-when-things-go-wrong--the-need-for-recovery)
+2. [Revert – Safely Undoing Published Commits](#2-revert--safely-undoing-published-commits)
+3. [Amend – Fixing the Most Recent Commit](#3-amend--fixing-the-most-recent-commit)
+4. [Reset – Moving the Pointer](#4-reset--moving-the-pointer)
+5. [Reflog – Recovering Lost Work](#5-reflog--recovering-lost-work)
+6. [Best Practices & Guardrails](#6-best-practices--guardrails)
 
 ---
 
 <details>
 <summary><strong>1. When Things Go Wrong – The Need for Recovery</strong></summary>
 
-Mistakes happen — a wrong commit, deleted branch, or reset gone bad.  
-Git provides multiple *safety nets* to fix or roll back issues without losing history.
-
-Think of these tools as **three layers of recovery:**
+Mistakes happen — wrong commit, deleted branch, reset gone bad.
+Git provides multiple safety nets to fix or roll back without losing history.
 
 | Layer | Tool | Purpose |
-|--------|------|----------|
-| Surface | `git commit --amend` | Fix your last commit (message or files). |
-| Mid-Level | `git revert` | Undo older commits safely with new commits. |
-| Deep Recovery | `git reflog` / `git reset` | Restore lost work or move to any past state. |
-
-Together, they form Git’s **time machine** — allowing you to go back, fix, and move forward safely.
+|---|---|---|
+| Surface | `git commit --amend` | Fix your last commit (message or files) |
+| Mid-Level | `git revert` | Undo older commits safely with new commits |
+| Deep Recovery | `git reflog` / `git reset` | Restore lost work or move to any past state |
 
 </details>
 
@@ -44,65 +39,39 @@ Together, they form Git’s **time machine** — allowing you to go back, fix, a
 <details>
 <summary><strong>2. Revert – Safely Undoing Published Commits</strong></summary>
 
-`git revert` creates a new commit that **reverses the changes** of an earlier commit without deleting history.
+`git revert` creates a **new commit** that reverses the changes of an earlier commit — without deleting history.
 
-### Why Use It
-- You accidentally introduced a bug.  
-- You need to roll back one specific commit.  
-- You want to keep the project history clean and intact.  
+**Analogy:** Crossing out a line in a notebook instead of tearing the page — the record remains.
 
-**Analogy:** Like crossing out a line in a notebook instead of tearing the page — the record remains.
+### Commands
 
----
-
-### Basic Commands
 | Command | Description |
-|----------|-------------|
+|---|---|
 | `git revert HEAD` | Undo the latest commit |
 | `git revert <commit-hash>` | Undo a specific commit |
 | `git revert HEAD~2` | Undo a commit two steps back |
 | `git revert --no-edit` | Skip editing commit message |
-| `git log --oneline` | View history to identify commits |
-
----
 
 ### Example
-Find the commit to undo:
+
 ```bash
 git log --oneline
-````
+# a91b23c add broken feature
+# b78d23d fix login
 
-Then revert:
-
-```bash
-git revert HEAD --no-edit
+git revert a91b23c --no-edit
+# Creates new commit that undoes a91b23c
+# History is preserved — nothing is deleted
 ```
-
-Output:
-
-```
-[main e56ba1f] Revert "Added feature X"
- 1 file changed, 0 insertions(+), 0 deletions(-)
-```
-
-A **new commit** is added that cancels the old one — history remains intact.
-
----
 
 ### Troubleshooting
 
-| Issue                 | Solution                                             |
-| --------------------- | ---------------------------------------------------- |
-| Conflict occurs       | Fix manually → `git add .` → `git revert --continue` |
-| Want to cancel revert | `git revert --abort`                                 |
-| Want to skip a revert | `git revert --skip`                                  |
+| Issue | Solution |
+|---|---|
+| Conflict occurs | Fix manually → `git add .` → `git revert --continue` |
+| Want to cancel | `git revert --abort` |
 
----
-
-**When to Use**
-
-* In shared repos where others may have pulled your commits.
-* To undo specific commits safely without altering history.
+**Use revert when:** the commit has already been pushed and others may have pulled it.
 
 </details>
 
@@ -111,126 +80,70 @@ A **new commit** is added that cancels the old one — history remains intact.
 <details>
 <summary><strong>3. Amend – Fixing the Most Recent Commit</strong></summary>
 
-`git commit --amend` lets you **rewrite your last commit** — perfect for quick corrections.
+`git commit --amend` rewrites your last commit.
 
----
+⚠️ Only use on **local commits** — never amend something already pushed.
 
-### When to Use
-
-* You forgot to include a file.
-* Your message had a typo.
-* You want to replace or remove a file from the last commit.
-
-⚠️ Only use amend on **local commits** (not yet pushed).
-
----
-
-### Fix a Commit Message
+### Fix a commit message
 
 ```bash
-git commit --amend -m "Corrected commit message"
+git commit --amend -m "add webstore config file"
 ```
 
-### Add Forgotten Files
+### Add a forgotten file
 
 ```bash
-git add newfile.txt
-git commit --amend
+git add missing-file.txt
+git commit --amend --no-edit
 ```
 
-### Remove a File
+### Remove a file from the last commit
 
 ```bash
 git reset HEAD^ -- unwanted.txt
-git commit --amend
+git commit --amend --no-edit
 ```
 
-After amending, the **commit hash changes** — Git treats it as a new commit.
-
----
-
-### Review Changes
-
-```bash
-git log --oneline
-```
-
-Before:
-
-```
-07c5bc5 (HEAD -> main) Addd lines to redme
-```
-
-After:
-
-```
-eaa69ce (HEAD -> main) Added lines to README.md
-```
-
----
-
-### Warnings
-
-* Avoid amending commits that were already pushed.
-* Rewriting shared history can cause merge conflicts.
-
-**Analogy:** Like editing your last sent message before anyone sees it — safe if unread, risky if already read.
+After amending, the commit hash changes — Git treats it as a new commit.
 
 </details>
 
 ---
 
 <details>
-<summary><strong>4. Reset – Moving the Pointer (Local Rollback)</strong></summary>
+<summary><strong>4. Reset – Moving the Pointer</strong></summary>
 
-`git reset` moves your **HEAD** pointer to a specific commit and optionally modifies the staging or working directory.
+`git reset` moves your HEAD pointer to a specific commit.
 
----
+### Modes
 
-### Modes of Reset
-
-| Command                                  | Effect                                            |
-| ---------------------------------------- | ------------------------------------------------- |
-| `git reset --soft <commit>`              | Move HEAD, keep changes staged                    |
-| `git reset --mixed <commit>` *(default)* | Move HEAD, unstage changes but keep them in files |
-| `git reset --hard <commit>`              | Move HEAD and **erase** working directory changes |
-| `git reset <file>`                       | Unstage specific file only                        |
-
----
+| Command | Effect |
+|---|---|
+| `git reset --soft <commit>` | Move HEAD, keep changes staged |
+| `git reset --mixed <commit>` | Move HEAD, unstage changes (default) |
+| `git reset --hard <commit>` | Move HEAD and erase all changes |
+| `git reset <file>` | Unstage a specific file only |
 
 ### Example
 
-Find the target commit:
-
 ```bash
 git log --oneline
+# a91b23c bad commit
+# b78d23d good state
+
+git reset --soft b78d23d
+# HEAD moves back — changes from a91b23c are now staged, ready to recommit
 ```
 
-Then reset:
-
-```bash
-git reset --soft 9a9add8
-```
-
-→ Moves HEAD to that commit; keeps changes staged for new commit.
-
----
-
-### Visual Summary
+### Visual summary
 
 ```
 --soft  → HEAD moves, files stay staged
---mixed → HEAD moves, files unstaged
---hard  → HEAD moves, files erased
+--mixed → HEAD moves, files unstaged but kept
+--hard  → HEAD moves, files erased completely
 ```
 
----
-
-### Warnings
-
-* **Reset rewrites history.** Never use it on shared branches.
-* Use `revert` instead when collaborating.
-* Always check with `git status` after reset.
+⚠️ Never use `reset` on shared branches — rewrite history causes problems for teammates.
 
 </details>
 
@@ -239,77 +152,47 @@ git reset --soft 9a9add8
 <details>
 <summary><strong>5. Reflog – Recovering Lost Work</strong></summary>
 
-`git reflog` records every update to the tip of branches and `HEAD`, even those unreachable by normal history.
-It’s your **“black box recorder”** — tracking every move.
+`git reflog` records every update to HEAD — even commits unreachable by normal history.
+Your **black box recorder** — tracks every move.
 
----
+### When to use
 
-### When to Use
+- Lost commits after a reset
+- Branch deleted by mistake
+- Need to go back to an exact state
 
-* You lost commits after a reset or rebase.
-* A branch was deleted by mistake.
-* You want to travel back in time.
-
----
-
-### View Reflog
+### View reflog
 
 ```bash
 git reflog
 ```
 
-Example output:
-
+Example:
 ```
-e56ba1f (HEAD -> main) HEAD@{0}: commit: Revert feature
-52418f7 HEAD@{1}: commit: Update README
-9a9add8 HEAD@{2}: commit: Added .gitignore
+e56ba1f HEAD@{0}: commit: revert bad feature
+52418f7 HEAD@{1}: commit: update webstore config
+9a9add8 HEAD@{2}: reset: moving to HEAD~1
 ```
 
-Each line shows where HEAD has been — every commit, checkout, or reset.
-
----
-
-### Recover Lost Commits
+### Recover lost commits
 
 ```bash
 git reset --hard HEAD@{2}
+# or
+git checkout 9a9add8
 ```
 
-or
+### Restore a deleted branch
 
 ```bash
-git checkout <commit-hash>
+git branch recovered-branch 9a9add8
 ```
 
-You’ve effectively time-traveled to an earlier state.
+### Key notes
 
----
-
-### Restore Deleted Branch
-
-```bash
-git branch feature-recovered <commit-hash>
-```
-
----
-
-### Clean Up Reflog
-
-Old entries expire automatically, but you can prune them:
-
-```bash
-git reflog expire --expire=30.days refs/heads/main
-git gc --prune=now
-```
-
----
-
-### Key Notes
-
-* Reflog is **local only** — not synced to remote.
-* It expires (90 days default).
-* Always push branches you want to preserve permanently.
+- Reflog is **local only** — not synced to remote
+- Expires after 90 days by default
+- Always push branches you want to keep permanently
 
 </details>
 
@@ -318,36 +201,16 @@ git gc --prune=now
 <details>
 <summary><strong>6. Best Practices & Guardrails</strong></summary>
 
-| Action                      | Use                           | Avoid                            |
-| --------------------------- | ----------------------------- | -------------------------------- |
-| Minor local fix             | `git commit --amend`          | After pushing to shared repo     |
-| Undo specific public commit | `git revert`                  | `git reset --hard`               |
-| Undo multiple local commits | `git reset --soft`            | On shared branches               |
-| Lost commit recovery        | `git reflog` + `git checkout` | Ignoring reflog before panicking |
+| Situation | Use | Avoid |
+|---|---|---|
+| Fix local commit before push | `git commit --amend` | After pushing to shared repo |
+| Undo a pushed commit safely | `git revert` | `git reset --hard` on shared branch |
+| Undo multiple local commits | `git reset --soft` | On shared branches |
+| Lost commit recovery | `git reflog` + `git checkout` | Panicking before checking reflog |
 
-**Golden Rule:**
-👉 *Revert for shared safety, Reset for private cleanup.*
-
-</details>
-
----
-
-<details>
-<summary><strong>7. Mentor Insight</strong></summary>
-
-Mistakes in Git aren’t failures — they’re checkpoints for learning.
-Every commit, even a wrong one, leaves a trail you can recover from.
-
-The tools you’ve learned are not about “going back,” but about **moving forward responsibly**:
-
-* `amend` fixes the present,
-* `revert` respects the past,
-* `reset` repositions the pointer,
-* `reflog` restores what seemed lost.
-
-You’ve now mastered not just version control — but **version recovery**.
-Git isn’t unforgiving; it’s built for second chances.
+**Golden rule:**
+Revert for shared safety. Reset for private cleanup.
 
 </details>
 
----
+→ Ready to practice? [Go to Lab 05](../git-labs/05-undo-recovery-lab.md)

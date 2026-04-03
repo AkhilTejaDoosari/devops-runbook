@@ -3,7 +3,7 @@
 [Stash & Tags](../02-stash-tags/README.md) | 
 [History & Branching](../03-history-branching/README.md) | 
 [Contribute](../04-contribute/README.md) | 
-[Undo & Recovery](../05-undo-recovery/README.md) | 
+[Undo & Recovery](../05-undo-recovery/README.md)
 
 # Git Contribute  
 > Fork, Clone & Pull Requests – Working with Others
@@ -11,224 +11,177 @@
 ---
 
 ## Table of Contents
-1. [Understanding Collaboration – The Open-Source Mindset](#1-understanding-collaboration--the-open-source-mindset)  
-2. [Forking a Repository – Your Personal Copy on GitHub](#2-forking-a-repository--your-personal-copy-on-github)  
-3. [Cloning a Fork – Bringing It to Your Local Machine](#3-cloning-a-fork--bringing-it-to-your-local-machine)  
-4. [Setting Up Remotes – Communicating with Two Worlds](#4-setting-up-remotes--communicating-with-two-worlds)  
-5. [Pushing Changes – Syncing Local Work to GitHub](#5-pushing-changes--syncing-local-work-to-github)  
-6. [Creating Pull Requests – Suggesting Changes Upstream](#6-creating-pull-requests--suggesting-changes-upstream)  
-7. [Collaboration Flow Recap](#7-collaboration-flow-recap)  
-8. [Mentor Insight](#8-mentor-insight)
+1. [Understanding Collaboration](#1-understanding-collaboration)
+2. [Forking a Repository](#2-forking-a-repository)
+3. [Cloning – Bringing It to Your Local Machine](#3-cloning--bringing-it-to-your-local-machine)
+4. [Remotes – origin and upstream](#4-remotes--origin-and-upstream)
+5. [Pushing Changes](#5-pushing-changes)
+6. [Pull Requests – Suggesting Changes](#6-pull-requests--suggesting-changes)
+7. [Collaboration Flow Recap](#7-collaboration-flow-recap)
 
 ---
 
 <details>
-<summary><strong>1. Understanding Collaboration – The Open-Source Mindset</strong></summary>
+<summary><strong>1. Understanding Collaboration</strong></summary>
 
-Git’s true power begins when your work meets others’.  
-In teams or open-source projects, you rarely push directly to someone else’s repository — you **propose** your changes instead.
+In teams or open-source projects, you rarely push directly to someone else's repository — you **propose** your changes instead.
 
-The collaboration cycle is simple:
+The collaboration cycle:
+```
+Fork → Clone → Branch → Edit → Push → Pull Request → Review → Merge
 ```
 
-Fork → Clone → Edit → Push → Pull Request → Review → Merge
+**Two contexts you'll encounter:**
 
-````
+| Context | What you do |
+|---|---|
+| **Company repo** | Clone directly, work in feature branches, open PRs to main |
+| **Open-source repo** | Fork first, clone your fork, open PR to original |
 
-Every Git hosting platform (GitHub, GitLab, Bitbucket) builds around this pattern — protecting the main codebase while inviting improvement.
+In DevOps day-to-day work, you'll mostly use the company repo pattern — clone, branch, PR.
 
 </details>
 
 ---
 
 <details>
-<summary><strong>2. Forking a Repository – Your Personal Copy on GitHub</strong></summary>
+<summary><strong>2. Forking a Repository</strong></summary>
 
-A **fork** is a complete copy of another repository under your account.  
-It’s the first step toward contributing without touching the original.
+A **fork** is a complete copy of another repository under your GitHub account.
+Used mainly for open-source contributions where you don't have write access to the original.
 
-Forking is **not a Git command** — it’s a GitHub feature.
-
-### Why Fork?
-- To propose fixes or features to public projects  
-- To experiment without risk  
-- To create your own version of an existing project  
+Forking is a **GitHub feature**, not a Git command.
 
 ### Steps on GitHub
-1. Navigate to the repository you want to contribute to.  
-2. Click the **Fork** button (top-right).  
-3. GitHub creates a copy of that repo in your account.  
+1. Navigate to the repository
+2. Click **Fork** (top-right)
+3. GitHub creates a copy under your account
 
-You now own a remote copy (e.g., `github.com/akhiltejadoosari/project`) where you have full write access.
+You now have full write access to your fork.
 
 </details>
 
 ---
 
 <details>
-<summary><strong>3. Cloning a Fork – Bringing It to Your Local Machine</strong></summary>
+<summary><strong>3. Cloning – Bringing It to Your Local Machine</strong></summary>
 
-Once you have a fork on GitHub, you’ll want a **local copy** to work on.
-
-### Clone the Fork
-```bash
-git clone https://github.com/akhiltejadoosari/project.git
-````
-
-This downloads the full project history and places it in a new folder:
-
-```
-project/
-├── .git/
-├── src/
-└── README.md
-```
-
-If you want a specific directory name:
+Clone downloads the full repository to your machine.
 
 ```bash
-git clone https://github.com/akhiltejadoosari/project.git myfolder
+# Clone a repo
+git clone https://github.com/username/webstore.git
+
+# Clone into a specific folder name
+git clone https://github.com/username/webstore.git my-webstore
 ```
 
-### Verify Your Local Copy
-
+After cloning:
 ```bash
-cd myfolder
+cd webstore
 git status
+# On branch main — nothing to commit, working tree clean
 ```
-
-Output:
-
-```
-On branch main
-Your branch is up to date with 'origin/main'.
-nothing to commit, working tree clean
-```
-
-You now have a working environment linked to your **fork** (not the original repo yet).
 
 </details>
 
 ---
 
 <details>
-<summary><strong>4. Setting Up Remotes – Communicating with Two Worlds</strong></summary>
+<summary><strong>4. Remotes – origin and upstream</strong></summary>
 
-After cloning, your local Git has one remote named **origin** — your fork on GitHub.
-But we also want to keep contact with the **original repository**, often called **upstream**.
+A **remote** is a named reference to a repository hosted somewhere (GitHub, GitLab, etc).
 
-### Check Current Remotes
-
-```bash
-git remote -v
-```
-
-Example:
-
-```
-origin  https://github.com/akhiltejadoosari/project.git (fetch)
-origin  https://github.com/akhiltejadoosari/project.git (push)
-```
-
-### Add the Original Repository
-
-First, rename your current remote for clarity:
-
-```bash
-git remote rename origin upstream
-```
-
-Then re-add your own fork as **origin**:
-
-```bash
-git remote add origin https://github.com/akhiltejadoosari/project.git
-```
-
-Now verify:
+### Check your remotes
 
 ```bash
 git remote -v
 ```
 
-Output:
-
+After cloning, you have one remote named **origin** — the repo you cloned from:
 ```
-origin    https://github.com/akhiltejadoosari/project.git (push/pull)
-upstream  https://github.com/original-owner/project.git (read-only)
+origin  https://github.com/username/webstore.git (fetch)
+origin  https://github.com/username/webstore.git (push)
 ```
 
-**Terminology Summary**
+### When you need upstream (open-source workflow)
 
-| Remote     | Purpose                   | Access       |
-| ---------- | ------------------------- | ------------ |
-| `origin`   | Your fork (personal copy) | Read + Write |
-| `upstream` | Original repository       | Read-only    |
+If you forked a repo and want to stay in sync with the original:
 
-This dual-remote setup keeps you synchronized with both worlds.
+```bash
+# Add the original repo as upstream
+git remote add upstream https://github.com/original-owner/webstore.git
+
+git remote -v
+# origin    https://github.com/your-username/webstore.git
+# upstream  https://github.com/original-owner/webstore.git
+```
+
+Then pull updates from the original:
+```bash
+git fetch upstream
+git merge upstream/main
+```
+
+| Remote | Purpose | Access |
+|---|---|---|
+| `origin` | Your fork or your team's repo | Read + Write |
+| `upstream` | Original repo you forked from | Read only |
 
 </details>
 
 ---
 
 <details>
-<summary><strong>5. Pushing Changes – Syncing Local Work to GitHub</strong></summary>
+<summary><strong>5. Pushing Changes</strong></summary>
 
-Now you can modify files locally, commit, and push to your fork.
+After making commits locally, push them to the remote:
 
 ```bash
 git add .
-git commit -m "Add new feature"
+git commit -m "add webstore product endpoint"
 git push origin main
 ```
 
-Output:
-
+Or if working on a feature branch:
+```bash
+git push origin feature/webstore-api
 ```
-Enumerating objects: 8, done.
-Writing objects: 100% (5/5), done.
-To https://github.com/akhiltejadoosari/project.git
-   facaeae..ebb1a5c  main -> main
-```
-
-Check your GitHub repository — your commit appears instantly.
-This is your **private staging area** before proposing to the main project.
 
 </details>
 
 ---
 
 <details>
-<summary><strong>6. Creating Pull Requests – Suggesting Changes Upstream</strong></summary>
+<summary><strong>6. Pull Requests – Suggesting Changes</strong></summary>
 
-Once your fork has new commits, it’s time to **suggest those changes** to the original project.
+A **pull request (PR)** is a proposal to merge your branch or fork into another branch.
 
-On GitHub:
+### Company repo workflow (most common in DevOps)
 
-1. Visit your fork’s page.
-2. Click **Compare & Pull Request.**
-3. Add a clear title and description explaining *why* the change matters.
-4. Submit the Pull Request (PR).
+```bash
+git switch -c feature/webstore-api
+# make changes
+git push origin feature/webstore-api
+```
 
-The maintainers of the original repository will:
+Then on GitHub:
+1. Click **Compare & Pull Request**
+2. Set base branch → `main`, compare branch → `feature/webstore-api`
+3. Add title and description explaining what changed and why
+4. Submit — teammates review, comment, approve
+5. Merge when approved
 
-* Review your code, leave comments, or request adjustments.
-* Merge it into their main branch when approved.
+### Open-source workflow
 
-### Behind the Scenes
+Same steps — but you're pushing to your fork and opening a PR from your fork to the original repo.
 
-A pull request is a polite way of saying:
+### What makes a good PR
 
-> “Here’s an improvement I made — would you like to include it?”
-
-It doesn’t alter the upstream repo automatically; it simply opens a **merge proposal**.
-
----
-
-**Maintainer View:**
-
-* They see the PR listed under “Pull Requests.”
-* They can **comment, approve, or close** it.
-* When merged, your commit becomes part of their history.
+- One logical change per PR — easier to review and rollback
+- Clear title: `feat: add webstore product pagination`
+- Description explains the why, not just the what
+- Link to any related issue
 
 </details>
 
@@ -237,58 +190,25 @@ It doesn’t alter the upstream repo automatically; it simply opens a **merge pr
 <details>
 <summary><strong>7. Collaboration Flow Recap</strong></summary>
 
-Here’s the full journey in one glance:
-
+**Company repo (DevOps day-to-day):**
 ```
-          ┌─────────────────────────────┐
-          │  Original Repo (Upstream)   │
-          └────────────┬────────────────┘
-                       │  (Fork)
-                       ▼
-          ┌─────────────────────────────┐
-          │     Your GitHub Fork        │  ← remote: origin
-          └────────────┬────────────────┘
-                       │  (Clone)
-                       ▼
-          ┌─────────────────────────────┐
-          │    Local Repository (Git)   │
-          └────────────┬────────────────┘
-                       │  (Push)
-                       ▼
-          ┌─────────────────────────────┐
-          │    Your GitHub Repository   │
-          └────────────┬────────────────┘
-                       │  (Pull Request)
-                       ▼
-          ┌─────────────────────────────┐
-          │  Original Repo (Merged)     │
-          └─────────────────────────────┘
+Clone → Branch → Commit → Push → Pull Request → Review → Merge
 ```
 
-**Essential Flow:**
-
+**Open-source contribution:**
 ```
-Fork → Clone → Remote Setup → Commit → Push → Pull Request → Review → Merge
+Fork → Clone → Branch → Commit → Push → Pull Request → Review → Merge
+```
+
+**Essential commands:**
+```bash
+git clone <url>                    # get the repo locally
+git switch -c feature/name         # create feature branch
+git push origin feature/name       # push branch to remote
+git remote -v                      # check your remotes
+git fetch upstream                 # sync with original (open-source)
 ```
 
 </details>
 
----
-
-<details>
-<summary><strong>8. Mentor Insight</strong></summary>
-
-This is where Git becomes **social engineering** — not just version control.
-You now understand how to:
-
-* Copy projects responsibly (`fork`)
-* Work locally and push confidently (`clone` → `commit` → `push`)
-* Collaborate respectfully through review (`pull request`)
-
-These habits are what turn isolated coders into **collaborative engineers.**
-Next, we’ll complete your mastery circle by learning **how to undo, recover, and rewrite history** safely in
-**File 05 – Git Undo & Recovery – Mastering Revert, Reflog & Amend.**
-
-</details>
-
----
+→ Ready to practice? [Go to Lab 04](../git-labs/04-contribute-lab.md)

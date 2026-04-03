@@ -28,7 +28,7 @@
 - [9. tar -xzvf – Extract from `.tar.gz`](#9-tar--xzvf--extract-from-targz)
 - [10. tar -tvf – View Contents of `.tar.gz`](#10-tar--tvf--view-contents-of-targz)
 - [11. tar -czvf – Archive + Compress Files](#11-tar--czvf--archive--compress-files)
-- [12. Backup `/home/akhil/linux/backup` Folder](#12-backup-homeakhillinuxbackup-folder)
+- [12. Backup a Directory](#12-backup-a-directory)
 
 ---
 
@@ -63,26 +63,26 @@
 ### Syntax:
 ```bash
 zip [options] <archive_name.zip> <file1> <file2> ...
-````
+```
 
 ### Example:
 
 ```bash
-zip logs.zip samplelog.txt pets.txt
+zip logs.zip access.log error.log
 ```
 
 ### Output:
 
 ```text
-  adding: samplelog.txt (deflated 60%)
-  adding: pets.txt (deflated 55%)
+  adding: access.log (deflated 60%)
+  adding: error.log (deflated 55%)
 ```
 
 Result:
 
 ```bash
 ls -lh
-# -rw-r--r-- 1 akhil-teja-doosari bestfriends 4.1K Jul 01 18:00 logs.zip
+# -rw-r--r-- 1 user group 4.1K Jul 01 18:00 logs.zip
 ```
 
 </details>
@@ -114,8 +114,8 @@ unzip logs.zip
 
 ```text
 Archive:  logs.zip
-  inflating: samplelog.txt
-  inflating: pets.txt
+  inflating: access.log
+  inflating: error.log
 ```
 
 </details>
@@ -140,15 +140,15 @@ zip -r <archive_name.zip> <directory_path>
 ### Example:
 
 ```bash
-zip -r backup.zip /home/akhil/linux/backup
+zip -r webstore-logs.zip /var/log/webstore
 ```
 
 ### Output:
 
 ```text
-  adding: /home/akhil/linux/backup/ (stored 0%)
-  adding: /home/akhil/linux/backup/fruits.txt (deflated 40%)
-  adding: /home/akhil/linux/backup/movies.txt (deflated 42%)
+  adding: /var/log/webstore/ (stored 0%)
+  adding: /var/log/webstore/access.log (deflated 40%)
+  adding: /var/log/webstore/error.log (deflated 42%)
 ```
 
 </details>
@@ -173,20 +173,20 @@ gzip [options] <filename>
 ### Example:
 
 ```bash
-gzip samplelog.txt
+gzip access.log
 ```
 
 ### Output:
 
 ```bash
 ls -lh
-# -rw-r--r-- 1 akhil-teja-doosari bestfriends 2.1K Jul 01 18:10 samplelog.txt.gz
+# -rw-r--r-- 1 user group 2.1K Jul 01 18:10 access.log.gz
 ```
 
 Maximum compression:
 
 ```bash
-gzip -9 pets.txt
+gzip -9 error.log
 ```
 
 </details>
@@ -213,14 +213,14 @@ zless <file.gz>
 ### Example:
 
 ```bash
-zcat samplelog.txt.gz
+zcat access.log.gz
 ```
 
 ### Output:
 
 ```text
-ERROR 2025-07-01 Connection failed
-INFO 2025-07-01 Retry started
+192.168.1.10 GET /api/products 200
+192.168.1.14 POST /api/orders 500
 ...
 ```
 
@@ -246,14 +246,14 @@ gunzip <file.gz>
 ### Example:
 
 ```bash
-gunzip samplelog.txt.gz
+gunzip access.log.gz
 ```
 
 ### Output:
 
 ```bash
 ls -lh
-# -rw-r--r-- 1 akhil-teja-doosari bestfriends 4.8K Jul 01 18:11 samplelog.txt
+# -rw-r--r-- 1 user group 4.8K Jul 01 18:11 access.log
 ```
 
 </details>
@@ -278,19 +278,19 @@ tar -cvf <archive_name.tar> <file1> <file2> ...
 ### Example:
 
 ```bash
-tar -cvf backup.tar pets.txt fruits.txt
+tar -cvf webstore-configs.tar nginx.conf webstore.conf
 ```
 
 ### Output:
 
 ```text
-pets.txt
-fruits.txt
+nginx.conf
+webstore.conf
 ```
 
 ```bash
 ls -lh
-# -rw-r--r-- 1 akhil-teja-doosari bestfriends 6.0K Jul 01 18:12 backup.tar
+# -rw-r--r-- 1 user group 6.0K Jul 01 18:12 webstore-configs.tar
 ```
 
 </details>
@@ -315,14 +315,14 @@ tar -xzvf <archive.tar.gz>
 ### Example:
 
 ```bash
-tar -xzvf backup.tar.gz
+tar -xzvf webstore-configs.tar.gz
 ```
 
 ### Output:
 
 ```text
-pets.txt
-fruits.txt
+nginx.conf
+webstore.conf
 ```
 
 </details>
@@ -347,14 +347,14 @@ tar -tvf <archive.tar.gz>
 ### Example:
 
 ```bash
-tar -tvf backup.tar.gz
+tar -tvf webstore-configs.tar.gz
 ```
 
 ### Output:
 
 ```text
--rw-r--r-- akhil-teja-doosari/bestfriends  2096 2025-07-01 17:59 pets.txt
--rw-r--r-- akhil-teja-doosari/bestfriends  1800 2025-07-01 17:59 fruits.txt
+-rw-r--r-- user/group  2096 2025-07-01 17:59 nginx.conf
+-rw-r--r-- user/group  1800 2025-07-01 17:59 webstore.conf
 ```
 
 </details>
@@ -379,19 +379,19 @@ tar -czvf <archive.tar.gz> <file1> <file2> ...
 ### Example:
 
 ```bash
-tar -czvf files.tar.gz pets.txt students.txt
+tar -czvf webstore-configs.tar.gz nginx.conf webstore.conf
 ```
 
 ### Output:
 
 ```text
-pets.txt
-students.txt
+nginx.conf
+webstore.conf
 ```
 
 ```bash
 ls -lh
-# -rw-r--r-- 1 akhil-teja-doosari bestfriends 3.5K Jul 01 18:15 files.tar.gz
+# -rw-r--r-- 1 user group 3.5K Jul 01 18:15 webstore-configs.tar.gz
 ```
 
 </details>
@@ -399,11 +399,11 @@ ls -lh
 ---
 
 <details>
-<summary><strong>12. Backup `/home/akhil/linux/backup` Folder</strong></summary>
+<summary><strong>12. Backup a Directory</strong></summary>
 
 ## Theory
 
-`tar -czvf` can also compress and archive full directories (with subfolders and metadata).
+`tar -czvf` can compress and archive full directories (with subfolders and metadata).
 
 ---
 
@@ -416,21 +416,23 @@ tar -czvf <backup_name.tar.gz> <directory_path>
 ### Example:
 
 ```bash
-tar -czvf akhil_backup.tar.gz /home/akhil/linux/backup
+tar -czvf webstore-backup.tar.gz /var/log/webstore
 ```
 
 ### Output:
 
 ```text
-/home/akhil/linux/backup/
-/home/akhil/linux/backup/fruits.txt
-/home/akhil/linux/backup/students.txt
+/var/log/webstore/
+/var/log/webstore/access.log
+/var/log/webstore/error.log
 ```
 
 To extract:
 
 ```bash
-tar -xzvf akhil_backup.tar.gz
+tar -xzvf webstore-backup.tar.gz
 ```
 
 </details>
+
+→ Ready to practice? [Go to Lab 04](../linux-labs/04-archive-packages-services-lab.md)

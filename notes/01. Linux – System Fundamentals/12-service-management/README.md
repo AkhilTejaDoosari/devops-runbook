@@ -20,7 +20,7 @@
 * [1. Introduction to Services](#1-introduction-to-services)
 * [2. Role of systemd](#2-role-of-systemd)
 * [3. Managing Services with `systemctl`](#3-managing-services-with-systemctl)
-* [4. Practical: Managing apache2 with systemctl](#4-practical-managing-apache2-with-systemctl)
+* [4. Practical: Managing nginx with systemctl](#4-practical-managing-nginx-with-systemctl)
 * [5. Quick Command Summary](#5-quick-command-summary)
 
 ---
@@ -34,7 +34,7 @@
 * These are also known as **daemons**.
 * Examples include:
 
-  * Web servers (`httpd`)
+  * Web servers (`nginx`)
   * Databases (`mysqld`)
   * Schedulers (`cron`)
   * Loggers (`journald`)
@@ -61,11 +61,11 @@
 
   * `sshd`: Secure remote login
   * `crond`: Scheduled tasks
-  * `httpd`: Web server
+  * `nginx`: Web server
   * `mysqld`: Database engine
   * `journald`: System logs collector
 * Daemons use config files to define behavior
-  (e.g., `/etc/ssh/sshd_config` for `sshd`).
+  (e.g., `/etc/ssh/sshd_config` for `sshd`, `/etc/nginx/nginx.conf` for `nginx`).
 
 </details>
 
@@ -150,102 +150,123 @@
 ---
 
 <details>
-<summary><strong>4. Practical: Managing apache2 with systemctl</strong></summary>
+<summary><strong>4. Practical: Managing nginx with systemctl</strong></summary>
 
-## Commands Used
+## Theory & Notes
 
-### Install apache2
+nginx is the web server that will serve webstore-frontend in production.
+This section teaches you to manage it as a systemd service — the same skill
+you will use when deploying webstore to a real server.
+
+---
+
+### Install nginx
 
 ```bash
 sudo apt update
-sudo apt install apache2 -y
+sudo apt install nginx -y
 ```
 
 ### Check Version
 
 ```bash
-apache2 -v
+nginx -v
 ```
 
 ### Check Status
 
 ```bash
-sudo systemctl status apache2.service
+sudo systemctl status nginx
 ```
 
 If not running:
 
 ```bash
-sudo systemctl start apache2.service
+sudo systemctl start nginx
 ```
 
 Enable on boot:
 
 ```bash
-sudo systemctl enable apache2.service
+sudo systemctl enable nginx
 ```
 
----
-
-### Edit Apache Config
-
-```bash
-sudo nano /etc/apache2/sites-available/000-default.conf
-```
-
-Change:
-
-```bash
-DocumentRoot /var/www/html
-# to
-DocumentRoot /var/www/custom_HTML
-```
-
-Create directory:
-
-```bash
-sudo mkdir /var/www/custom_HTML
-```
-
-Create index.html:
-
-```bash
-echo "Hello from custom_HTML" | sudo tee /var/www/custom_HTML/index.html
-```
-
-### Test Output
+Test it is serving:
 
 ```bash
 curl http://localhost
 ```
 
-### Check Config
+**What to observe:** nginx default welcome page returned
+
+---
+
+### Configure nginx to Serve webstore-frontend
+
+Create the webstore-frontend directory:
 
 ```bash
-sudo apachectl configtest
-# Should return: Syntax OK
+sudo mkdir -p /var/www/webstore-frontend
 ```
+
+Create a simple index page:
+
+```bash
+echo "<h1>webstore-frontend</h1>" | sudo tee /var/www/webstore-frontend/index.html
+```
+
+Edit the default nginx site config:
+
+```bash
+sudo nano /etc/nginx/sites-available/default
+```
+
+Change the `root` directive:
+
+```nginx
+# Change this:
+root /var/www/html;
+
+# To this:
+root /var/www/webstore-frontend;
+```
+
+### Test the Config
+
+```bash
+sudo nginx -t
+```
+
+**What to observe:** `syntax is ok` and `test is successful`
 
 ### Apply Config Changes
 
 ```bash
-sudo systemctl restart apache2.service
-# or
-sudo systemctl reload apache2.service
+sudo systemctl reload nginx
 ```
 
-### Stop and Disable Apache2
+### Verify the Change
 
 ```bash
-sudo systemctl stop apache2.service
-sudo systemctl disable apache2.service
+curl http://localhost
+```
+
+**What to observe:** `<h1>webstore-frontend</h1>` — nginx is now serving the webstore frontend directory
+
+---
+
+### Stop and Disable nginx
+
+```bash
+sudo systemctl stop nginx
+sudo systemctl disable nginx
 ```
 
 Check status:
 
 ```bash
-sudo systemctl status apache2.service
-# Should show inactive (dead)
+sudo systemctl status nginx
+# Should show: inactive (dead)
 ```
 
 </details>
@@ -255,27 +276,25 @@ sudo systemctl status apache2.service
 <details>
 <summary><strong>5. Quick Command Summary</strong></summary>
 
-| Command                                                   | Description                            |                                 |
-| --------------------------------------------------------- | -------------------------------------- | ------------------------------- |
-| `systemctl start <service>`                               | Start a service immediately            |                                 |
-| `systemctl stop <service>`                                | Stop a running service                 |                                 |
-| `systemctl restart <service>`                             | Restart a service                      |                                 |
-| `systemctl reload <service>`                              | Reload config without stopping service |                                 |
-| `systemctl enable <service>`                              | Enable service to auto-start on boot   |                                 |
-| `systemctl disable <service>`                             | Disable service from starting on boot  |                                 |
-| `systemctl status <service>`                              | Show detailed status of a service      |                                 |
-| `systemctl is-active <service>`                           | Check if service is currently running  |                                 |
-| `systemctl is-enabled <service>`                          | Check if service is enabled at boot    |                                 |
-| `systemctl list-units`                                    | List all active units                  |                                 |
-| `systemctl list-units --type=service`                     | List only services                     |                                 |
-| `systemctl list-units --type=service --state=running`     | List only running services             |                                 |
-| `apache2 -v`                                              | Check Apache version                   |                                 |
-| `sudo apachectl configtest`                               | Validate Apache config syntax          |                                 |
-| `curl http://localhost`                                   | Fetch Apache landing page              |                                 |
-| `sudo nano /etc/apache2/sites-available/000-default.conf` | Edit Apache site config                |                                 |
-| \`echo "..."                                              | sudo tee <file>\`                      | Create or write content as root |
-| `sudo mkdir <dir>`                                        | Create directory with superuser rights |                                 |
+| Command                                               | Description                            |
+| ----------------------------------------------------- | -------------------------------------- |
+| `systemctl start <service>`                           | Start a service immediately            |
+| `systemctl stop <service>`                            | Stop a running service                 |
+| `systemctl restart <service>`                         | Restart a service                      |
+| `systemctl reload <service>`                          | Reload config without stopping service |
+| `systemctl enable <service>`                          | Enable service to auto-start on boot   |
+| `systemctl disable <service>`                         | Disable service from starting on boot  |
+| `systemctl status <service>`                          | Show detailed status of a service      |
+| `systemctl is-active <service>`                       | Check if service is currently running  |
+| `systemctl is-enabled <service>`                      | Check if service is enabled at boot    |
+| `systemctl list-units`                                | List all active units                  |
+| `systemctl list-units --type=service`                 | List only services                     |
+| `systemctl list-units --type=service --state=running` | List only running services             |
+| `nginx -v`                                            | Check nginx version                    |
+| `sudo nginx -t`                                       | Validate nginx config syntax           |
+| `curl http://localhost`                               | Fetch nginx landing page               |
+| `sudo nano /etc/nginx/sites-available/default`        | Edit nginx site config                 |
 
 </details>
 
----
+→ Ready to practice? [Go to Lab 04](../linux-labs/04-archive-packages-services-lab.md)

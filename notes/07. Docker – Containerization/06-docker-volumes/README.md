@@ -321,3 +321,5 @@ Container (code runs here)  ──>  Volume (data lives here)
 **Never forget:**
 Data in containers = temporary  
 Data in volumes = permanent
+
+→ Ready to practice? [Go to Lab 02](../docker-labs/02-networking-volumes-lab.md)

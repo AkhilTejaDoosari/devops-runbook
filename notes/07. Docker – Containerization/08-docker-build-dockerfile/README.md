@@ -19,7 +19,7 @@ You have:
 * a laptop
 * a folder with your app code (files)
 
-That’s it.
+That's it.
 
 No Linux knowledge required.
 No Node knowledge required.
@@ -99,15 +99,15 @@ Docker cannot start from nothing.
 
 So the first line must answer:
 
-> “What should I start from?”
+> "What should I start from?"
 
 ```dockerfile
 FROM node:20
-````
+```
 
 Plain English:
 
-* “Start from a ready-made environment that already knows how to run Node apps.”
+* "Start from a ready-made environment that already knows how to run Node apps."
 
 Facts:
 
@@ -125,7 +125,7 @@ WORKDIR /app
 
 Plain English:
 
-* “Inside the image, treat `/app` as the current folder.”
+* "Inside the image, treat `/app` as the current folder."
 
 Facts:
 
@@ -139,12 +139,12 @@ Facts:
 
 ```dockerfile
 ENV NODE_ENV=production \
-    PORT=3000
+    PORT=8080
 ```
 
 Plain English:
 
-* “Store key=value defaults inside the image.”
+* "Store key=value defaults inside the image."
 
 Facts:
 
@@ -204,7 +204,7 @@ Chronological meaning:
 
 Plain English:
 
-* “Copy my app files into the image.”
+* "Copy my app files into the image."
 
 Facts:
 
@@ -214,26 +214,60 @@ Facts:
 
 ---
 
-## 9) File Sourcing Rules (Critical)
+## 9) `.dockerignore` — Control What Gets Copied
 
-* Local files → `COPY`
-* Internet files → `RUN curl` / `RUN wget`
-* Secrets / dynamic data → runtime, not the image
+When Docker runs `COPY . .`, it copies everything in the build context by default.
+That includes junk that slows builds and breaks layer caching.
 
-Example:
+`.dockerignore` is a file in the same folder as your Dockerfile.
+It tells Docker what to exclude from the build context.
 
-```dockerfile
-RUN curl -fsSL -o /app/file.dat https://example.com/file.dat
+**Create `.dockerignore` in your project root:**
+
+```
+node_modules
+.git
+*.log
+.env
+dist
+build
 ```
 
-Avoid `ADD` unless you have a specific reason.
+**Why each line matters:**
+
+| Entry | Why exclude it |
+|---|---|
+| `node_modules` | Already installed by `RUN npm install` inside the image — copying from host wastes space and breaks the install layer |
+| `.git` | Version control history has no place in a runtime image |
+| `*.log` | Log files change constantly — they break layer caching on every build |
+| `.env` | Contains secrets — never bake secrets into an image |
+| `dist` / `build` | Compiled output — the image should build this itself |
+
+**Without `.dockerignore` — what goes wrong:**
+
+```
+COPY . .     ← copies node_modules (300MB), .git, .env, logs
+               layer hash changes every build even if code didn't
+               cache breaks → npm install runs again every time
+```
+
+**With `.dockerignore` — what happens:**
+
+```
+COPY . .     ← copies only your source code
+               layer hash stable until code actually changes
+               cache works → fast builds
+```
+
+**One-line rule:**
+`.dockerignore` exists so `COPY . .` only copies what the image actually needs.
 
 ---
 
 ## 10) `EXPOSE` — Documentation Only
 
 ```dockerfile
-EXPOSE 3000
+EXPOSE 8080
 ```
 
 Facts:
@@ -245,7 +279,7 @@ Facts:
 Real access happens with port binding (covered in Port Binding notes):
 
 ```bash
-docker run -p 3000:3000 chillspot:1.0
+docker run -p 8080:8080 webstore-api:1.0
 ```
 
 ---
@@ -258,7 +292,7 @@ CMD ["node", "server.js"]
 
 Plain English:
 
-* “When a container starts, run this command.”
+* "When a container starts, run this command."
 
 Facts:
 
@@ -271,13 +305,13 @@ Facts:
 ## 12) Build the Image (Nothing Runs Yet)
 
 ```bash
-docker build -t chillspot:1.0 .
+docker build -t webstore-api:1.0 .
 ```
 
 Meaning:
 
 * `-t` → tag (name) the image
-* `chillspot` → image name
+* `webstore-api` → image name
 * `1.0` → version tag
 * `.` → build context (files Docker is allowed to `COPY`)
 
@@ -299,7 +333,7 @@ docker images
 ## 14) Run the Image (First Time Anything Runs)
 
 ```bash
-docker run chillspot:1.0
+docker run -p 8080:8080 webstore-api:1.0
 ```
 
 Now:
@@ -350,25 +384,6 @@ Reason:
 * Docker caches layers top → bottom
 * changing a layer invalidates everything after it
 
-1) Instruction laws
-- FROM: starting filesystem + tools
-- WORKDIR: default folder (creates it)
-- RUN: build-time execution (can be used multiple times)
-- COPY: bring files from build context
-- ENV: static defaults (not secrets)
-- EXPOSE: metadata only
-- CMD: default runtime command
-
-2) File sourcing rules
-- Local files → COPY
-- Internet files → RUN curl / wget
-- Secrets / dynamic data → runtime, not image
-
-3) OS rule
-Inside Docker = Linux.
-Language tools are portable.
-OS package managers are Linux-specific.
-
 ---
 
 ## 17) Instruction Laws (Quick Reference)
@@ -381,8 +396,20 @@ OS package managers are Linux-specific.
 * `EXPOSE` → metadata only
 * `CMD` → default runtime command
 
+**File sourcing rules:**
+* Local files → `COPY`
+* Internet files → `RUN curl` / `RUN wget`
+* Secrets / dynamic data → runtime, not image
+
+**OS rule:**
+Inside Docker = Linux.
+Language tools are portable.
+OS package managers are Linux-specific.
+
 ---
 
 ## 18) One-Line Truth
 
 > A Dockerfile is a cached, ordered, Linux build recipe that separates build-time from run-time to create reproducible images.
+
+→ Ready to practice? [Go to Lab 03](../docker-labs/03-build-layers-lab.md)

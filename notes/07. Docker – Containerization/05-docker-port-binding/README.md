@@ -102,3 +102,5 @@ Port binding maps a container’s internal port to a host machine port so the ap
 └───────────────────────────────────────────────────────────────────────────────┘
 
 ```
+
+→ Ready to practice? [Go to Lab 01](../docker-labs/01-containers-portbinding-lab.md)

@@ -561,3 +561,5 @@ Order matters for speed
 
 **One-line truth:**
 Docker images are stacks of cached, read-only layers; changing one layer invalidates everything after it, so put stable stuff first and volatile stuff last.
+
+→ Ready to practice? [Go to Lab 03](../docker-labs/03-build-layers-lab.md)

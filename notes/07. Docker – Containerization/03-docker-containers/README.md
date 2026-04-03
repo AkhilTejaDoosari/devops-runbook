@@ -208,3 +208,5 @@ Run services → `run -d`
 Configure → `-e`  
 Debug → `logs / inspect / exec`  
 Clean → `stop → rm → rmi`  
+
+→ Ready to practice? [Go to Lab 01](../docker-labs/01-containers-portbinding-lab.md)

@@ -43,10 +43,11 @@ With a registry:
 
 ![](./readme-assets/container-registry.jpg)
 
-What this image shows:  
+What this image shows:
+
 **Developer systems**
 - Push → very common (after build)
-- Pull → very common (base images, debugging)  
+- Pull → very common (base images, debugging)
 
 **CI servers**
 - Pull → always (to test, scan, deploy)
@@ -61,15 +62,10 @@ The registry is **passive storage**.
 Everything else initiates communication.
 
 **The Only Flow That Matters**
-
 ```
-
 Developer ↔ Registry ↔ CI → Production
-
 ```
-
-Same image.
-Different environments.
+Same image. Different environments.
 
 ---
 
@@ -140,23 +136,11 @@ You do not manage tokens manually at this stage.
 
 ---
 
-You’re right to demand an end-to-end “do this, then this” sequence. Your current Section 8 is missing the **Docker Hub UI prerequisites** and a **clean, deterministic terminal flow**.
-
-Below is **Section 8 only** (drop it after Section 7). It includes:
-
-* Docker Hub login + repo creation (UI)
-* Build verification + build if missing
-* Terminal login (with a clean “reset credentials” option)
-* Tag + push
-* Verification
-
-No fluff. All required commands included.
-
-## 8) Publish Chillspot to Docker Hub (End-to-End Process)
+## 8) Publish webstore-api to Docker Hub (End-to-End Process)
 
 Goal:
-- Take a local image you built (Section 08)
-- Publish it to Docker Hub so other machines/CI can pull it
+- Take the local image you built in section 08 (`webstore-api:1.0`)
+- Publish it to Docker Hub so other machines and CI can pull it
 
 This section includes:
 - Docker Hub UI steps (create repository)
@@ -168,10 +152,10 @@ This section includes:
 
 1) Sign in to Docker Hub (website).
 2) Create a repository:
-   - Name: `chillspot`
+   - Name: `webstore-api`
    - Visibility: Public or Private (your choice)
 3) After creation, your image target will look like:
-   - `DOCKERHUB_USERNAME/chillspot`
+   - `DOCKERHUB_USERNAME/webstore-api`
 
 You can add your own screenshots here (recommended).
 
@@ -187,13 +171,13 @@ docker images
 
 Look for:
 
-* `chillspot` under `REPOSITORY`
-* a tag like `latest`
+* `webstore-api` under `REPOSITORY`
+* a tag like `1.0`
 
 If you do NOT see it, build it now (run this from the folder that contains your Dockerfile):
 
 ```bash
-docker build -t chillspot:latest .
+docker build -t webstore-api:1.0 .
 ```
 
 Re-check:
@@ -233,8 +217,8 @@ docker logout
 Why logout/login helps:
 
 * it clears stale credentials in the credential store
-* avoids “pushing to the wrong account” mistakes
-* fixes “denied: requested access to the resource is denied” when the wrong user is cached
+* avoids "pushing to the wrong account" mistakes
+* fixes "denied: requested access to the resource is denied" when the wrong user is cached
 
 Now login again:
 
@@ -263,19 +247,19 @@ DOCKERHUB_USERNAME/REPO_NAME:TAG
 Tag your local image:
 
 ```bash
-docker tag chillspot:latest DOCKERHUB_USERNAME/chillspot:1.0
+docker tag webstore-api:1.0 DOCKERHUB_USERNAME/webstore-api:1.0
 ```
 
 Confirm the tag exists:
 
 ```bash
-docker images | grep chillspot
+docker images | grep webstore-api
 ```
 
 You should see both:
 
-* `chillspot:latest`
-* `DOCKERHUB_USERNAME/chillspot:1.0`
+* `webstore-api:1.0`
+* `DOCKERHUB_USERNAME/webstore-api:1.0`
 
 ---
 
@@ -284,7 +268,7 @@ You should see both:
 Push to Docker Hub:
 
 ```bash
-docker push DOCKERHUB_USERNAME/chillspot:1.0
+docker push DOCKERHUB_USERNAME/webstore-api:1.0
 ```
 
 What happens:
@@ -300,7 +284,7 @@ What happens:
 Terminal verification:
 
 ```bash
-docker pull DOCKERHUB_USERNAME/chillspot:1.0
+docker pull DOCKERHUB_USERNAME/webstore-api:1.0
 ```
 
 Docker Hub verification:
@@ -313,34 +297,28 @@ Docker Hub verification:
 ### Common Failure Modes (Fast Fix)
 
 1. `denied: requested access to the resource is denied`
-
-* Cause: wrong Docker Hub username, not logged in, or repo not owned by you
-* Fix:
-
-  ```bash
-  docker logout
-  docker login
-  ```
+   - Cause: wrong Docker Hub username, not logged in, or repo not owned by you
+   - Fix:
+     ```bash
+     docker logout
+     docker login
+     ```
 
 2. `tag does not exist`
-
-* Cause: you tagged the wrong local image name or it was never built
-* Fix:
-
-  ```bash
-  docker build -t chillspot:latest .
-  docker tag chillspot:latest DOCKERHUB_USERNAME/chillspot:1.0
-  ```
+   - Cause: you tagged the wrong local image name or it was never built
+   - Fix:
+     ```bash
+     docker build -t webstore-api:1.0 .
+     docker tag webstore-api:1.0 DOCKERHUB_USERNAME/webstore-api:1.0
+     ```
 
 3. `unauthorized: authentication required`
-
-* Cause: not logged in or stale credentials
-* Fix:
-
-  ```bash
-  docker logout
-  docker login
-  ```
+   - Cause: not logged in or stale credentials
+   - Fix:
+     ```bash
+     docker logout
+     docker login
+     ```
 
 ---
 
@@ -348,16 +326,16 @@ Docker Hub verification:
 
 If you can do this from zero:
 
-* build `chillspot:latest`
+* build `webstore-api:1.0`
 * create Docker Hub repo
 * login correctly
-* tag to `DOCKERHUB_USERNAME/chillspot:TAG`
+* tag to `DOCKERHUB_USERNAME/webstore-api:1.0`
 * push successfully
 
 Then you understand container registries at the correct practical level.
 
 **One-Line Definition**
 
-- A container registry is a remote store for container images so the same image can be shared across development, CI, and production.
+A container registry is a remote store for container images so the same image can be shared across development, CI, and production.
 
----
+→ Ready to practice? [Go to Lab 04](../docker-labs/04-registry-compose-lab.md)

@@ -1,86 +1,61 @@
 # Docker — From Fundamentals to Daily Use
 
-This repository documents a **clean, inside-out learning path** for Docker.
-It is designed to build **correct mental models first**, then move toward
-practical, repeatable workflows used in real DevOps environments.
-
-Focus:
-- understand how Docker actually works
-- avoid memorization
-- avoid tutorial noise
-- learn only what is used in practice
+A fundamentals-first learning path for Docker.
+Built around one real app. No tutorial noise. No memorization.
 
 ---
 
-## How to Use This Repository
+## The Running Example
 
-Read the sections **in order**.
+Every note, every lab, every command uses the same 3-tier app:
 
-Each section builds directly on the previous one.  
-If something feels obvious, that means the mental model is working.  
-Do not skip sections unless you already understand them.  
+| Service | Image | Port |
+|---|---|---|
+| webstore-api | nginx:1.24 (then custom) | 8080 |
+| webstore-db | mongo | 27017 |
+| mongo-express | mongo-express | 8081 |
 
----
-
-## Table of Contents
-
-01. [History & Motivation](01-history-and-motivation/README.md)  
-02. [Technology Overview](02-technology-overview/README.md)  
-03. [Docker Containers (Runtime Basics)](03-docker-containers/README.md)  
-04. [Docker Networking](04-docker-networking/README.md)  
-05. [Docker Port Binding](05-docker-port-binding/README.md)  
-06. [Docker Volumes](06-docker-volumes/README.md)  
-07. [Docker Layers](07-docker-layers/README.md)  
-08. [Docker Build (Dockerfile)](08-docker-build-dockerfile/README.md)  
-09. [Docker Registry (Push / Pull)](09-docker-registry/README.md)  
-10. [Docker Compose](10-docker-compose/README.md)
+By the end, this app is containerized, networked, persisted, built from a Dockerfile, pushed to a registry, and running with a single Compose command.
 
 ---
 
-## What This Repository Is (and Is Not)
+## Phases
 
-**This repository is:**
-- fundamentals-first
-- mental-model driven
-- focused on daily DevOps usage
-
-**This repository is NOT:**
-- a certification cram guide
-- a vendor-specific Docker course
-- a Kubernetes course
-
-Those come later.
+| Phase | Topics | Lab |
+|---|---|---|
+| 0 — Foundation | [01 History & Motivation](./01-history-and-motivation/README.md) · [02 Technology Overview](./02-technology-overview/README.md) | No lab |
+| 1 — Running Containers | [03 Docker Containers](./03-docker-containers/README.md) · [05 Port Binding](./05-docker-port-binding/README.md) | [Lab 01](./docker-labs/01-containers-portbinding-lab.md) |
+| 2 — Data & Networks | [04 Networking](./04-docker-networking/README.md) · [06 Volumes](./06-docker-volumes/README.md) | [Lab 02](./docker-labs/02-networking-volumes-lab.md) |
+| 3 — Building Images | [07 Layers](./07-docker-layers/README.md) · [08 Build & Dockerfile](./08-docker-build-dockerfile/README.md) | [Lab 03](./docker-labs/03-build-layers-lab.md) |
+| 4 — Ship & Operate | [09 Registry](./09-docker-registry/README.md) · [10 Compose](./10-docker-compose/README.md) | [Lab 04](./docker-labs/04-registry-compose-lab.md) |
 
 ---
 
-## What You Should Be Able to Do After This
+## Labs
 
-By the end of this repository, you should be able to:
-
-- explain what a container actually is
-- build Docker images confidently
-- run multi-container systems locally
-- publish and consume images via registries
-- use Docker Compose without guessing
-
-If you can do these without memorizing commands, this repository has done its job.
+| Lab | Covers |
+|---|---|
+| [Lab 01](./docker-labs/01-containers-portbinding-lab.md) | Pull images, run containers, port binding, debug, safe delete |
+| [Lab 02](./docker-labs/02-networking-volumes-lab.md) | Docker networks, DNS between containers, named volumes, bind mounts |
+| [Lab 03](./docker-labs/03-build-layers-lab.md) | Layer inspection, cache behavior, Dockerfile ordering, .dockerignore |
+| [Lab 04](./docker-labs/04-registry-compose-lab.md) | Push to Docker Hub, pull and verify, write and run docker-compose.yml |
 
 ---
 
-## Credits & Acknowledgements
+## How to Use This
 
-This repository is a **derivative learning work**, rebuilt from scratch with a
-fundamentals-first, mental-model-driven structure.
+Read phases in order. Each one builds on the previous.
+After each phase, do the lab before moving on.
+The checklist at the end of every lab is not optional.
 
-Reference material and inspiration:
+---
 
-- **Apna College**  
-  Docker tutorial (YouTube):  
-  https://youtu.be/exmSJpJvIPs?si=sI5Ph6CAs64KdQ59  
+## What You Can Do After This
 
-- **Sid DevOps Directive**  
-  Complete Docker Course (YouTube):  
-  https://youtu.be/RqTEHSBrYFw?si=u_JX-X9Sg_6Ys8Be  
-
-All explanations, sequencing, and notes have been rewritten and reorganized to
-match my own learning style and goals.
+- Explain what a container actually is and how Linux makes it work
+- Run any service in a container without installing it on your host
+- Connect multi-container apps over a Docker network
+- Persist data correctly so it survives container deletion
+- Write a Dockerfile from scratch with correct layer ordering
+- Build, tag, and push images to a registry
+- Bring up a full multi-container system with one command

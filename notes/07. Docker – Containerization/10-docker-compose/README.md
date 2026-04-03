@@ -16,16 +16,16 @@
 
 Docker Compose replaces many manual `docker run` commands with **one file**.
 
-Below is the **entire system** in one view.
+Below is the **entire webstore system** in one view.
 
-Do not analyze it yet.  
+Do not analyze it yet.
 Just observe the shape.
 
 ```yaml
 version: "3.9"
 
 services:
-  mongodb:
+  webstore-db:
     image: mongo
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
@@ -38,25 +38,25 @@ services:
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: admin
       ME_CONFIG_MONGODB_ADMINPASSWORD: secret
-      ME_CONFIG_MONGODB_URL: mongodb://admin:secret@mongodb:27017
+      ME_CONFIG_MONGODB_URL: mongodb://admin:secret@webstore-db:27017
     depends_on:
-      - mongodb
+      - webstore-db
 
-  chillspot:
+  webstore-api:
     build: .
     ports:
-      - "5050:5050"
+      - "8080:8080"
     environment:
-      MONGO_URL: mongodb://admin:secret@mongodb:27017
+      MONGO_URL: mongodb://admin:secret@webstore-db:27017
     depends_on:
-      - mongodb
-````
+      - webstore-db
+```
 
 What this shows at a glance:
 
 * Three containers
 * One private Docker network (created automatically)
-* Two ports exposed for human access
+* Two ports exposed for human access (8080 for app, 8081 for DB UI)
 * One database accessed internally by hostname
 
 Everything below explains **this file**, line by line.
@@ -88,23 +88,22 @@ Meaning:
 
 * Start of all containers in this system
 * Each service becomes:
-
   * one container
   * one DNS hostname
   * one isolated process
 
 ---
 
-## 4) MongoDB Service (Database Server)
+## 4) webstore-db Service (Database Server)
 
 ```yaml
-  mongodb:
+  webstore-db:
 ```
 
 Meaning:
 
 * Service name
-* Also becomes hostname `mongodb`
+* Also becomes hostname `webstore-db`
 * Used by other containers to connect
 
 ```yaml
@@ -136,7 +135,7 @@ Important:
 
 ---
 
-## 5) Mongo Express Service (UI Client)
+## 5) mongo-express Service (UI Client)
 
 ```yaml
   mongo-express:
@@ -154,7 +153,7 @@ Meaning:
 Meaning:
 
 * Uses the Mongo Express image
-* Provides a web interface
+* Provides a web interface for the database
 
 ```yaml
     ports:
@@ -164,44 +163,44 @@ Meaning:
 Meaning:
 
 * Host port `8081` forwards to container port `8081`
-* Required so the browser can access the UI
+* Required so the browser can access the DB UI
 
 ```yaml
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: admin
       ME_CONFIG_MONGODB_ADMINPASSWORD: secret
-      ME_CONFIG_MONGODB_URL: mongodb://admin:secret@mongodb:27017
+      ME_CONFIG_MONGODB_URL: mongodb://admin:secret@webstore-db:27017
 ```
 
 Meaning:
 
-* Credentials for MongoDB
-* Connection uses hostname `mongodb`
+* Credentials for the database
+* Connection uses hostname `webstore-db`
 * DNS is provided automatically by Compose
 
 ```yaml
     depends_on:
-      - mongodb
+      - webstore-db
 ```
 
 Meaning:
 
-* MongoDB container starts first
+* webstore-db container starts first
 * Controls start order only
 * Does not guarantee readiness
 
 ---
 
-## 6) Chillspot Service (Application)
+## 6) webstore-api Service (Application)
 
 ```yaml
-  chillspot:
+  webstore-api:
 ```
 
 Meaning:
 
 * Application container
-* Hostname becomes `chillspot`
+* Hostname becomes `webstore-api`
 
 ```yaml
     build: .
@@ -214,33 +213,33 @@ Meaning:
 
 ```yaml
     ports:
-      - "5050:5050"
+      - "8080:8080"
 ```
 
 Meaning:
 
-* Host port `5050` forwards to app port `5050`
-* Required for browser access
+* Host port `8080` forwards to app port `8080`
+* Required for browser access to the API
 
 ```yaml
     environment:
-      MONGO_URL: mongodb://admin:secret@mongodb:27017
+      MONGO_URL: mongodb://admin:secret@webstore-db:27017
 ```
 
 Meaning:
 
 * Database connection string for the app
-* Uses service name `mongodb`
-* Same rule as manual Docker networking
+* Uses service name `webstore-db`
+* Same rule as manual Docker networking — containers talk by name
 
 ```yaml
     depends_on:
-      - mongodb
+      - webstore-db
 ```
 
 Meaning:
 
-* Starts MongoDB before the app
+* Starts webstore-db before the app
 * Prevents obvious startup failures
 * Not a health check
 
@@ -272,6 +271,12 @@ Start everything:
 docker compose up
 ```
 
+Start in background:
+
+```bash
+docker compose up -d
+```
+
 Stop and clean up:
 
 ```bash
@@ -283,7 +288,7 @@ This removes:
 * containers
 * Compose-created network
 
-Images remain unchanged.
+Images and volumes remain unchanged.
 
 ---
 
@@ -322,8 +327,20 @@ Use Docker Compose when:
 * daily development
 * you want reproducible setup
 
-One-line truth:
-Chillspot connects to MongoDB using hostname `mongodb` on a Docker network.
-Compose only automates the same configuration.
+**Data flows (same as manual, just automated):**
 
----
+App path:
+```
+Browser → localhost:8080 → webstore-api → webstore-db:27017 → webstore-db
+```
+
+Debug path:
+```
+Browser → localhost:8081 → mongo-express → webstore-db:27017 → webstore-db
+```
+
+One-line truth:
+webstore-api connects to webstore-db using hostname `webstore-db` on a Docker network.
+Compose only automates the same configuration you already know.
+
+→ Ready to practice? [Go to Lab 04](../docker-labs/04-registry-compose-lab.md)

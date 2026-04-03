@@ -1191,3 +1191,4 @@ DHCP Reservation = Reserved hotel room
 ✅ Understand localhost (127.0.0.1)  
 
 ---
+→ Ready to practice? [Go to Lab 01](../networking-labs/01-foundation-addressing-ip-lab.md)

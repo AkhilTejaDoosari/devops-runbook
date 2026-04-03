@@ -1367,3 +1367,4 @@ Use NACLs only when you need DENY rules
 ✅ Know when to use Security Groups vs NACLs  
 
 ---
+→ Ready to practice? [Go to Lab 04](../networking-labs/04-dns-firewalls-lab.md)

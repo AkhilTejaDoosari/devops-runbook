@@ -1338,3 +1338,4 @@ Router = Translator:
 ✅ Know router has two IPs (LAN + WAN)  
 
 ---
+→ Ready to practice? [Go to Lab 03](../networking-labs/03-ports-transport-nat-lab.md)

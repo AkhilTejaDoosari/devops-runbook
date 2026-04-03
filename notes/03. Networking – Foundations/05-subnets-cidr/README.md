@@ -1085,3 +1085,4 @@ Result:
 ✅ Plan for growth and future expansion  
 
 ---
+→ Ready to practice? [Go to Lab 02](../networking-labs/02-devices-subnets-lab.md)

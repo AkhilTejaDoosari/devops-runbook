@@ -132,4 +132,4 @@ This wipes the cluster state completely and starts clean.
 
 ---
 
-→ Ready to practice? [Go to Lab 00](../labs/00-setup-lab.md)
+→ Ready to practice? [Go to Lab 00](../k8s-labs/00-setup-lab.md)

@@ -348,4 +348,4 @@ k9s
 
 If you see any of these, run `kubectl describe pod webstore-frontend` and scroll to the Events section at the bottom. The answer is always there. → Full troubleshooting toolkit in Phase 5.
 
-→ Ready to practice? [Go to Lab 02](../labs/02-yaml-pods-lab.md)
+→ Ready to practice? [Go to Lab 02](../k8s-labs/02-yaml-pods-lab.md)

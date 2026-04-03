@@ -411,4 +411,4 @@ kubectl rollout history deploy/webstore-frontend
 
 ---
 
-→ Ready to practice? [Go to Lab 03](../labs/03-deployments-lab.md)
+→ Ready to practice? [Go to Lab 03](../k8s-labs/03-deployments-lab.md)

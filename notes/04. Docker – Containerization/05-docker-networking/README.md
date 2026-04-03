@@ -2,8 +2,8 @@
 [History & Motivation](../01-history-and-motivation/README.md) |
 [Technology Overview](../02-technology-overview/README.md) |
 [Docker Containers](../03-docker-containers/README.md) |
-[Networking](../04-docker-networking/README.md) |
-[Port Binding](../05-docker-port-binding/README.md) |
+[Port Binding](../04-docker-port-binding/README.md) |
+[Networking](../05-docker-networking/README.md) |
 [Volumes](../06-docker-volumes/README.md) |
 [Layers](../07-docker-layers/README.md) |
 [Build](../08-docker-build-dockerfile/README.md) |

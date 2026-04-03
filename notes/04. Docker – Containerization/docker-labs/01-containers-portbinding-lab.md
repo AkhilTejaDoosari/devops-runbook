@@ -16,7 +16,7 @@ You will run containers interactively and as background services, pass configura
 ## Prerequisites
 
 - [Docker Containers notes](../03-docker-containers/README.md)
-- [Docker Port Binding notes](../05-docker-port-binding/README.md)
+- [Docker Port Binding notes](../04-docker-port-binding/README.md)
 - Docker Desktop running on your machine
 
 ---

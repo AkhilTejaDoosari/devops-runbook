@@ -15,7 +15,7 @@ You will prove that containers cannot talk to each other without a network, crea
 
 ## Prerequisites
 
-- [Docker Networking notes](../04-docker-networking/README.md)
+- [Docker Networking notes](../05-docker-networking/README.md)
 - [Docker Volumes notes](../06-docker-volumes/README.md)
 - Lab 01 completed
 

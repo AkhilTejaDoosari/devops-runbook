@@ -232,3 +232,5 @@ Use `ls -l` to view these indicators.
 | File      | Text or binary file  | `-`       |
 | Symlink   | Link to another file | `l`       |
 
+
+→ Ready to practice? [Go to Lab 01](../linux-labs/01-boot-basics-files-lab.md)

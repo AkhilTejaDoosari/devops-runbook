@@ -335,3 +335,4 @@ Try these in your terminal:
    ```
 
 </details>
+→ Ready to practice? [Go to Lab 05](../linux-labs/05-networking-lab.md)

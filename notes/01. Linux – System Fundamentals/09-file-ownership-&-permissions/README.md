@@ -281,3 +281,5 @@ ln -s file.txt symlink.txt
 |                     | Create symlink             | `ln -s source target`               |
 
 </details>
+
+→ Ready to practice? [Go to Lab 03](../linux-labs/03-vim-users-permissions-lab.md)

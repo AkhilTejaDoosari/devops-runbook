@@ -195,3 +195,4 @@
 | `awk 'length($0)>N' file`             | Print lines longer than *N* characters   |
 
 </details>
+→ Ready to practice? [Go to Lab 02](../linux-labs/02-filters-sed-awk-lab.md)

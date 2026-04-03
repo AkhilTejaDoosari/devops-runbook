@@ -663,9 +663,6 @@ Doing ARP for every packet would be slow:
 # Linux/Mac
 arp -a
 
-# Windows
-arp -a
-
 Output:
 Address           HWtype  HWaddress            Flags
 192.168.1.1       ether   11:22:33:44:55:66    C
@@ -965,38 +962,8 @@ Instance → Internet:
   Or uses NAT Gateway if in private subnet
 ```
 
----
-
-### Scenario 3: Docker Container Network
-
-**Docker bridge network:**
-
-```
-Host machine:
-  IP: 192.168.1.100
-
-Docker bridge:
-  IP: 172.17.0.1
-  Subnet: 172.17.0.0/16
-
-Container 1:
-  MAC: 02:42:AC:11:00:02
-  IP:  172.17.0.2
-
-Container 2:
-  MAC: 02:42:AC:11:00:03
-  IP:  172.17.0.3
-```
-
-**Container 1 → Container 2:**
-
-```
-Same subnet (172.17.0.0/16)
-  1. Container 1 checks: "Is 172.17.0.3 local?" → Yes
-  2. ARP: "Who has 172.17.0.3?"
-  3. Container 2 responds with MAC
-  4. Data sent directly via Docker bridge
-```
+> **Docker implementation:** The same MAC and IP addressing concepts apply inside Docker networks. Each container gets its own MAC and IP, communicating via a virtual bridge exactly like a physical LAN.
+> → [Docker Networking](../../04.%20Docker%20–%20Containerization/05-docker-networking/README.md)
 
 ---
 
@@ -1109,7 +1076,7 @@ ARP = Looking up "Who's driving truck to this address?"
 ✅ Understand why both MAC and IP exist  
 ✅ Know how ARP works (IP → MAC translation)  
 ✅ Identify private vs public IP addresses  
-✅ Understand addressing in home networks, AWS, Docker  
+✅ Understand addressing in home networks and AWS  
 ✅ Know that MAC changes at each hop, IP doesn't  
 
 ---

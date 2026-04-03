@@ -104,7 +104,6 @@ A network where all devices can communicate directly without routing.
 Your home WiFi:        192.168.1.0/24
 Office floor:          10.0.5.0/24
 AWS VPC subnet:        10.0.1.0/24
-Docker bridge network: 172.17.0.0/16
 ```
 
 ---
@@ -639,13 +638,6 @@ EC2 in subnet 10.0.1.0/24:
   Default gateway: 10.0.1.1 (VPC router)
 ```
 
-**Docker:**
-
-```
-Container: 172.17.0.2
-Default gateway: 172.17.0.1 (Docker bridge)
-```
-
 **Office network:**
 
 ```
@@ -677,13 +669,6 @@ ipconfig
 
 Output:
 Default Gateway: 192.168.1.1
-```
-
-**What this means:**
-
-```
-All traffic not destined for your local network
-goes to 192.168.1.1 for forwarding
 ```
 
 ---
@@ -746,8 +731,6 @@ Usually ends in .1 (192.168.1.1, 10.0.0.1, etc.)
 ✅ Need more ports (router has 4, need 24)
 ✅ All devices on same subnet
 ✅ High-speed local connections
-
-Example: Office floor with 50 computers
 ```
 
 **Use a router when:**
@@ -757,8 +740,6 @@ Example: Office floor with 50 computers
 ✅ Need to reach internet
 ✅ Connecting office branches
 ✅ Separating networks (security, performance)
-
-Example: Connecting home network to ISP
 ```
 
 **Often used together:**
@@ -773,54 +754,6 @@ Switch (connects local devices)
    ├─ Computer 2
    ├─ Printer
    └─ Server
-```
-
----
-
-### Visual Comparison
-
-**Switch operation:**
-
-```
-Same network: 192.168.1.0/24
-
-[Device A]     [Device B]     [Device C]
-192.168.1.10   192.168.1.20   192.168.1.30
-   MAC: AA        MAC: BB        MAC: CC
-      │              │              │
-      └──────────[Switch]───────────┘
-             │
-        MAC Table:
-        AA → Port 1
-        BB → Port 2
-        CC → Port 3
-
-Device A → Device B:
-  Switch reads destination MAC (BB)
-  Forwards to Port 2 only
-```
-
-**Router operation:**
-
-```
-Network A: 192.168.1.0/24    Network B: 10.0.0.0/24
-
-[Device A]                   [Device B]
-192.168.1.10                 10.0.0.20
-      │                           │
-      │                           │
-    [Router]──────────────────────┘
-  IP1: 192.168.1.1
-  IP2: 10.0.0.1
-      │
-  Routing Table:
-  192.168.1.0/24 → Interface 1
-  10.0.0.0/24    → Interface 2
-
-Device A → Device B:
-  Router reads destination IP (10.0.0.20)
-  Forwards to Interface 2
-  Creates new frame with new MACs
 ```
 
 ---
@@ -899,38 +832,6 @@ Step 4: Forward
 
 ---
 
-### More Complex Routing Table
-
-**Enterprise router:**
-
-```
-Destination        Next Hop        Interface    Metric
-10.0.1.0/24        0.0.0.0         eth0         0    (HQ LAN)
-10.0.2.0/24        0.0.0.0         eth1         0    (Branch office)
-192.168.1.0/24     10.0.2.254      eth1         10   (Remote office via VPN)
-172.16.0.0/12      10.0.1.100      eth0         5    (Data center)
-0.0.0.0/0          203.45.67.1     eth2         1    (Internet)
-```
-
-**Routing decisions:**
-
-```
-Destination: 10.0.1.50
-  Matches: 10.0.1.0/24
-  Action: Forward directly via eth0
-
-Destination: 192.168.1.100
-  Matches: 192.168.1.0/24
-  Action: Forward to 10.0.2.254 via eth1 (VPN)
-
-Destination: 8.8.8.8
-  No specific match
-  Uses: Default route 0.0.0.0/0
-  Action: Forward to ISP via eth2
-```
-
----
-
 ### View Routing Table
 
 **Linux/Mac:**
@@ -950,11 +851,6 @@ default via 192.168.1.1 dev eth0
 
 ```cmd
 route print
-
-Output:
-Network Destination    Netmask          Gateway       Interface
-0.0.0.0                0.0.0.0          192.168.1.1   192.168.1.45
-192.168.1.0            255.255.255.0    On-link       192.168.1.45
 ```
 
 ---
@@ -985,8 +881,6 @@ Protocols: RIP, OSPF, BGP
 Good for:
   Large networks
   Redundant paths
-  
-Not typically used in home/small office
 ```
 
 **For DevOps beginners:**  
@@ -1006,29 +900,6 @@ You might see it in old documentation or legacy networks.
 
 ---
 
-### How Hub Works (Badly)
-
-```
-       [Hub]
-         │
-    ┌────┼────┐
-    │    │    │
-[Device A] [Device B] [Device C]
-```
-
-**Device A sends to Device B:**
-
-```
-Hub receives frame
-Broadcasts to ALL ports
-  → Device B receives (intended)
-  → Device C receives (unnecessary!)
-  → Wastes bandwidth
-  → Creates collisions
-```
-
----
-
 ### Hub vs Switch
 
 | Feature | Hub | Switch |
@@ -1036,11 +907,9 @@ Broadcasts to ALL ports
 | **Intelligence** | None (broadcasts everything) | Smart (learns MACs) |
 | **Efficiency** | Low (wastes bandwidth) | High (targeted forwarding) |
 | **Speed** | Slow (collisions) | Fast |
-| **Cost** | Cheap | Cheap (now same price) |
 | **Use today** | ❌ Obsolete | ✅ Standard |
 
-**Hubs are dead.**  
-**Always use switches.**
+**Hubs are dead. Always use switches.**
 
 ---
 
@@ -1067,16 +936,6 @@ Broadcasts to ALL ports
           [Internet]
 ```
 
-**Devices on same network:**
-- Talk via router's built-in switch
-- Use MAC addresses
-- Direct communication
-
-**Devices reaching internet:**
-- Send to default gateway (192.168.1.1)
-- Router forwards to ISP
-- Uses routing
-
 ---
 
 ### Scenario 2: Office Network
@@ -1101,15 +960,6 @@ Broadcasts to ALL ports
                     ▼
               [Internet]
 ```
-
-**Intra-office communication:**
-- 50 PCs connected to switch
-- PC1 → PC2: Switch forwards via MAC table
-- Fast, efficient
-
-**Internet access:**
-- Any PC → internet: Send to 10.0.5.1 (router)
-- Router forwards to ISP
 
 ---
 
@@ -1144,70 +994,8 @@ Broadcasts to ALL ports
               [Internet]
 ```
 
-**Communication patterns:**
-
-```
-Web1 (10.0.1.10) → Web2 (10.0.1.20):
-  Same subnet → AWS virtual switch
-
-Web1 (10.0.1.10) → App1 (10.0.2.10):
-  Different subnet → VPC router forwards
-
-App1 (10.0.2.10) → Internet:
-  Via Internet Gateway or NAT Gateway
-  Routing decision
-```
-
----
-
-### Scenario 4: Docker Multi-Network
-
-```bash
-# Create two networks
-docker network create frontend --subnet=172.20.0.0/16
-docker network create backend --subnet=172.21.0.0/16
-
-# Containers
-docker run --name web --network frontend nginx
-docker run --name api --network frontend --network backend node-app
-docker run --name db --network backend postgres
-```
-
-**Resulting topology:**
-
-```
-┌────────────────────────┐
-│ Frontend Network       │
-│ 172.20.0.0/16          │
-│                        │
-│  [web]      [api]      │
-│  .2         .3         │
-└────────────────┬───────┘
-                 │
-        Docker routing
-                 │
-┌────────────────┴───────┐
-│ Backend Network        │
-│ 172.21.0.0/16          │
-│                        │
-│  [api]      [db]       │
-│  .2         .3         │
-└────────────────────────┘
-```
-
-**Communication:**
-
-```
-web → api:
-  Same network (frontend) → direct
-
-api → db:
-  Same network (backend) → direct
-
-web → db:
-  Different networks, web not on backend → FAILS
-  (This is intentional isolation!)
-```
+> **Docker implementation:** Docker uses the same switching and routing concepts internally — a bridge acts as the virtual switch, containers get their own IPs, and the Docker bridge acts as the default gateway. Multiple networks work exactly like multiple VPC subnets.
+> → [Docker Networking](../../04.%20Docker%20–%20Containerization/05-docker-networking/README.md)
 
 ---
 
@@ -1219,12 +1007,10 @@ web → db:
 LAN (Local Area Network):
   Same location, direct communication
   No routing needed
-  Example: 192.168.1.0/24
 
 WAN (Wide Area Network):
   Large geographic area, multiple LANs
   Routing required
-  Example: The Internet
 ```
 
 ---
@@ -1235,7 +1021,6 @@ WAN (Wide Area Network):
 ```
 ✅ Connects devices in same network
 ✅ Uses MAC addresses
-✅ Learns device locations
 ✅ Fast, efficient
 ✅ One network only
 
@@ -1248,7 +1033,6 @@ Job: Local delivery within LAN
 ✅ Uses IP addresses
 ✅ Makes routing decisions
 ✅ Multiple network interfaces
-✅ Has routing table
 
 Job: Forward packets between networks
 ```
@@ -1265,32 +1049,6 @@ Job: Forward packets between networks
 ```
 Destination in my subnet? → Send directly (switch)
 Destination outside my subnet? → Send to gateway (router)
-```
-
-**Your config always includes:**
-```
-IP:      Your address
-Mask:    Network boundary
-Gateway: Router's IP (exit door)
-```
-
----
-
-### Routing Table
-
-**Format:**
-```
-Destination → Next Hop → Interface
-
-Specific routes first
-Default route last (0.0.0.0/0)
-```
-
-**Logic:**
-```
-1. Check most specific match
-2. If no match, use default route
-3. Forward to next hop via interface
 ```
 
 ---

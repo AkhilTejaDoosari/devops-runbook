@@ -18,16 +18,14 @@
 
 ## What this file is about
 
-This file teaches **how to control network access using firewall rules** and **the critical difference between stateful and stateless firewalls**. If you understand this, you'll know how to secure AWS infrastructure, debug "connection refused" errors, and avoid the common NACL trap that breaks beginners. This is essential for production deployments.
+This file teaches **how to control network access using firewall rules** and **the critical difference between stateful and stateless firewalls**. If you understand this, you'll be able to reason about any firewall — Linux iptables, AWS Security Groups, AWS NACLs, Docker network rules. The universal concepts are here. How AWS implements stateful and stateless firewalls on top of these concepts is covered in the AWS notes.
 
 <!-- no toc -->
 - [The Core Problem](#the-core-problem)
 - [What Is a Firewall?](#what-is-a-firewall)
 - [Firewall Rules (The Basics)](#firewall-rules-the-basics)
 - [Stateful vs Stateless (CRITICAL)](#stateful-vs-stateless-critical)
-- [AWS Security Groups (Stateful)](#aws-security-groups-stateful)
-- [AWS NACLs (Stateless)](#aws-nacls-stateless)
-- [The NACL Trap (Common Mistake)](#the-nacl-trap-common-mistake)
+- [Linux Firewall — iptables](#linux-firewall--iptables)
 - [Common Firewall Scenarios](#common-firewall-scenarios)
 - [Production Debugging Framework](#production-debugging-framework)  
 [Final Compression](#final-compression)
@@ -51,14 +49,11 @@ Open ports:
 ├─ 5432 (PostgreSQL)
 └─ 6379 (Redis)
 
-Problem:
-  Anyone on the internet can connect to ANY port
-  
 Attacker from 123.45.67.89:
   ✅ Can try SSH brute force (port 22)
   ✅ Can access database directly (port 3306)
   ✅ Can connect to Redis (port 6379)
-  
+
 Result: Security nightmare
 ```
 
@@ -88,9 +83,6 @@ Restrict everything else
 **Firewall:**  
 A network security system that monitors and controls incoming and outgoing network traffic based on predetermined security rules.
 
-**Purpose:**  
-Act as a barrier between trusted internal network and untrusted external network (internet).
-
 ---
 
 ### Firewall Placement
@@ -102,8 +94,6 @@ Act as a barrier between trusted internal network and untrusted external network
 │   Internet   │ ←────→  │ Firewall │ ←────→  │ Internal │
 │              │         │          │         │ Network  │
 └──────────────┘         └──────────┘         └──────────┘
-
-Inspects all traffic crossing boundary
 ```
 
 **Host-based firewall (on server):**
@@ -114,16 +104,13 @@ Inspects all traffic crossing boundary
 │                                │
 │  ┌──────────────────────────┐  │
 │  │   Firewall (iptables)    │  │
-│  │                          │  │
-│  │  Rules:                  │  │
-│  │  - Allow 80, 443         │  │
-│  │  - Allow 22 from office  │  │
-│  │  - Block everything else │  │
+│  │  Allow 80, 443           │  │
+│  │  Allow 22 from office    │  │
+│  │  Block everything else   │  │
 │  └──────────────────────────┘  │
 │               │                │
 │       ┌───────┴────────┐       │
 │       │   Application  │       │
-│       │   (nginx, etc) │       │
 │       └────────────────┘       │
 └────────────────────────────────┘
 ```
@@ -135,15 +122,8 @@ Inspects all traffic crossing boundary
 **Packet filtering (Layer 3-4):**
 
 ```
-Examines:
-  - Source IP
-  - Destination IP
-  - Source port
-  - Destination port
-  - Protocol (TCP/UDP)
-
+Examines: Source IP, Destination IP, ports, protocol
 Decision: Allow or deny
-
 Examples: iptables, AWS Security Groups, NACLs
 ```
 
@@ -152,8 +132,7 @@ Examples: iptables, AWS Security Groups, NACLs
 ```
 Tracks connection state
 Remembers outbound requests
-Automatically allows related return traffic
-
+Auto-allows return traffic
 Examples: AWS Security Groups, modern firewalls
 ```
 
@@ -161,15 +140,9 @@ Examples: AWS Security Groups, modern firewalls
 
 ```
 Inspects application data
-Can block based on:
-  - URLs
-  - HTTP headers
-  - Content patterns
-  
+Can block based on URLs, HTTP headers, content
 Examples: Web Application Firewall (WAF), proxy servers
 ```
-
-**For DevOps basics: Focus on packet filtering (stateful vs stateless)**
 
 ---
 
@@ -182,7 +155,7 @@ Examples: Web Application Firewall (WAF), proxy servers
 ```
 1. Direction (inbound or outbound)
 2. Protocol (TCP, UDP, ICMP, or ALL)
-3. Port range (22, 80, 443, or range like 1024-65535)
+3. Port range (22, 80, 443, or range)
 4. Source (where traffic comes FROM)
 5. Destination (where traffic goes TO)
 6. Action (ALLOW or DENY)
@@ -199,15 +172,7 @@ Direction:   Inbound
 Protocol:    TCP
 Port:        22
 Source:      203.0.113.0/24 (office network)
-Destination: This server
 Action:      ALLOW
-
-Meaning:
-  Traffic TO this server
-  Using TCP protocol
-  On port 22 (SSH)
-  FROM office IP range
-  = ALLOWED
 ```
 
 ---
@@ -220,16 +185,8 @@ Rule: Allow HTTPS to internet
 Direction:   Outbound
 Protocol:    TCP
 Port:        443
-Source:      This server
 Destination: 0.0.0.0/0 (anywhere)
 Action:      ALLOW
-
-Meaning:
-  Traffic FROM this server
-  Using TCP protocol
-  On port 443 (HTTPS)
-  TO anywhere
-  = ALLOWED
 ```
 
 ---
@@ -238,7 +195,7 @@ Meaning:
 
 **Firewalls have a default action:**
 
-**Default DENY (recommended, whitelist approach):**
+**Default DENY (recommended — whitelist approach):**
 
 ```
 Default: DENY all traffic
@@ -253,48 +210,24 @@ Everything else: DENIED
 Secure: Only explicitly allowed traffic passes
 ```
 
-**Default ALLOW (dangerous, blacklist approach):**
+**Default ALLOW (dangerous — blacklist approach):**
 
 ```
 Default: ALLOW all traffic
 
-Explicit rules:
-  DENY port 3306 from 0.0.0.0/0
-  DENY port 5432 from 0.0.0.0/0
-
-Everything else: ALLOWED
-
-Insecure: Easy to forget to block something
+This is insecure — easy to forget to block something
 ```
 
-**Best practice: Default DENY, explicitly ALLOW what's needed**
+**Best practice: Default DENY, explicitly ALLOW what's needed.**
 
 ---
 
 ### Source/Destination Notation
 
-**IP addresses:**
-
 ```
-Single IP:
-  203.0.113.45/32
-
-IP range (CIDR):
-  203.0.113.0/24 (203.0.113.0 - 203.0.113.255)
-  10.0.0.0/16 (10.0.0.0 - 10.0.255.255)
-
-Anywhere (internet):
-  0.0.0.0/0 (all IPv4 addresses)
-```
-
-**AWS-specific:**
-
-```
-Security group ID:
-  sg-1234567890abcdef (reference another security group)
-  
-This server:
-  Implied (when configuring inbound rules)
+Single IP:     203.0.113.45/32
+IP range:      203.0.113.0/24
+Anywhere:      0.0.0.0/0 (all IPv4)
 ```
 
 ---
@@ -303,9 +236,7 @@ This server:
 
 ### The Most Important Concept in This File
 
-**This single concept causes more AWS beginners to fail than anything else.**
-
-**Understanding this is MANDATORY for working with AWS networking.**
+**This single concept is responsible for more firewall misconfiguration than anything else.**
 
 ---
 
@@ -335,23 +266,20 @@ This server:
 
 ### Stateful Example (Easy)
 
-**AWS Security Group (stateful):**
+**Stateful firewall:**
 
 ```
 Inbound rules:
   ALLOW TCP port 80 from 0.0.0.0/0
 
-Outbound rules:
-  ALLOW ALL (default)
-
 What happens:
-  1. User (123.45.67.89) → Your server (port 80)
+  1. User → Your server (port 80)
      Inbound rule: ALLOW ✅
-     
+
   2. Your server → User (return traffic)
-     Security group: "This is return traffic from allowed inbound"
+     Firewall: "This is return traffic from allowed inbound"
      Automatically allowed ✅ (stateful behavior)
-     
+
 Connection works! ✅
 
 You only needed ONE rule (inbound)
@@ -362,7 +290,7 @@ Return traffic automatically allowed
 
 ### Stateless Example (Hard)
 
-**AWS NACL (stateless):**
+**Stateless firewall:**
 
 ```
 Inbound rules:
@@ -374,14 +302,13 @@ Outbound rules:
 What happens:
   1. User (123.45.67.89:54321) → Your server (port 80)
      Inbound rule: ALLOW ✅
-     Request reaches server
-     
+
   2. Your server (port 80) → User (123.45.67.89:54321)
-     NACL: "Is there an outbound rule allowing TCP to 123.45.67.89:54321?"
+     Firewall: "Is there an outbound rule for port 54321?"
      NO rule exists ❌
-     
+
      Response BLOCKED ❌
-     
+
 Connection FAILS! ❌
 
 You needed TWO rules:
@@ -391,102 +318,21 @@ You needed TWO rules:
 
 ---
 
-### Visual: Stateful vs Stateless
-
-**Stateful (Security Group):**
-
-```
-┌─────────────┐                        ┌─────────────┐
-│   Client    │                        │   Server    │
-│ 123.45.67.89│                        │203.45.67.89 │
-└──────┬──────┘                        └──────┬──────┘
-       │                                      │
-       │ 1. Request (TCP SYN)                 │
-       │    Src: 123.45.67.89:54321           │
-       │    Dst: 203.45.67.89:80              │
-       ├─────────────────────────────────────>│
-       │                                      │
-       │  Security Group (Inbound):           │
-       │"Allow TCP port 80 from 0.0.0.0/0"✅  │
-       │  Packet allowed                      │
-       │                                      │
-       │ 2. Response (TCP SYN-ACK)            │
-       │    Src: 203.45.67.89:80              │
-       │    Dst: 123.45.67.89:54321           │
-       │<─────────────────────────────────────┤
-       │                                      │
-       │  Security Group (Outbound):          │
-       │  "This is RETURN TRAFFIC"            │
-       │  AUTOMATICALLY allowed ✅            │
-       │  (stateful - remembers connection)   │
-       │                                      │
-       ✅ Connection successful               │
-```
-
-**Stateless (NACL):**
-
-```
-┌─────────────┐                    ┌─────────────┐
-│   Client    │                    │   Server    │
-│ 123.45.67.89│                    │203.45.67.89 │
-└──────┬──────┘                    └──────┬──────┘
-       │                                  │
-       │ 1. Request                       │
-       │    Src: 123.45.67.89:54321       │
-       │    Dst: 203.45.67.89:80          │
-       ├─────────────────────────────────>│
-       │                                  │
-       │  NACL (Inbound):                 │
-       │  "Allow TCP port 80" ✅          │
-       │  Packet allowed                  │
-       │                                  │
-       │ 2. Response                      │
-       │    Src: 203.45.67.89:80          │
-       │    Dst: 123.45.67.89:54321       │
-       │<─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┤
-       │         BLOCKED! ❌              │
-       │                                  │
-       │  NACL (Outbound):                │
-       │  NO RULE for port 54321 ❌       │
-       │  Packet DROPPED                  │
-       │  (stateless - no memory)         │
-       │                                  │
-       ❌ Connection FAILS                │
-```
-
----
-
 ### The Ephemeral Port Problem
 
 **Why stateless is hard:**
 
-**Outbound request (easy):**
-
 ```
-Your server initiates connection to google.com:443
+User connects to your server on port 80
+User's browser picks a random ephemeral port (49152-65535) as source
 
-Outbound:
-  Src: Your server:54321 (random ephemeral port)
-  Dst: Google:443
-  
-Rule needed: Allow outbound TCP port 443
+Your server's response goes back to that ephemeral port
+Stateless firewall has no outbound rule for port 54321
 
-Inbound (response):
-  Src: Google:443
-  Dst: Your server:54321 (ephemeral port)
-  
-Rule needed: Allow inbound TCP port 54321
-  
-But wait... you don't know which ephemeral port will be used!
-```
+Solution:
+  Allow outbound TCP ports 1024-65535 (all ephemeral ports)
 
-**Solution for stateless:**
-
-```
-Allow inbound TCP ports 1024-65535 (all ephemeral ports)
-
-This is overly permissive but necessary
-This is why stateless firewalls are hard
+This is overly permissive but necessary for stateless firewalls.
 ```
 
 ---
@@ -499,408 +345,181 @@ This is why stateless firewalls are hard
 | **Auto-allows return traffic?** | ✅ Yes | ❌ No |
 | **Rules needed** | Fewer (easier) | More (harder) |
 | **Configuration complexity** | Low | High |
-| **Example** | AWS Security Groups | AWS NACLs |
-| **Best for** | Instance-level security | Subnet-level security |
+| **AWS example** | Security Groups | NACLs |
 
 ---
 
-## AWS Security Groups (Stateful)
-
-### What Are Security Groups?
-
-**Security Group:**  
-Virtual firewall for EC2 instances (and other AWS resources).
-
-**Characteristics:**
-
-```
-✅ Stateful (return traffic automatically allowed)
-✅ Instance-level (applies to specific instances)
-✅ Default DENY (only explicit ALLOW rules)
-✅ Can reference other security groups
-✅ Changes apply immediately
-❌ Cannot create DENY rules (only ALLOW)
-```
+> **AWS implementation:** AWS Security Groups are stateful — they remember connections and auto-allow return traffic. AWS NACLs are stateless — you must explicitly allow both directions including ephemeral ports. The full setup, the NACL trap, and best practices are in the AWS VPC notes.
+> → [AWS VPC & Subnets](../../06.%20AWS%20–%20Cloud%20Infrastructure/03-vpc-subnet/README.md)
 
 ---
 
-### Security Group Rules
+## Linux Firewall — iptables
 
-**Inbound rules (traffic TO instance):**
+### What Is iptables?
 
+**iptables** is the Linux kernel's built-in packet filtering firewall. AWS Security Groups and Docker networking both use iptables under the hood.
+
+---
+
+### Tables and Chains
+
+**Tables:**
 ```
-Type      Protocol  Port Range  Source
-HTTP      TCP       80          0.0.0.0/0
-HTTPS     TCP       443         0.0.0.0/0
-SSH       TCP       22          203.0.113.0/24
-MySQL     TCP       3306        sg-1234abcd (another SG)
+filter  - Default. Allow/deny packets.
+nat     - Modify source/destination IPs (NAT, port forwarding).
+mangle  - Modify packet headers.
 ```
 
-**Outbound rules (traffic FROM instance):**
-
+**Chains (in the filter table):**
 ```
-Type      Protocol  Port Range  Destination
-All       All       All         0.0.0.0/0
-
-(Usually left as "allow all" due to stateful behavior)
+INPUT   - Packets destined FOR this machine
+OUTPUT  - Packets originating FROM this machine
+FORWARD - Packets passing THROUGH this machine
 ```
 
 ---
 
-### Security Group Example
+### Basic iptables Commands
 
-**Web server security group:**
+**View current rules:**
 
-```
-Inbound:
-  HTTP (80)    from 0.0.0.0/0 (internet)
-  HTTPS (443)  from 0.0.0.0/0 (internet)
-  SSH (22)     from 203.0.113.0/24 (office)
+```bash
+# View filter table rules
+sudo iptables -L -n -v
 
-Outbound:
-  All traffic  to 0.0.0.0/0
-
-How it works:
-  1. User accesses https://yourserver.com
-  2. Request to port 443 ✅ (allowed inbound)
-  3. Server responds ✅ (stateful - auto-allowed)
-  
-  4. You SSH from office (203.0.113.45)
-  5. SSH to port 22 ✅ (allowed inbound from office)
-  6. SSH responses ✅ (stateful - auto-allowed)
-  
-  7. Attacker tries SSH from 123.45.67.89
-  8. SSH to port 22 ❌ (not from office network)
-  9. Connection refused
+# View with line numbers (useful for deletion)
+sudo iptables -L --line-numbers -n
 ```
 
----
+**Allow inbound HTTP:**
 
-### Referencing Security Groups
-
-**Common pattern: Multi-tier application**
-
+```bash
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
 ```
-Web Server Security Group (sg-web):
-  Inbound:
-    HTTP/HTTPS from 0.0.0.0/0
-  Outbound:
-    All to 0.0.0.0/0
 
-App Server Security Group (sg-app):
-  Inbound:
-    Port 3000 from sg-web (only from web servers!)
-  Outbound:
-    All to 0.0.0.0/0
+**Allow inbound SSH from specific IP only:**
 
-Database Security Group (sg-db):
-  Inbound:
-    Port 5432 from sg-app (only from app servers!)
-  Outbound:
-    All to 0.0.0.0/0
+```bash
+sudo iptables -A INPUT -p tcp --dport 22 -s 203.0.113.0/24 -j ACCEPT
+```
 
-Security:
-  ✅ Database only accessible from app servers
-  ✅ App servers only accessible from web servers
-  ✅ Web servers only accessible from internet on 80/443
+**Block all inbound by default (after allowing needed ports):**
+
+```bash
+sudo iptables -P INPUT DROP
+```
+
+**Delete a rule by line number:**
+
+```bash
+sudo iptables -D INPUT 3
+```
+
+**Flush all rules (reset):**
+
+```bash
+sudo iptables -F
 ```
 
 ---
 
-### Terraform Security Group Example
+### Complete Minimal Server Example
 
-```hcl
-# Web server security group
-resource "aws_security_group" "web" {
-  name        = "web-server-sg"
-  description = "Security group for web servers"
-  vpc_id      = aws_vpc.main.id
+**Allow HTTP, HTTPS, SSH — block everything else:**
 
-  # Inbound HTTP
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow HTTP from internet"
-  }
+```bash
+# Start fresh
+sudo iptables -F
 
-  # Inbound HTTPS
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow HTTPS from internet"
-  }
+# Allow established connections (stateful behavior)
+sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-  # Inbound SSH (office only)
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["203.0.113.0/24"]
-    description = "Allow SSH from office"
-  }
+# Allow loopback
+sudo iptables -A INPUT -i lo -j ACCEPT
 
-  # Outbound all (default)
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow all outbound"
-  }
+# Allow SSH from office
+sudo iptables -A INPUT -p tcp --dport 22 -s 203.0.113.0/24 -j ACCEPT
 
-  tags = {
-    Name = "web-server-sg"
-  }
-}
+# Allow HTTP and HTTPS from anywhere
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
 
-# Database security group
-resource "aws_security_group" "database" {
-  name        = "database-sg"
-  description = "Security group for database"
-  vpc_id      = aws_vpc.main.id
+# Block everything else inbound
+sudo iptables -P INPUT DROP
 
-  # Inbound PostgreSQL (from app servers only)
-  ingress {
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.app.id]
-    description     = "Allow PostgreSQL from app servers"
-  }
+# Allow all outbound (default)
+sudo iptables -P OUTPUT ACCEPT
+```
 
-  # Outbound all
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+**Key line — stateful behavior:**
+```bash
+sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+```
 
-  tags = {
-    Name = "database-sg"
-  }
-}
+This is what makes iptables stateful. Without it, you'd need explicit rules for every return packet.
+
+---
+
+### Verify Rules
+
+```bash
+sudo iptables -L INPUT -n -v
+
+Output:
+Chain INPUT (policy DROP)
+target     prot opt source     destination
+ACCEPT     all  --  0.0.0.0/0  0.0.0.0/0   state RELATED,ESTABLISHED
+ACCEPT     all  --  0.0.0.0/0  0.0.0.0/0   (loopback)
+ACCEPT     tcp  --  203.0.113.0/24  0.0.0.0/0  tcp dpt:22
+ACCEPT     tcp  --  0.0.0.0/0  0.0.0.0/0   tcp dpt:80
+ACCEPT     tcp  --  0.0.0.0/0  0.0.0.0/0   tcp dpt:443
 ```
 
 ---
 
-## AWS NACLs (Stateless)
+### NAT Rules (iptables nat table)
 
-### What Are NACLs?
+**Docker uses iptables nat rules for port binding:**
 
-**NACL = Network Access Control List**
+```bash
+# View NAT rules
+sudo iptables -t nat -L -n -v
 
-**Characteristics:**
+# See DNAT rules Docker created
+sudo iptables -t nat -L DOCKER -n
 
+Output (after docker run -p 8080:80 nginx):
+  DNAT tcp dpt:8080 to:172.17.0.2:80
 ```
-❌ Stateless (must explicitly allow both directions)
-🔒 Subnet-level (applies to entire subnet)
-✅ Can create ALLOW and DENY rules
-📊 Rule numbers determine evaluation order
-⚡ Changes apply immediately
-🎯 Last line of defense (after Security Groups)
-```
+
+This is exactly what happens when you run `docker run -p 8080:80` — Docker writes an iptables DNAT rule.
 
 ---
 
-### NACL Rule Structure
+### ufw (Uncomplicated Firewall)
 
-**Rules have numbers (evaluated in order):**
+**ufw is a simpler front-end for iptables:**
 
-```
-Rule #  Type      Protocol  Port    Source/Dest  Allow/Deny
-100     HTTP      TCP       80      0.0.0.0/0    ALLOW
-200     HTTPS     TCP       443     0.0.0.0/0    ALLOW
-300     SSH       TCP       22      203.0.113.0/24  ALLOW
-*       All       All       All     0.0.0.0/0    DENY
+```bash
+# Check status
+sudo ufw status verbose
 
-Rules evaluated in order (100, 200, 300, *)
-First match wins
-* = default rule (catch-all)
-```
+# Allow port 80
+sudo ufw allow 80/tcp
 
----
+# Allow SSH from specific IP
+sudo ufw allow from 203.0.113.0/24 to any port 22
 
-### NACL Example (Correct Configuration)
-
-**Allow HTTP/HTTPS traffic:**
-
-**Inbound rules:**
-
-```
-Rule #  Type      Protocol  Port Range    Source       Allow/Deny
-100     HTTP      TCP       80            0.0.0.0/0    ALLOW
-110     HTTPS     TCP       443           0.0.0.0/0    ALLOW
-120     Custom    TCP       1024-65535    0.0.0.0/0    ALLOW (ephemeral)
-*       All       All       All           0.0.0.0/0    DENY
-```
-
-**Outbound rules:**
-
-```
-Rule #  Type      Protocol  Port Range    Destination  Allow/Deny
-100     HTTP      TCP       80            0.0.0.0/0    ALLOW
-110     HTTPS     TCP       443           0.0.0.0/0    ALLOW
-120     Custom    TCP       1024-65535    0.0.0.0/0    ALLOW (ephemeral)
-*       All       All       All           0.0.0.0/0    DENY
-```
-
-**Why both ephemeral port ranges?**
-
-```
-Inbound ephemeral (1024-65535):
-  For RETURN traffic when instance makes outbound request
-  Instance:54321 → Google:443
-  Google:443 → Instance:54321 (needs inbound rule for 54321)
-
-Outbound ephemeral (1024-65535):
-  For RETURN traffic when user makes inbound request
-  User:54321 → Instance:80
-  Instance:80 → User:54321 (needs outbound rule for 54321)
-
-Stateless = Must allow BOTH directions explicitly
-```
-
----
-
-## The NACL Trap (Common Mistake)
-
-### The Scenario That Breaks Beginners
-
-**Setup:**
-
-```
-VPC with default NACL (allow all)
-Working fine
-
-DevOps engineer: "Let's add security!"
-Creates custom NACL
-```
-
-**Beginner's NACL configuration:**
-
-```
-Inbound:
-  100  TCP  80   0.0.0.0/0  ALLOW  (HTTP)
-  110  TCP  443  0.0.0.0/0  ALLOW  (HTTPS)
-  *    All  All  0.0.0.0/0  DENY
-
-Outbound:
-  100  TCP  80   0.0.0.0/0  ALLOW
-  110  TCP  443  0.0.0.0/0  ALLOW
-  *    All  All  0.0.0.0/0  DENY
-
-Looks good! All HTTP/HTTPS allowed both ways!
-```
-
----
-
-### What Actually Happens
-
-**User tries to access website:**
-
-```
-1. User (123.45.67.89:54321) → Server (YourIP:80)
-   
-   NACL Inbound check:
-   Rule 100: TCP port 80 from 0.0.0.0/0 ✅
-   Packet allowed into subnet
-   
-2. Security Group allows traffic ✅
-
-3. Server processes request
-
-4. Server (YourIP:80) → User (123.45.67.89:54321)
-   
-   NACL Outbound check:
-   Rule 100: TCP port 80 to 0.0.0.0/0
-   Destination port is 54321, not 80 ❌
-   Rule 110: TCP port 443 to 0.0.0.0/0
-   Destination port is 54321, not 443 ❌
-   Rule *: DENY ❌
-   
-   PACKET DROPPED! ❌
-
-Website doesn't load
-User sees timeout
-Engineer: "But Security Group allows it!"
-```
-
----
-
-### The Fix
-
-**Add ephemeral port rules:**
-
-```
-Inbound:
-  100  TCP  80          0.0.0.0/0  ALLOW
-  110  TCP  443         0.0.0.0/0  ALLOW
-  120  TCP  1024-65535  0.0.0.0/0  ALLOW  ← FIX!
-  *    All  All         0.0.0.0/0  DENY
-
-Outbound:
-  100  TCP  80          0.0.0.0/0  ALLOW
-  110  TCP  443         0.0.0.0/0  ALLOW
-  120  TCP  1024-65535  0.0.0.0/0  ALLOW  ← FIX!
-  *    All  All         0.0.0.0/0  DENY
-
-Now return traffic can use ephemeral ports
-Website works ✅
-```
-
----
-
-### Why This Is Confusing
-
-**Security Groups (stateful) taught you:**
-
-```
-"Just allow inbound port 80, return traffic is automatic"
-
-This works! ✅
-```
-
-**NACLs (stateless) require:**
-
-```
-"Allow inbound port 80 AND outbound ephemeral ports"
-
-Completely different mental model
-Easy to forget
-Causes production outages
-```
-
----
-
-### NACL Best Practice
-
-**Most teams:**
-
-```
-✅ Use Security Groups for security
-❌ Leave NACLs at default (allow all)
-
-Reason:
-  Security Groups are easier
-  Security Groups are stateful
-  Security Groups are sufficient for most cases
-  
-Use NACLs only when you need:
-  - Explicit DENY rules (Security Groups can't deny)
-  - Subnet-level controls
-  - Additional defense layer
+# Enable (careful on remote servers — ensure SSH is allowed first!)
+sudo ufw enable
 ```
 
 ---
 
 ## Common Firewall Scenarios
 
-### Scenario 1: Can't SSH to EC2
+### Scenario 1: Can't SSH to Server
 
 **Symptom:**
 
@@ -912,33 +531,18 @@ ssh user@54.123.45.67
 **Debug checklist:**
 
 ```
-☐ 1. Security Group allows port 22?
-     Check inbound rules for TCP port 22
-     
-☐ 2. Source IP correct?
-     Your current IP might have changed
-     Rule allows 203.0.113.0/24 but you're 198.51.100.45
-     
-☐ 3. NACL allows port 22?
-     Check subnet's NACL inbound rules
-     
-☐ 4. NACL allows ephemeral outbound?
-     Check NACL outbound for ports 1024-65535
-     
-☐ 5. Instance actually listening?
-     sshd running?
-     Correct port?
-```
+☐ 1. Is port 22 open?
+     nc -zv 54.123.45.67 22
+     # Connection refused = nothing listening or firewall blocking
 
-**Common fix:**
+☐ 2. Check iptables rules
+     sudo iptables -L INPUT -n | grep 22
 
-```
-Security Group inbound:
-  SSH (22) from 0.0.0.0/0 (temporary)
-  
-Test if it works
-If yes: Security Group source IP was wrong
-Update to your actual IP
+☐ 3. Is your source IP allowed?
+     Check if your current IP is in the allowed range
+
+☐ 4. Is sshd running?
+     sudo systemctl status sshd
 ```
 
 ---
@@ -947,7 +551,7 @@ Update to your actual IP
 
 **Symptom:**
 
-```
+```bash
 curl http://54.123.45.67
 # Hangs, times out
 ```
@@ -955,17 +559,17 @@ curl http://54.123.45.67
 **Debug:**
 
 ```
-☐ 1. Security Group allows port 80?
-     
-☐ 2. NACL allows port 80 inbound?
-     
-☐ 3. NACL allows ephemeral outbound?
-     Rule for TCP 1024-65535 outbound
-     
-☐ 4. Web server running?
+☐ 1. Is port 80 open?
+     nc -zv 54.123.45.67 80
+
+☐ 2. Check iptables
+     sudo iptables -L INPUT -n | grep 80
+
+☐ 3. Is web server running?
+     sudo systemctl status nginx
      sudo netstat -tlnp | grep :80
-     
-☐ 5. Web server listening on correct interface?
+
+☐ 4. Listening on correct interface?
      0.0.0.0:80 ✅ (all interfaces)
      127.0.0.1:80 ❌ (localhost only)
 ```
@@ -977,59 +581,26 @@ curl http://54.123.45.67
 **Symptom:**
 
 ```
-App server can't connect to database
-
+App can't connect to database
 Error: Connection refused to 10.0.3.50:5432
 ```
 
 **Debug:**
 
 ```
-☐ 1. Database security group allows app server?
-     Inbound rule: Port 5432 from sg-app
-     
-☐ 2. App server has correct security group?
-     Instance must be in sg-app
-     
-☐ 3. Database actually listening?
-     On database server:
+☐ 1. Is PostgreSQL listening?
      sudo netstat -tlnp | grep :5432
-     
-☐ 4. PostgreSQL listening on correct IP?
-     Edit postgresql.conf:
+
+☐ 2. Is PostgreSQL listening on correct interface?
+     Check postgresql.conf:
      listen_addresses = '*'  (all interfaces)
      Not: listen_addresses = 'localhost'
-```
 
----
+☐ 3. Firewall allowing the port?
+     sudo iptables -L INPUT -n | grep 5432
 
-### Scenario 4: Outbound HTTPS Blocked
-
-**Symptom:**
-
-```
-Instance can't download packages
-
-curl: (7) Failed to connect to archive.ubuntu.com
-```
-
-**Debug:**
-
-```
-☐ 1. Security Group allows outbound?
-     Usually defaults to allow all
-     
-☐ 2. NACL allows outbound port 443?
-     
-☐ 3. NACL allows inbound ephemeral?
-     Return traffic needs inbound 1024-65535
-     
-☐ 4. Route to internet exists?
-     Private subnet needs NAT Gateway
-     Route table: 0.0.0.0/0 → nat-xxxxx
-     
-☐ 5. DNS working?
-     nslookup archive.ubuntu.com
+☐ 4. App server IP allowed?
+     Check pg_hba.conf for client authentication
 ```
 
 ---
@@ -1045,14 +616,10 @@ curl: (7) Failed to connect to archive.ubuntu.com
 ### Step 1: DNS Resolution
 
 ```bash
-# Can you resolve the domain?
 nslookup database.internal
 dig api.example.com
 
-If fails:
-  - DNS server misconfigured
-  - Domain doesn't exist
-  - /etc/resolv.conf wrong
+If fails: DNS issue
 ```
 
 ---
@@ -1060,18 +627,10 @@ If fails:
 ### Step 2: Network Reachability
 
 ```bash
-# Can you reach the IP?
 ping 10.0.3.50
 
-# Note: ICMP might be blocked
-# Better test:
-telnet 10.0.3.50 5432
+# If ICMP blocked, test a port:
 nc -zv 10.0.3.50 5432
-
-If fails:
-  - Routing issue
-  - Firewall blocking
-  - Server down
 ```
 
 ---
@@ -1079,64 +638,31 @@ If fails:
 ### Step 3: Port Accessibility
 
 ```bash
-# Is the port open?
 telnet 10.0.3.50 5432
 
-If "Connection refused":
-  - Port not listening
-  - Service not running
-  - Listening on wrong interface
-
-If timeout:
-  - Firewall blocking
-  - Network issue
+Connection refused → Port not listening
+Timeout → Firewall blocking
 ```
 
 ---
 
-### Step 4: Security Group Check
+### Step 4: Firewall Check
 
 ```bash
-# AWS CLI
-aws ec2 describe-security-groups \
-  --group-ids sg-1234567890abcdef
+# Local iptables
+sudo iptables -L -n -v
 
-Check:
-  ✅ Inbound rule exists for your port
-  ✅ Source allows your IP or security group
-  ✅ Protocol matches (TCP vs UDP)
+# Cloud firewall (see AWS notes for Security Groups / NACLs)
 ```
 
 ---
 
-### Step 5: NACL Check
+### Step 5: Application Layer
 
 ```bash
-# AWS CLI
-aws ec2 describe-network-acls \
-  --filters "Name=association.subnet-id,Values=subnet-12345"
-
-Check:
-  ✅ Inbound allows your port
-  ✅ Outbound allows ephemeral ports (1024-65535)
-  ✅ Rules in correct order (lower numbers first)
-```
-
----
-
-### Step 6: Application Layer
-
-```bash
-# Is service running?
 sudo systemctl status postgresql
-sudo systemctl status nginx
-
-# Is it listening?
 sudo netstat -tlnp | grep :5432
-
-# Check logs
 sudo journalctl -u postgresql -n 50
-sudo tail -f /var/log/nginx/error.log
 ```
 
 ---
@@ -1147,41 +673,19 @@ sudo tail -f /var/log/nginx/error.log
 Connection fails
     │
     ▼
-┌─────────────────┐
-│ Can resolve DNS?│
-└────┬────────────┘
-     │
-  ┌──┴──┐
- No    Yes
-  │     │
-  │     ▼
-  │  ┌─────────────────┐
-  │  │ Can ping/reach? │
-  │  └────┬────────────┘
-  │       │
-  │    ┌──┴──┐
-  │   No    Yes
-  │    │     │
-  │    │     ▼
-  │    │  ┌──────────────────┐
-  │    │  │ Port accessible? │
-  │    │  └────┬─────────────┘
-  │    │       │
-  │    │    ┌──┴──┐
-  │    │   No    Yes
-  │    │    │     │
-  │    │    │     ▼
-  │    │    │  ┌────────────────┐
-  │    │    │  │ Service running?│
-  │    │    │  └─────────────────┘
-  │    │    │
-  │    │    └──► Security Group
-  │    │         or NACL issue
-  │    │
-  │    └──► Routing or
-  │         firewall issue
-  │
-  └──► DNS issue
+Can resolve DNS? → No → DNS issue
+    │ Yes
+    ▼
+Can ping/reach IP? → No → Routing or firewall issue
+    │ Yes
+    ▼
+Port accessible? → No → Firewall blocking or service not running
+    │ Yes
+    ▼
+Service running? → No → Start/restart the service
+    │ Yes
+    ▼
+Check application logs → Application-level issue
 ```
 
 ---
@@ -1193,8 +697,8 @@ Connection fails
 | **Connection refused** | Port not listening | Service not running, wrong port |
 | **Connection timeout** | No response | Firewall blocking, server down |
 | **No route to host** | Routing problem | Network misconfigured |
-| **Name or service not known** | DNS failure | DNS misconfigured, domain doesn't exist |
-| **Network unreachable** | No network path | Routing table missing default route |
+| **Name or service not known** | DNS failure | DNS misconfigured |
+| **Network unreachable** | No network path | Missing default route |
 
 ---
 
@@ -1218,82 +722,40 @@ Purpose: Security
 
 ### Stateful vs Stateless (CRITICAL)
 
-**Stateful (AWS Security Groups):**
+**Stateful:**
 ```
 ✅ Remembers connections
 ✅ Auto-allows return traffic
 ✅ Easier to configure
 
-Example:
-  Allow inbound port 80
-  Return traffic automatically allowed
-
-One rule needed
+One rule needed (inbound only)
 ```
 
-**Stateless (AWS NACLs):**
+**Stateless:**
 ```
 ❌ No memory
 ❌ Must explicitly allow both directions
 ❌ Harder to configure
 
-Example:
-  Allow inbound port 80
-  Allow outbound ports 1024-65535 (ephemeral)
-  
-Two rules needed (both directions)
+Two rules needed (inbound + outbound including ephemeral ports)
 ```
 
 ---
 
-### AWS Security Groups
+### iptables Essentials
 
-```
-Characteristics:
-  ✅ Stateful
-  ✅ Instance-level
-  ✅ Default DENY
-  ✅ Only ALLOW rules
-  ✅ Can reference other SGs
+```bash
+# View rules
+sudo iptables -L -n -v
 
-Use for: Primary instance security
-```
+# Allow port 80
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
 
----
+# Allow established connections (stateful)
+sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-### AWS NACLs
-
-```
-Characteristics:
-  ❌ Stateless
-  ✅ Subnet-level
-  ✅ ALLOW and DENY rules
-  ✅ Numbered rules (order matters)
-
-Requirement:
-  Must allow ephemeral ports (1024-65535)
-  Both inbound AND outbound
-
-Use for: Subnet-level defense (rare)
-```
-
----
-
-### The NACL Trap
-
-```
-Common mistake:
-  Allow inbound port 80
-  Allow outbound port 80
-  Forget ephemeral ports
-
-Result:
-  Inbound request works
-  Response BLOCKED (port 54321 not allowed outbound)
-  
-Fix:
-  Add outbound 1024-65535
-  Add inbound 1024-65535
+# Block all inbound (after allowlist)
+sudo iptables -P INPUT DROP
 ```
 
 ---
@@ -1304,9 +766,8 @@ Fix:
 1. DNS working? (nslookup)
 2. Network reachable? (ping, nc)
 3. Port open? (telnet, nc -zv)
-4. Security Group allows? (AWS console/CLI)
-5. NACL allows? (Check ephemeral ports!)
-6. Service running? (systemctl, netstat)
+4. Firewall allowing? (iptables)
+5. Service running? (systemctl, netstat)
 ```
 
 ---
@@ -1314,9 +775,9 @@ Fix:
 ### Common Scenarios
 
 ```
-"Connection refused" → Service not running
+"Connection refused" → Service not running or wrong port
 "Connection timeout" → Firewall blocking
-"DNS not found" → DNS misconfigured
+"DNS not found"      → DNS misconfigured
 "Network unreachable" → Routing issue
 ```
 
@@ -1327,12 +788,11 @@ Fix:
 ```
 ✅ Default DENY policy
 ✅ Principle of least privilege
-✅ Use Security Groups (stateful, easier)
-✅ Leave NACLs at default (unless specific need)
-✅ Document firewall rules
-✅ Test after changes
+✅ Use stateful firewalls (easier and safer)
+✅ Document all rules
+✅ Test after every change
 ❌ Don't open all ports (0-65535)
-❌ Don't use 0.0.0.0/0 for SSH (restrict to office)
+❌ Don't allow SSH from 0.0.0.0/0 in production
 ```
 
 ---
@@ -1340,18 +800,16 @@ Fix:
 ### Mental Model
 
 ```
-Security Group = Bouncer at door
+Stateful firewall = Smart bouncer
   Remembers who came in
   Lets them out automatically
-  Stateful, smart
 
-NACL = Gate guard
+Stateless firewall = Strict gate guard
   Checks everyone, both ways
   No memory
-  Stateless, strict
 
-Use Security Groups for most security
-Use NACLs only when you need DENY rules
+Use stateful for most cases.
+Use stateless only when you need explicit DENY rules.
 ```
 
 ---
@@ -1359,12 +817,10 @@ Use NACLs only when you need DENY rules
 ### What You Can Do Now
 
 ✅ Understand stateful vs stateless firewalls  
-✅ Configure AWS Security Groups correctly  
-✅ Avoid the NACL trap (ephemeral ports)  
+✅ Write iptables rules for common scenarios  
 ✅ Debug connectivity issues systematically  
-✅ Secure multi-tier applications  
-✅ Understand "connection refused" vs "timeout"  
-✅ Know when to use Security Groups vs NACLs  
+✅ Know "connection refused" vs "timeout"  
+✅ Apply principle of least privilege  
 
 ---
 → Ready to practice? [Go to Lab 04](../networking-labs/04-dns-firewalls-lab.md)

@@ -33,7 +33,7 @@ Instead of local disks, it’s like a giant warehouse in the cloud — infinite 
 8. [Security & Access Control](#8-security--access-control)
 9. [Lifecycle Management](#9-lifecycle-management)
 10. [Encryption & Consistency](#10-encryption--consistency)
-11. [Real Example – ChillSpot Media Flow](#11-real-example--chillspot-media-flow)
+11. [Real Example – Webstore Media Flow](#11-real-example--webstore-media-flow)
 12. [AWS CLI Examples](#12-aws-cli-examples)
 13. [Quick Command Summary](#13-quick-command-summary)
 
@@ -109,7 +109,7 @@ Pick regions closer to your users to reduce latency.
 | Global uniqueness | No two buckets share the same name |
 | Forbidden | Uppercase, underscores, or spaces |
 
-💡 Tip: For websites, match your bucket name to your domain (e.g., `chillspot-media.com`).
+💡 Tip: For websites, match your bucket name to your domain (e.g., `webstore-media.com`).
 
 </details>
 
@@ -129,7 +129,7 @@ S3 can host **static websites** — sites made of HTML, CSS, and JS files that l
 6. Access your site via the generated endpoint URL.
 
 Example endpoint:  
-`http://chillspot-website.s3-website-us-east-1.amazonaws.com`
+`http://webstore-website.s3-website-us-east-1.amazonaws.com`
 
 📘 *Modern tip:* For production, use **AWS Amplify** or **CloudFront** for performance and HTTPS.
 
@@ -205,9 +205,9 @@ If you store **1 TB** of data—whether it lives in one bucket or ten—the cost
 | **Separate buckets per data type** | Clear boundaries for policy and lifecycle; easy cost breakdown | Slightly more management overhead, but no extra charges |
 
 💬 **Example:**  
-- `chillspot-media` → movies & shows (Standard → IA)  
-- `chillspot-logs`   → app logs (Intelligent-Tiering → Glacier)  
-- `chillspot-backups` → database exports (Deep Archive)
+- `webstore-media` → movies & shows (Standard → IA)  
+- `webstore-logs`   → app logs (Intelligent-Tiering → Glacier)  
+- `webstore-backups` → database exports (Deep Archive)
 
 All together they cost the same as one huge bucket—only the **usage** matters.
 
@@ -286,9 +286,9 @@ These features make S3 safe for both personal data and enterprise-grade workload
 ---
 
 <details>
-<summary><strong>11. Real Example – ChillSpot Media Flow</strong></summary>
+<summary><strong>11. Real Example – Webstore Media Flow</strong></summary>
 
-In **StarkWolf’s ChillSpot**, every movie file sits inside an S3 bucket — secure, versioned, and globally accessible.  
+In the **webstore app**, every movie file sits inside an S3 bucket — secure, versioned, and globally accessible.  
 When a user presses “Play,” the app fetches metadata (title, rating, genre) from **RDS**,  
 then streams the video directly from **S3** through a pre-signed URL.  
 
@@ -308,16 +308,16 @@ That’s the trio powering most modern streaming platforms.
 
 ```bash
 # Upload a file
-aws s3 cp song.mp3 s3://chillspot-media/audio/song.mp3
+aws s3 cp song.mp3 s3://webstore-media/audio/song.mp3
 
 # Download a file
-aws s3 cp s3://chillspot-media/audio/song.mp3 ./downloads/
+aws s3 cp s3://webstore-media/audio/song.mp3 ./downloads/
 
 # Sync local folder to bucket
-aws s3 sync ./media s3://chillspot-media/
+aws s3 sync ./media s3://webstore-media/
 
 # Remove an object
-aws s3 rm s3://chillspot-media/old-promo.mp4
+aws s3 rm s3://webstore-media/old-promo.mp4
 ````
 
 </details>

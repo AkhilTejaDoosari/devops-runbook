@@ -12,14 +12,13 @@
 
 ## What this lab is about
 
-You will inspect which ports are listening on your machine, watch the TCP 3-way handshake happen in real time, observe NAT in action through Docker port binding, and confirm that UDP behaves differently from TCP. This maps to files 06 and 07.
+You will inspect which ports are listening on your machine, watch the TCP 3-way handshake happen in real time, observe NAT in action at the iptables level, and confirm that UDP behaves differently from TCP. This maps to files 06 and 07.
 
 ## Prerequisites
 
 - [Ports & Transport notes](../06-ports-transport/README.md)
 - [NAT notes](../07-nat/README.md)
 - Lab 02 completed
-- Docker installed
 
 ---
 
@@ -85,14 +84,7 @@ curl -v http://example.com 2>&1 | head -30
 curl -v https://example.com 2>&1 | head -40
 ```
 
-**What to observe:**
-```
-* Connected to example.com port 443
-* TLSv1.3 (IN), TLS handshake
-  ↑ TCP handshake + TLS on top
-```
-
-3. Time the connection (shows TCP establishment speed)
+3. Time the connection
 ```bash
 curl -w "DNS: %{time_namelookup}s\nConnect: %{time_connect}s\nTotal: %{time_total}s\n" \
   -o /dev/null -s http://example.com
@@ -117,30 +109,22 @@ curl http://example.com
 
 **Goal:** Prove TCP and UDP behave differently.
 
-1. Test TCP connection (nc = netcat)
+1. Test TCP connection
 ```bash
-# Test TCP connection to Google DNS port 53
 nc -zv 8.8.8.8 53
 ```
 
-**What to observe:** `Connection to 8.8.8.8 53 port [tcp/domain] succeeded` — TCP handshake completed.
+**What to observe:** `Connection to 8.8.8.8 53 port [tcp/domain] succeeded`
 
 2. Test UDP connection
 ```bash
-# Test UDP connection to Google DNS
 nc -zuv 8.8.8.8 53
 ```
 
-**What to observe:** `Connection to 8.8.8.8 53 port [udp/domain] succeeded` — but UDP has no real handshake, nc just confirms the port is reachable.
-
-3. DNS uses UDP — make a DNS query and watch
+3. DNS uses UDP — make a DNS query and observe
 ```bash
-# DNS query goes over UDP
 dig google.com
-
-# Check the query section at the bottom
-# "SERVER: 8.8.8.8#53(8.8.8.8)"
-# ";; Query time: X msec"
+# Note: "SERVER: 8.8.8.8#53" and "Query time"
 ```
 
 4. Force DNS over TCP
@@ -148,64 +132,60 @@ dig google.com
 dig +tcp google.com
 ```
 
-**What to observe:** Same result but uses TCP instead of UDP — slightly slower due to handshake overhead.
+**What to observe:** Same result but uses TCP — slightly slower due to handshake overhead.
 
 5. Test a port that's not open
 ```bash
 nc -zv localhost 9999
 ```
 
-**What to observe:** `Connection refused` — TCP reached the machine but nothing is listening on that port.
+**What to observe:** `Connection refused` — TCP reached the machine but nothing listening.
 
 ---
 
-## Section 4 — NAT in Action with Docker
+## Section 4 — NAT in Action with iptables
 
-**Goal:** Prove Docker port binding is NAT — your host translates between public port and container port.
+**Goal:** See how NAT rules work at the Linux kernel level using iptables.
 
-1. Run nginx with port binding
+1. Check what iptables NAT rules currently exist
 ```bash
-docker run -d --name nat-test -p 8080:80 nginx
+sudo iptables -t nat -L -n -v
 ```
 
-2. Confirm port 8080 is now listening on the host
+**What to observe:** Existing NAT rules — PREROUTING (DNAT) and POSTROUTING (SNAT) chains.
+
+2. Manually create a port forwarding rule (DNAT) — this is exactly what Docker does
 ```bash
-sudo ss -tlnp | grep 8080
+# Forward host port 9999 to localhost:8080
+sudo iptables -t nat -A PREROUTING -p tcp --dport 9999 -j REDIRECT --to-port 8080
 ```
 
-**What to observe:** Port 8080 is now listening — Docker created this mapping.
-
-3. Access it from the host
+3. Start a server on port 8080
 ```bash
-curl http://localhost:8080
+python3 -m http.server 8080 &
+SERVER_PID=$!
 ```
 
-**What to observe:** nginx responds — request hit host port 8080, Docker translated to container port 80.
-
-4. See the NAT rule Docker created (iptables)
+4. Access it via the forwarded port
 ```bash
-sudo iptables -t nat -L DOCKER --line-numbers -n
+curl http://localhost:9999
 ```
 
-**What to observe:** A DNAT rule exists mapping host port 8080 to the container's IP:80.
+**What to observe:** Request to port 9999 is transparently forwarded to 8080 — this is DNAT in action.
 
-5. Check what IP the container has
+5. Verify the iptables rule you created
 ```bash
-docker inspect nat-test | grep IPAddress
+sudo iptables -t nat -L PREROUTING -n -v
 ```
 
-6. Access the container directly on its IP (bypasses NAT)
+6. Clean up
 ```bash
-CONTAINER_IP=$(docker inspect nat-test | grep '"IPAddress"' | tail -1 | awk -F'"' '{print $4}')
-curl http://$CONTAINER_IP:80
+sudo iptables -t nat -D PREROUTING -p tcp --dport 9999 -j REDIRECT --to-port 8080
+kill $SERVER_PID 2>/dev/null
 ```
 
-**What to observe:** Direct container access on port 80 works — no NAT needed when on the same Docker network.
-
-7. Clean up
-```bash
-docker stop nat-test && docker rm nat-test
-```
+> **Docker NAT walkthrough:** Docker automates all of this — every `-p host:container` flag creates iptables DNAT rules just like you did above. The full Docker-specific walkthrough (docker network inspect, verifying DNAT rules created by Docker, container-to-container vs host access) is in the Docker networking lab.
+> → [Docker Lab 02](../../04.%20Docker%20–%20Containerization/docker-labs/02-networking-volumes-lab.md)
 
 ---
 
@@ -215,23 +195,19 @@ docker stop nat-test && docker rm nat-test
 
 1. Make multiple simultaneous connections and watch port numbers
 ```bash
-# Make connections in background
 curl -s http://example.com &
 curl -s http://example.com &
 curl -s http://example.com &
 
-# Quickly check connections
 ss -tn | grep example.com
 ```
 
-**What to observe:** Each connection uses a different source port (49152-65535 range) — ephemeral ports assigned by the OS.
+**What to observe:** Each connection uses a different source port (49152-65535 range).
 
 2. See your local port range
 ```bash
 cat /proc/sys/net/ipv4/ip_local_port_range
 ```
-
-**What to observe:** The range of ports your OS uses for client connections.
 
 ---
 
@@ -243,7 +219,7 @@ cat /proc/sys/net/ipv4/ip_local_port_range
 python3 -m http.server 80
 ```
 
-**What to observe:** `Permission denied` — ports below 1024 require root. This is why web servers run as root or use capabilities.
+**What to observe:** `Permission denied` — ports below 1024 require root.
 
 Fix it with a high port:
 ```bash
@@ -255,10 +231,7 @@ kill %1
 ### Break 2 — Try to bind same port twice
 
 ```bash
-# Start first server
 python3 -m http.server 7777 &
-
-# Try to start second on same port
 python3 -m http.server 7777
 ```
 
@@ -292,7 +265,6 @@ Do not move to Lab 04 until every box is checked.
 - [ ] I used `curl -v` and saw the TCP connection established message
 - [ ] I timed a TCP connection with `curl -w` and noted the connect time
 - [ ] I used `nc -zv` to test both TCP and UDP connections to port 53
-- [ ] I ran Docker with `-p 8080:80` and confirmed port 8080 appeared in `ss -tlnp`
-- [ ] I found the Docker DNAT rule in iptables
-- [ ] I accessed the Docker container directly by its IP without port binding
+- [ ] I manually created a DNAT iptables rule and confirmed port forwarding worked
+- [ ] I verified the iptables rule with `iptables -t nat -L PREROUTING -n`
 - [ ] I produced "Address already in use", "Connection refused", and "Permission denied" errors on purpose

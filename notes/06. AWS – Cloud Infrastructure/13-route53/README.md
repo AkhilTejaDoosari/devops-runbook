@@ -41,7 +41,7 @@
 <summary><strong>1. Why We Need Route 53</strong></summary>
 
 Every system eventually asks: **how do users reach it?**
-Humans remember names like `starkwolfchillspot.com`; machines only understand IPs.
+Humans remember names like `webstore.com`; machines only understand IPs.
 
 **AWS Route 53** is a globally distributed **Domain Name System (DNS)** service that resolves those names to IPs and directs users to the closest, healthiest endpoint (ALB, EC2, or S3).
 
@@ -119,7 +119,7 @@ Each query is answered by the nearest healthy server for low latency and automat
 
 | Concept            | Description                                       | Analogy           |
 | ------------------ | ------------------------------------------------- | ----------------- |
-| **Domain Name**    | Human-readable address (`starkwolfchillspot.com`) | Name on envelope  |
+| **Domain Name**    | Human-readable address (`webstore.com`) | Name on envelope  |
 | **Hosted Zone**    | Container for records                             | Local Post Office |
 | **Record Set**     | Name → target mapping                             | Address Label     |
 | **Routing Policy** | Decides which target to return                    | Delivery Rule     |

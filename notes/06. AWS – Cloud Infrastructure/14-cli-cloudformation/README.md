@@ -29,7 +29,7 @@
 4. [AWS CLI – Your Command-Line Bridge](#4-aws-cli--your-command-line-bridge)
 5. [CloudFormation – Your Infrastructure Engine](#5-cloudformation--your-infrastructure-engine)
 6. [Architecture Blueprint – Automation Flow](#6-architecture-blueprint--automation-flow)
-7. [Template Deep Dive – StarkWolf EC2 Stack (YAML Example)](#7-template-deep-dive--starkwolf-ec2-stack-yaml-example)
+7. [Template Deep Dive – Webstore EC2 Stack (YAML Example)](#7-template-deep-dive--webstore-ec2-stack-yaml-example)
 8. [Real-World Use Cases & Best Practices](#8-real-world-use-cases--best-practices)
 9. [Quick Summary & Self-Audit](#9-quick-summary--self-audit)
 10. [💡 Mentor Insight](#10-mentor-insight)
@@ -157,10 +157,10 @@ After setup, your credentials are stored safely under `~/.aws/credentials`.
 | **General**                 | Show current profile & region | `aws configure list`                                                                                                                                                                         | Confirms which account/region you’re using |
 |                             | Switch region temporarily     | `aws ec2 describe-instances --region us-west-2`                                                                                                                                              | Overrides default                          |
 | **S3 (Storage)**            | List buckets                  | `aws s3 ls`                                                                                                                                                                                  | Shows all buckets                          |
-|                             | Create bucket                 | `aws s3 mb s3://starkwolf-demo`                                                                                                                                                              | Makes a new S3 bucket                      |
-|                             | Upload file                   | `aws s3 cp index.html s3://starkwolf-demo/`                                                                                                                                                  | Uploads a file                             |
-|                             | Sync folders                  | `aws s3 sync ./website s3://starkwolf-demo`                                                                                                                                                  | Mirrors local → S3                         |
-|                             | Delete bucket                 | `aws s3 rb s3://starkwolf-demo --force`                                                                                                                                                      | Removes everything inside                  |
+|                             | Create bucket                 | `aws s3 mb s3://webstore-demo`                                                                                                                                                              | Makes a new S3 bucket                      |
+|                             | Upload file                   | `aws s3 cp index.html s3://webstore-demo/`                                                                                                                                                  | Uploads a file                             |
+|                             | Sync folders                  | `aws s3 sync ./website s3://webstore-demo`                                                                                                                                                  | Mirrors local → S3                         |
+|                             | Delete bucket                 | `aws s3 rb s3://webstore-demo --force`                                                                                                                                                      | Removes everything inside                  |
 | **EC2 (Compute)**           | List instances                | `aws ec2 describe-instances`                                                                                                                                                                 | View running/stopped servers               |
 |                             | Start instance                | `aws ec2 start-instances --instance-ids i-1234abcd`                                                                                                                                          | Boot up                                    |
 |                             | Stop instance                 | `aws ec2 stop-instances --instance-ids i-1234abcd`                                                                                                                                           | Shut down                                  |
@@ -235,15 +235,15 @@ You write **what you want**, AWS figures out **how to build it**.
 3. **Create Stack**
 
    ```bash
-   aws cloudformation create-stack --stack-name StarkWolfEC2Stack \
-       --template-body file://StarkWolf-EC2-Linux-VM.yml
+   aws cloudformation create-stack --stack-name WebstoreEC2Stack \
+       --template-body file://webstore-ec2.yml
    ```
 4. **Monitor** progress in Events tab
 5. **Verify** resources in EC2 console
 6. **Delete** cleanly:
 
    ```bash
-   aws cloudformation delete-stack --stack-name StarkWolfEC2Stack
+   aws cloudformation delete-stack --stack-name WebstoreEC2Stack
    ```
 
 ---
@@ -295,14 +295,14 @@ Together = full-spectrum DevOps efficiency.
 ---
 
 <details>
-<summary><strong>7. Template Deep Dive – StarkWolf EC2 Stack (YAML Example)</strong></summary>
+<summary><strong>7. Template Deep Dive – Webstore EC2 Stack (YAML Example)</strong></summary>
 
 Below is an **improved, production-ready version** of your original EC2 template — simplified for clarity but deployable.
 
 ```yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  StarkWolf EC2 Linux VM Stack – creates a secure EC2 instance with SSH access.
+  Webstore EC2 Linux VM Stack – creates a secure EC2 instance with SSH access.
 
 Parameters:
   KeyPairName:
@@ -310,7 +310,7 @@ Parameters:
     Description: Name of an existing EC2 KeyPair to SSH into the instance
 
 Resources:
-  StarkWolfSecurityGroup:
+  WebstoreSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow SSH and HTTP access
@@ -325,17 +325,17 @@ Resources:
           ToPort: 80
           CidrIp: 0.0.0.0/0
 
-  StarkWolfEC2Instance:
+  WebstoreEC2Instance:
     Type: AWS::EC2::Instance
     Properties:
       ImageId: ami-0c02fb55956c7d316      # Amazon Linux 2 (us-east-1)
       InstanceType: t2.micro
       KeyName: !Ref KeyPairName
       SecurityGroupIds:
-        - !Ref StarkWolfSecurityGroup
+        - !Ref WebstoreSecurityGroup
       Tags:
         - Key: Name
-          Value: StarkWolf-EC2-Instance
+          Value: Webstore-EC2-Instance
       UserData:
         Fn::Base64: |
           #!/bin/bash
@@ -343,15 +343,15 @@ Resources:
           amazon-linux-extras install nginx1 -y
           systemctl enable nginx
           systemctl start nginx
-          echo "<h1>Welcome to StarkWolf EC2!</h1>" > /usr/share/nginx/html/index.html
+          echo "<h1>Welcome to Webstore EC2!</h1>" > /usr/share/nginx/html/index.html
 
 Outputs:
   PublicIP:
     Description: Public IP address of the instance
-    Value: !GetAtt StarkWolfEC2Instance.PublicIp
+    Value: !GetAtt WebstoreEC2Instance.PublicIp
   WebURL:
     Description: URL of the deployed web server
-    Value: !Sub "http://${StarkWolfEC2Instance.PublicDnsName}"
+    Value: !Sub "http://${WebstoreEC2Instance.PublicDnsName}"
 ```
 
 **Explanation Highlights**
@@ -365,8 +365,8 @@ Deploy with:
 
 ```bash
 aws cloudformation create-stack \
-  --stack-name StarkWolfEC2Stack \
-  --template-body file://StarkWolf-EC2-Linux-VM.yml \
+  --stack-name WebstoreEC2Stack \
+  --template-body file://webstore-ec2.yml \
   --parameters ParameterKey=KeyPairName,ParameterValue=your-keypair
 ```
 
@@ -382,7 +382,7 @@ Instead of big jargon, let’s make it real.
 | Situation                | Tool to Use    | Example Scenario                                                                             |
 | ------------------------ | -------------- | -------------------------------------------------------------------------------------------- |
 | **Morning Check**        | AWS CLI        | You start your day by checking which EC2 servers are running — `aws ec2 describe-instances`. |
-| **Quick File Upload**    | AWS CLI        | You push today’s build logs to S3 — `aws s3 cp logs.zip s3://starkwolf-logs/`.               |
+| **Quick File Upload**    | AWS CLI        | You push today’s build logs to S3 — `aws s3 cp logs.zip s3://webstore-logs/`.               |
 | **Recreate Environment** | CloudFormation | Need a test VPC + EC2 for a new feature? Run your template once and everything appears.      |
 | **Clean Up Resources**   | AWS CLI        | Before weekend, run `aws s3 rb s3://temp-bucket --force` to clear unused data.               |
 | **Disaster Recovery**    | CloudFormation | Prod broke? Redeploy your saved template and get the same architecture back instantly.       |
@@ -418,7 +418,7 @@ Instead of big jargon, let’s make it real.
 ✅ **I can:**
 
 * Create and delete S3 buckets from CLI.
-* Deploy the StarkWolf EC2 Stack via CloudFormation.
+* Deploy the Webstore EC2 Stack via CloudFormation.
 * Explain IaC benefits to a teammate in plain English.
 
 </details>

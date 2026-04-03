@@ -127,91 +127,21 @@ Return journey:
 
 ---
 
-## Section 3 — Webstore Local Simulation
+## Section 3 — Docker Webstore Simulation
 
-**Goal:** Run a mini webstore locally and trace all the same concepts.
-
-1. Create a Docker network for webstore
-```bash
-docker network create webstore-journey --subnet=172.30.0.0/24
-```
-
-2. Start webstore-db
-```bash
-docker run -d \
-  --name webstore-db \
-  --network webstore-journey \
-  -e MONGO_INITDB_ROOT_USERNAME=admin \
-  -e MONGO_INITDB_ROOT_PASSWORD=secret \
-  mongo
-```
-
-3. Start webstore-api (nginx as placeholder)
-```bash
-docker run -d \
-  --name webstore-api \
-  --network webstore-journey \
-  -p 8080:80 \
-  nginx
-```
-
-4. Now trace the journey within Docker:
-
-**DNS — container name resolution:**
-```bash
-docker exec webstore-api nslookup webstore-db
-```
-Record: `webstore-db → ___.___.___.___ `
-
-**Layer 3 — routing between containers:**
-```bash
-docker exec webstore-api ip route
-```
-**What to observe:** Container has its own routing table with gateway pointing to Docker bridge.
-
-**Ports — what's listening:**
-```bash
-docker exec webstore-api ss -tlnp
-```
-
-**NAT — port binding in action:**
-```bash
-# From host, port 8080 reaches container port 80
-curl -s http://localhost:8080 | head -5
-
-# Check the NAT rule
-sudo iptables -t nat -L DOCKER -n | grep 8080
-```
-
-**The complete flow for a request to webstore-api:**
-```
-Your browser → localhost:8080
-  ↓
-Host iptables DNAT: :8080 → 172.30.0.X:80
-  ↓
-Docker bridge (172.30.0.1)
-  ↓
-webstore-api container (172.30.0.X:80)
-  ↓
-nginx serves response
-  ↓
-Reverse path back to browser
-```
-
-5. Clean up
-```bash
-docker stop webstore-api webstore-db
-docker rm webstore-api webstore-db
-docker network rm webstore-journey
-```
+> **This section is covered in the Docker networking lab.**
+>
+> Running the webstore stack in Docker and tracing DNS, routing, ports, and NAT within containers are hands-on exercises built into the Docker lab. The Docker lab has the complete webstore setup with all verification commands.
+>
+> → [Docker Lab 02 — Networking & Volumes](../../04.%20Docker%20–%20Containerization/docker-labs/02-networking-volumes-lab.md)
+>
+> Complete that lab after finishing the networking labs series.
 
 ---
 
 ## Section 4 — Production Debugging Simulation
 
 **Goal:** Use the systematic debugging framework to find and fix a broken connection.
-
-You will intentionally break connectivity, then find and fix each problem using only the tools you've learned.
 
 **Setup — start a web server:**
 ```bash
@@ -222,20 +152,14 @@ curl -s http://localhost:4444 > /dev/null && echo "Server working"
 
 **Break 1 — DNS failure simulation:**
 ```bash
-# Add wrong DNS entry
 echo "127.0.0.1 broken-webstore.com" | sudo tee -a /etc/hosts
 
-# This app is trying to connect to "working-webstore.com" but there's no DNS entry
 nslookup working-webstore.com
 ```
 
 **Debug it:**
 ```bash
-# Step 1: Check DNS
 nslookup working-webstore.com
-
-# Finding: NXDOMAIN — domain doesn't exist
-# Fix: Check /etc/hosts and DNS configuration
 cat /etc/hosts | grep webstore
 ```
 
@@ -245,7 +169,6 @@ echo "127.0.0.1 working-webstore.com" | sudo tee -a /etc/hosts
 nslookup working-webstore.com
 curl http://working-webstore.com:4444 -s > /dev/null && echo "Fixed"
 
-# Clean up hosts
 sudo sed -i '/webstore.com/d' /etc/hosts
 ```
 
@@ -253,32 +176,26 @@ sudo sed -i '/webstore.com/d' /etc/hosts
 
 **Break 2 — Port blocked:**
 ```bash
-# Block port 4444
 sudo iptables -A INPUT -p tcp --dport 4444 -j DROP
 
-# Try to connect
 curl -m 3 http://localhost:4444
 ```
 
 **Debug it using the framework:**
 ```bash
-# Step 1: DNS — not a DNS issue (using IP directly)
-
-# Step 2: Can we reach the host?
+# Step 1: Host reachable?
 ping -c 2 localhost
 
-# Step 3: Is the port open?
+# Step 2: Port open?
 nc -zv localhost 4444
 # Finding: timeout — firewall blocking
 
-# Step 4: Check firewall rules
+# Step 3: Check firewall rules
 sudo iptables -L INPUT -n | grep 4444
-# Finding: DROP rule for port 4444
 
-# Fix: Remove the rule
+# Fix
 sudo iptables -D INPUT -p tcp --dport 4444 -j DROP
 
-# Verify
 nc -zv localhost 4444
 curl http://localhost:4444 -s > /dev/null && echo "Fixed"
 ```
@@ -287,36 +204,27 @@ curl http://localhost:4444 -s > /dev/null && echo "Fixed"
 
 **Break 3 — Service not running:**
 ```bash
-# Stop the server
 kill $SERVER_PID 2>/dev/null
 
-# Try to connect
 curl -m 3 http://localhost:4444
 ```
 
 **Debug it:**
 ```bash
-# Step 1: DNS — not a DNS issue
-
-# Step 2: Host reachable?
-ping -c 2 localhost
-# Yes — host is up
-
-# Step 3: Port open?
+# Port open?
 nc -zv localhost 4444
 # Connection refused — nothing listening
 
-# Step 4: Check what's listening
+# What's listening?
 ss -tlnp | grep 4444
 # Nothing — service is down
 
-# Fix: Start the service
+# Fix
 python3 -m http.server 4444 &
 SERVER_PID=$!
 sleep 1
 curl http://localhost:4444 -s > /dev/null && echo "Fixed"
 
-# Clean up
 kill $SERVER_PID 2>/dev/null
 ```
 
@@ -326,7 +234,7 @@ kill $SERVER_PID 2>/dev/null
 
 **Goal:** Practice explaining the full packet journey out loud.
 
-Open the [networking map](../00-networking-map/README.md) and use it to answer this question as if in an interview:
+Open the [networking map](../00-networking-map/README.md) and answer this question as if in an interview:
 
 > "Walk me through exactly what happens when a user opens webstore.com. Start from their browser and end at the server response."
 
@@ -348,7 +256,7 @@ Time yourself. Aim for 90 seconds covering all key points.
 - [ ] I traced a complete request to google.com using dig, ip route, traceroute, nc, and curl -v
 - [ ] I filled in the complete journey template with my actual observed values
 - [ ] I identified my public IP with `curl ifconfig.me` and confirmed it differs from my private IP
-- [ ] I ran the webstore Docker simulation and traced DNS, routing, ports, and NAT within Docker
+- [ ] I noted that the Docker webstore simulation is in Docker Lab 02
 - [ ] I debugged all 3 break scenarios using the systematic framework (DNS → reachability → port → service)
 - [ ] I can explain the full packet journey from browser to server in 90 seconds without notes
 - [ ] I reviewed the networking map and understand every row

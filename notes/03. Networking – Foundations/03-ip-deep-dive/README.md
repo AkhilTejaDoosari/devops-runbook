@@ -886,7 +886,7 @@ Never leaves computer
 | **AWS EC2 instance** | That EC2 instance |
 | **Virtual machine** | That VM |
 
-**Common Docker mistake:**
+**The Common Docker mistake:**
 
 ```
 Docker container runs web server on port 3000
@@ -900,6 +900,9 @@ Docker container runs web server on port 3000
   "Container's localhost ≠ Host's localhost"
   "Need port binding: docker run -p 3000:3000"
 ```
+
+> **Docker implementation:** The localhost trap and IP assignment behavior inside containers is covered in full with hands-on examples in the Docker notes.
+> → [Docker Networking](../../04.%20Docker%20–%20Containerization/05-docker-networking/README.md)
 
 ---
 
@@ -1010,76 +1013,6 @@ Private Subnet: 10.0.2.0/24
 Not DHCP — AWS assigns when instance launches
 Private IP stays same for life of instance
 Can be manually specified or auto-assigned
-```
-
----
-
-### Scenario 3: Docker Network
-
-**Bridge network:**
-
-```bash
-docker network create --subnet=172.20.0.0/16 myapp
-
-docker run -d --name web --network myapp nginx
-docker run -d --name api --network myapp nodeapp
-docker run -d --name db --network myapp postgres
-```
-
-**IPs assigned:**
-
-```
-Docker bridge:  172.20.0.1
-web container:  172.20.0.2 (auto-assigned)
-api container:  172.20.0.3 (auto-assigned)
-db container:   172.20.0.4 (auto-assigned)
-```
-
-**How assignment works:**
-
-```
-Docker's internal DHCP-like system
-First container gets .2
-Second gets .3
-And so on
-
-Can also specify static:
-docker run --ip 172.20.0.100 --name web ...
-```
-
----
-
-### Scenario 4: Office Network
-
-**Large office:**
-
-```
-Network: 10.0.0.0/16
-
-VLANs (separate networks):
-├─ VLAN 10 (Management): 10.0.10.0/24
-│  └─ Servers, switches (static IPs)
-│
-├─ VLAN 20 (Employee): 10.0.20.0/24
-│  └─ Employee laptops (DHCP)
-│
-├─ VLAN 30 (Guest): 10.0.30.0/24
-│  └─ Guest WiFi (DHCP, short lease)
-│
-└─ VLAN 40 (Printers): 10.0.40.0/24
-   └─ Printers (DHCP reservation)
-```
-
-**DHCP configuration:**
-
-```
-VLAN 20 (Employee):
-  Pool: 10.0.20.100 - 10.0.20.200
-  Lease: 8 hours (work day)
-
-VLAN 30 (Guest):
-  Pool: 10.0.30.50 - 10.0.30.250
-  Lease: 1 hour (high turnover)
 ```
 
 ---

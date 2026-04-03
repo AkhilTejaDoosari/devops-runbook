@@ -33,7 +33,7 @@ That engine is EC2 (Elastic Compute Cloud) — the virtual machine that ties IAM
 8. [Storage (EBS, Snapshots, FSR, Archive, Cross-AZ/Region Patterns)](#8-storage-ebs-snapshots-fsr-archive-cross-azregion-patterns)  
 9. [Web Hosting (httpd) & User Data](#9-web-hosting-httpd--user-data)  
 10. [Instance Metadata & Identity (IMDSv2, Signed Docs, Role Creds)](#10-instance-metadata--identity-imdsv2-signed-docs-role-creds)  
-11. [Networking Foundations (DNS, TCP/UDP, OSI vs TCP/IP)](#11-networking-foundations-dns-tcpudp-osi-vs-tcpip)  
+11. [Networking Foundations](#11-networking-foundations)  
 12. [Load Balancer (with Health Checks)](#12-load-balancer-with-health-checks)  
 13. [Auto Scaling & Monitoring](#13-auto-scaling--monitoring)
 
@@ -640,7 +640,7 @@ In your Security Group, open:
 
 ```bash
 cd /var/www/html
-sudo bash -c 'echo "<h1>Telusko DevOps Learning</h1>" > index.html'
+sudo bash -c 'echo "<h1>Webstore DevOps Learning</h1>" > index.html'
 ```
 
 Now visit `http://<Public-IP>` in your browser.
@@ -660,7 +660,7 @@ They’re used for quick setup — installing software or creating files automat
 ```bash
 #!/bin/bash
 yum install -y httpd
-echo "<h1>ATD Learning App – 1</h1>" > /var/www/html/index.html
+echo "<h1>Webstore App – 1</h1>" > /var/www/html/index.html
 systemctl enable httpd
 systemctl start httpd
 ```
@@ -742,160 +742,17 @@ It’s your **government-issued house deed** — official proof of who you are o
 ---
 
 <details>
-<summary><strong>11. Networking Foundations (DNS, TCP, OSI Layers)</strong></summary>
+<summary><strong>11. Networking Foundations</strong></summary>
 
----
+Networking concepts — DNS, TCP/UDP, the 3-way handshake, OSI layers, stateful vs stateless firewalls — are covered in full in the Networking notes before this series.
 
-## Why do we need prerequisites before OSI?
+→ [Networking Fundamentals](../../03.%20Networking%20–%20Foundations/README.md)
 
-Before the OSI model starts wrapping and sending data, two things usually happen first:  
-1. We find the server’s **IP address**.  
-2. We make sure there’s a **reliable connection**.
-
-These two steps are like finding where the restaurant is and confirming the phone line works — only then can we start “talking.”
-
----
-
-## A) Domain Name System (DNS)
-
-*Analogy:* You know the **restaurant’s name** (“google.com”) but not its **street address**.  
-DNS is the **telephone directory** that gives you the real address (the IP).
-
-**Steps:**
-1. Browser checks its local cache.  
-2. If not found → asks the **router** → then your **ISP’s DNS**.  
-3. ISP may ask **Root** → **TLD** (like `.com`) → **Authoritative** DNS server.  
-4. The authoritative server replies with the correct **IP address** (e.g., `142.250.xx.xx`).
-
-👉 Without DNS, we’d have to memorize IPs instead of names — like remembering every restaurant’s GPS coordinates.
-
----
-
-## B) Transmission Control Protocol (TCP) – 3-Way Handshake
-
-*Analogy:* Starting a phone call:  
-- You: “Hello, can you hear me?”  
-- Server: “Yes, I can.”  
-- You: “Great, let’s talk.”
-
-**Steps:**
-1. **SYN (Synchronize)** → Client: “I want to connect.”  
-2. **SYN-ACK (Synchronize + Acknowledge)** → Server: “I hear you; I’m ready.”  
-3. **ACK (Acknowledge)** → Client: “Confirmed, let’s begin.”
-
-✅ Now the connection is reliable.  
-(When using **HTTPS**, a **TLS handshake** happens right after this to secure the communication.)
-
----
-
-## C) OSI 7 Layers (Top → Bottom)
-
----
-
-### Layer 7 — Application
-
-This is where the **user interacts** directly.  
-Example: You type `https://www.google.com` → your browser sends an **HTTP/HTTPS request** because **you asked for it**.
-
-Common protocols:  
-- **HTTP/HTTPS** – web traffic  
-- **FTP** – file transfers  
-- **SMTP/IMAP** – emails
-
-👉 **Analogy:** You’re **writing the letter** you want to send.
-
----
-
-### Layer 6 — Presentation
-
-Handles **formatting, encryption, and compression** so the data looks correct and secure.  
-Example: HTTPS encrypts your message before sending.
-
-👉 **Analogy:** You **seal the letter in an envelope and lock it**.
-
----
-
-### Layer 5 — Session
-
-Creates and maintains **sessions** between two systems.  
-Example: You log in to **Instagram**, and for the next few minutes you don’t need to log in again — the session is active.  
-If you log out or it expires, the session closes.
-
-👉 **Analogy:** You **keep the call alive** until one side hangs up.
-
----
-
-### Layer 4 — Transport
-
-Breaks big data into **segments**, numbers them, and ensures everything arrives correctly.  
-Two key protocols live here:
-
-- **TCP** → Reliable, ordered, connection-based (used by HTTPS).  
-- **UDP** → Faster, connectionless, no guarantee (used by video calls, games, DNS queries).
-
-Example: Sending a **10 GB wedding video** — it’s split into small numbered pieces that are reassembled on the other side.
-
-👉 **Analogy:** You **pack your gift into multiple numbered boxes** so none are lost.
-
----
-
-### Layer 3 — Network
-
-Adds **IP addresses** and decides how to reach the destination.  
-Routers pick the **best path** to get data from your computer to the target server.
-
-Example: Going from **Delhi → Mumbai**, there are many roads; the router picks the fastest route.
-
-👉 **Analogy:** You **write sender and receiver addresses** on the package.
-
----
-
-### Layer 2 — Data Link
-
-Works inside your **local network (LAN, Wi-Fi, Ethernet)**.  
-It converts **packets → frames** and adds **MAC addresses** for local delivery.
-
-Example: Your router knows which device to send data to — your phone or your laptop — using their unique MAC IDs.
-
-👉 **Analogy:** A **local delivery truck** takes your package to the right house on the same street.
-
----
-
-### Layer 1 — Physical
-
-Turns everything into **bits (0s and 1s)** and sends them as signals over **wires or air**.  
-Examples: Fiber optics, copper cables, Wi-Fi signals.
-
-👉 **Analogy:** These are the **roads themselves** — the physical paths the trucks drive on.
-
----
-
-## D) Encapsulation & Decapsulation
-
-When you send data, it moves **down** through all layers (7 → 1).  
-When the receiver gets it, it moves **up** (1 → 7).
-
-```
-
-Sender:   L7 → L6 → L5 → L4 → L3 → L2 → L1  (wrap the data)
-Network:  --- bits travel through wires/Wi-Fi ---
-Receiver: L1 → L2 → L3 → L4 → L5 → L6 → L7  (unwrap the data)
-
-```
-
-💡 **Analogy:**  
-You wrap a gift in multiple boxes before shipping it.  
-At the other end, the receiver opens each box layer by layer to reach the actual item.
-
----
-
-✅ **Key Takeaways:**
-1. **DNS** finds where to send data.  
-2. **TCP handshake** makes the connection reliable.  
-3. **OSI layers** define how the message is wrapped, sent, and understood.  
-4. Each layer adds its own “box” to keep communication smooth and universal.
-
-📸 **Reference:** [AWS Networking Whitepaper](https://docs.aws.amazon.com/whitepapers/latest/aws-overview/networking.html)
+Key concepts used in EC2:
+- Security Groups = stateful firewall → [Firewalls & Security](../../03.%20Networking%20–%20Foundations/09-firewalls/README.md)
+- Subnets and CIDR → [Subnets & CIDR](../../03.%20Networking%20–%20Foundations/05-subnets-cidr/README.md)
+- NAT Gateway → [NAT & Translation](../../03.%20Networking%20–%20Foundations/07-nat/README.md)
+- DNS and Route 53 → [DNS](../../03.%20Networking%20–%20Foundations/08-dns/README.md)
 
 </details>
 

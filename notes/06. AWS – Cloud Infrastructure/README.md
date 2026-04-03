@@ -79,9 +79,9 @@ Lambda, Elastic Beanstalk, Route 53, and CloudFormation take you from manually m
 
 ---
 
-## 🔧 Practical Example — ChillSpot
+## 🔧 Practical Example — Webstore
 
-Throughout this series, a fictional containerized streaming platform called **ChillSpot** serves as the running practical example. Each module shows how a real-world application uses that AWS service — from storing media in S3, querying metadata from RDS, running compute on EC2, to routing global traffic through Route 53.
+Throughout this series, the **webstore** application serves as the running practical example — the same 3-tier app used across Docker, Kubernetes, and Networking. Each module shows how a real-world application uses that AWS service — from storing media in S3, querying metadata from RDS, running compute on EC2, to routing global traffic through Route 53.
 
 ---
 

@@ -1609,12 +1609,12 @@ Port    → 443 routes to web application
 
 ---
 
-## ChillSpot DevOps Scenario
+## Webstore DevOps Scenario
 
-**User opens chillspot.com**
+**User opens webstore.com**
 
 ```
-DNS       → chillspot.com resolves to 54.123.45.67 (Route53)
+DNS       → webstore.com resolves to 54.123.45.67 (Route53)
 TCP       → Handshake to port 443
 NAT       → Home router: 192.168.1.50 → 203.45.67.89
 Routing   → Hops to AWS us-east-1

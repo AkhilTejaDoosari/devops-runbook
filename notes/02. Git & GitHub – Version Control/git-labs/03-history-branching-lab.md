@@ -1,4 +1,4 @@
-[← devops-runbook](../../README.md) |
+[Home](../README.md) |
 [Labs Index](./README.md) |
 [Lab 01](./01-foundations-lab.md) |
 [Lab 02](./02-stash-tags-lab.md) |

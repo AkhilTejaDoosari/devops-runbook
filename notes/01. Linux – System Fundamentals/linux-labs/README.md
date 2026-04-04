@@ -1,4 +1,4 @@
-[← devops-runbook](../../README.md) |
+[Home](../README.md) |
 [Labs Index](./README.md) |
 [Lab 01](./01-boot-basics-files-lab.md) |
 [Lab 02](./02-filters-sed-awk-lab.md) |

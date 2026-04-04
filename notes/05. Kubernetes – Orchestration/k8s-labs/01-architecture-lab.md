@@ -1,4 +1,4 @@
-[← devops-runbook](../../README.md) | [Labs Index](./README.md) | [Lab 00](./00-setup-lab.md) | [Lab 01](./01-architecture-lab.md) | [Lab 02](./02-yaml-pods-lab.md) | [Lab 03](./03-deployments-lab.md) | [Lab 03.5](./03.5-networking-lab.md) | [Lab 04](./04-state-lab.md) | [Lab 05](./05-troubleshooting-lab.md) | [Lab 06](./06-cicd-lab.md) | [Lab 07](./07-observability-lab.md) | [Lab 08](./08-cloud-lab.md)
+[Home](../README.md) | [Labs Index](./README.md) | [Lab 00](./00-setup-lab.md) | [Lab 01](./01-architecture-lab.md) | [Lab 02](./02-yaml-pods-lab.md) | [Lab 03](./03-deployments-lab.md) | [Lab 03.5](./03.5-networking-lab.md) | [Lab 04](./04-state-lab.md) | [Lab 05](./05-troubleshooting-lab.md) | [Lab 06](./06-cicd-lab.md) | [Lab 07](./07-observability-lab.md) | [Lab 08](./08-cloud-lab.md)
 ---
 
 # Lab 01 — Architecture & The Live Cluster

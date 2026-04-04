@@ -1,7 +1,25 @@
-# Docker — From Fundamentals to Daily Use
+<p align="center">
+  <img src="../../assets/docker-banner.svg" alt="docker" width="100%"/>
+</p>
 
-A fundamentals-first learning path for Docker.
-Built around one real app. No tutorial noise. No memorization.
+[← devops-runbook](../../README.md)
+
+---
+
+A fundamentals-first learning path for Docker — containers, networking, volumes, images, and Compose — built around one real app with no tutorial noise.
+
+---
+
+## Prerequisites
+
+**Complete first:** [03. Networking – Foundations](../03.%20Networking%20–%20Foundations/README.md)
+
+Specifically, before starting Docker you should understand:
+- How bridges and routing work (file 04) — Docker bridge is a virtual switch
+- NAT and port forwarding (file 07) — Docker `-p` flag creates iptables DNAT rules
+- DNS resolution (file 08) — Docker has an embedded DNS server at `127.0.0.11`
+
+Without these, Docker networking will feel like magic. Magic breaks in production.
 
 ---
 
@@ -36,7 +54,7 @@ By the end, this app is containerized, networked, persisted, built from a Docker
 | Lab | Covers |
 |---|---|
 | [Lab 01](./docker-labs/01-containers-portbinding-lab.md) | Pull images, run containers, port binding, debug, safe delete |
-| [Lab 02](./docker-labs/02-networking-volumes-lab.md) | Docker networks, DNS between containers, named volumes, bind mounts |
+| [Lab 02](./docker-labs/02-networking-volumes-lab.md) | Docker networks, DNS between containers, iptables DNAT proof, named volumes, bind mounts |
 | [Lab 03](./docker-labs/03-build-layers-lab.md) | Layer inspection, cache behavior, Dockerfile ordering, .dockerignore |
 | [Lab 04](./docker-labs/04-registry-compose-lab.md) | Push to Docker Hub, pull and verify, write and run docker-compose.yml |
 
@@ -44,8 +62,8 @@ By the end, this app is containerized, networked, persisted, built from a Docker
 
 ## How to Use This
 
-Read phases in order. Each one builds on the previous.
-After each phase, do the lab before moving on.
+Read phases in order. Each one builds on the previous.  
+After each phase do the lab before moving on.  
 The checklist at the end of every lab is not optional.
 
 ---
@@ -54,8 +72,16 @@ The checklist at the end of every lab is not optional.
 
 - Explain what a container actually is and how Linux makes it work
 - Run any service in a container without installing it on your host
-- Connect multi-container apps over a Docker network
+- Connect multi-container apps over a Docker network using DNS names
 - Persist data correctly so it survives container deletion
 - Write a Dockerfile from scratch with correct layer ordering
 - Build, tag, and push images to a registry
 - Bring up a full multi-container system with one command
+
+---
+
+## What Comes Next
+
+→ [05. Kubernetes – Orchestration](../05.%20Kubernetes%20–%20Orchestration/README.md)
+
+Docker runs containers on one machine. Kubernetes manages containers across many machines — with self-healing, rolling updates, and auto-scaling. Everything you learned about containers, networking, and images applies directly.

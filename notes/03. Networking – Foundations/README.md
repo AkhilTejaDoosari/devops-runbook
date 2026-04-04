@@ -1,20 +1,29 @@
-[Foundation](01-foundation-and-the-big-picture/README.md) |
-[Addressing](02-addressing-fundamentals/README.md) |
-[IP Deep Dive](03-ip-deep-dive/README.md) |
-[Network Devices](04-network-devices/README.md) |
-[Subnets & CIDR](05-subnets-cidr/README.md) |
-[Ports & Transport](06-ports-transport/README.md) |
-[NAT](07-nat/README.md) |
-[DNS](08-dns/README.md) |
-[Firewalls](09-firewalls/README.md) |
-[Complete Journey](10-complete-journey/README.md)
+<p align="center">
+  <img src="../../assets/networking-banner.svg" alt="networking" width="100%"/>
+</p>
+
+[← devops-runbook](../../README.md)
 
 ---
 
-# Networking Fundamentals for DevOps Engineers
+A practical networking guide built for DevOps and cloud engineering roles.  
+No CCNA fluff. Only what you actually use — and only what Docker and AWS build on top of.
 
-A practical networking guide built for DevOps and cloud engineering roles.
-No CCNA fluff. Only what you actually use.
+---
+
+## Prerequisites
+
+**Complete first:** [02. Git & GitHub – Version Control](../02.%20Git%20%26%20GitHub%20–%20Version%20Control/README.md)
+
+You need Git to version your lab work and notes as you go through this series.
+
+---
+
+## Why Networking Comes Before Docker and AWS
+
+Docker bridge networking, container DNS, and port binding are all networking concepts in a container wrapper. AWS VPC, Security Groups, NAT Gateway, and Route 53 are all networking concepts in a cloud wrapper.
+
+If you learn Docker or AWS before networking, those tools feel like magic. Magic breaks in production without warning. This folder removes the magic — everything Docker and AWS do with networking has its foundation explained here first.
 
 ---
 
@@ -31,16 +40,16 @@ Every scenario uses the same webstore application:
 
 | # | File | What You Learn |
 |---|---|---|
-| 01 | [Foundation & Big Picture](01-foundation-and-the-big-picture/README.md) | What networking is, packets, encapsulation, OSI overview |
-| 02 | [Addressing Fundamentals](02-addressing-fundamentals/README.md) | MAC vs IP, ARP, private vs public IPs |
-| 03 | [IP Deep Dive](03-ip-deep-dive/README.md) | DHCP, why your IP changes, static vs dynamic, localhost |
-| 04 | [Network Devices](04-network-devices/README.md) | Switch vs router, default gateway, routing tables |
-| 05 | [Subnets & CIDR](05-subnets-cidr/README.md) | Subnet masks, CIDR notation, AWS VPC planning |
-| 06 | [Ports & Transport](06-ports-transport/README.md) | Ports, TCP vs UDP, 3-way handshake, sockets |
-| 07 | [NAT & Translation](07-nat/README.md) | PAT, port forwarding, AWS NAT Gateway, Docker port binding |
-| 08 | [DNS](08-dns/README.md) | DNS resolution, record types, TTL, Route53, Docker DNS |
-| 09 | [Firewalls & Security](09-firewalls/README.md) | Stateful vs stateless, Security Groups, NACLs, NACL trap |
-| 10 | [Complete Journey](10-complete-journey/README.md) | Everything integrated — full packet flows end to end |
+| 01 | [Foundation & Big Picture](./01-foundation-and-the-big-picture/README.md) | What networking is, packets, encapsulation, OSI overview |
+| 02 | [Addressing Fundamentals](./02-addressing-fundamentals/README.md) | MAC vs IP, ARP, private vs public IPs |
+| 03 | [IP Deep Dive](./03-ip-deep-dive/README.md) | DHCP, why your IP changes, static vs dynamic, localhost |
+| 04 | [Network Devices](./04-network-devices/README.md) | Switch vs router, default gateway, routing tables |
+| 05 | [Subnets & CIDR](./05-subnets-cidr/README.md) | Subnet masks, CIDR notation, IP range calculations |
+| 06 | [Ports & Transport](./06-ports-transport/README.md) | Ports, TCP vs UDP, 3-way handshake, sockets |
+| 07 | [NAT & Translation](./07-nat/README.md) | PAT, port forwarding, the NAT table |
+| 08 | [DNS](./08-dns/README.md) | DNS resolution, record types, TTL, caching |
+| 09 | [Firewalls & Security](./09-firewalls/README.md) | Stateful vs stateless, iptables, debugging connectivity |
+| 10 | [Complete Journey](./10-complete-journey/README.md) | Everything integrated — full packet flows end to end |
 
 ---
 
@@ -49,34 +58,46 @@ Every scenario uses the same webstore application:
 | Lab | Covers |
 |---|---|
 | [Lab 01](./networking-labs/01-foundation-addressing-ip-lab.md) | ip addr, ARP table, MAC vs IP, private ranges, localhost |
-| [Lab 02](./networking-labs/02-devices-subnets-lab.md) | Routing table, traceroute, CIDR calculation, VPC design |
-| [Lab 03](./networking-labs/03-ports-transport-nat-lab.md) | ss, netstat, curl TCP handshake, Docker NAT |
-| [Lab 04](./networking-labs/04-dns-firewalls-lab.md) | dig trace, nslookup, ufw rules, break and fix connectivity |
+| [Lab 02](./networking-labs/02-devices-subnets-lab.md) | Routing table, traceroute, CIDR calculation, subnet design |
+| [Lab 03](./networking-labs/03-ports-transport-nat-lab.md) | ss, TCP handshake, iptables DNAT proof |
+| [Lab 04](./networking-labs/04-dns-firewalls-lab.md) | dig +trace, nslookup, iptables rules, stateful vs stateless |
 | [Lab 05](./networking-labs/05-complete-journey-lab.md) | Full end-to-end trace: DNS + routing + ports + firewalls |
 
 ---
 
 ## Reference
 
-[Networking Map](00-networking-map/README.md) — single-page cheat sheet, use before interviews
+[Networking Map](./00-networking-map/README.md) — single-page cheat sheet, use before interviews and when debugging
 
 ---
 
 ## Critical Concepts
 
-**The Big Three:**
-1. **MAC vs IP** — MAC changes at every hop, IP never changes
-2. **Stateful vs Stateless** — Security Groups auto-allow return traffic, NACLs don't
-3. **Encapsulation** — Each layer wraps the previous (Frame → Packet → Segment → Data)
+**The Big Three — understand these before moving on:**
+
+1. **MAC vs IP** — MAC changes at every router hop, IP never changes end to end
+2. **Stateful vs Stateless** — stateful firewalls auto-allow return traffic, stateless don't — this causes the most common AWS NACL failures
+3. **Encapsulation** — each layer wraps the previous (Frame → Packet → Segment → Data)
 
 ---
 
 ## What You Can Do After This
-  
-✅ Design AWS VPCs with proper subnetting  
-✅ Debug "can't connect" issues systematically  
-✅ Configure Docker networks correctly  
-✅ Understand what happens when you type a URL  
-✅ Set up firewalls without breaking applications  
-✅ Calculate CIDR blocks  
-✅ Not get trapped by AWS NACLs  
+
+- Design subnets and calculate CIDR blocks correctly
+- Debug "can't connect" issues systematically layer by layer
+- Understand what Docker bridge, DNS, and port binding actually do
+- Understand what AWS VPC, Security Groups, and NAT Gateway actually do
+- Set up firewall rules without breaking applications
+- Trace a full packet journey from browser to server
+
+---
+
+## What Comes Next
+
+This folder feeds directly into two tools:
+
+→ [04. Docker – Containerization](../04.%20Docker%20–%20Containerization/README.md)  
+Docker bridge networks, container DNS, and port binding are all built on the NAT, DNS, and routing concepts from this folder.
+
+→ [06. AWS – Cloud Infrastructure](../06.%20AWS%20–%20Cloud%20Infrastructure/README.md)  
+AWS VPC, Security Groups, NACLs, and NAT Gateway are all built on the subnetting, firewall, and NAT concepts from this folder.

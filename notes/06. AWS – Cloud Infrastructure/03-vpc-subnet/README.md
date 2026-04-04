@@ -1,4 +1,4 @@
-[🏠 Home](../README.md) |
+[← devops-runbook](../../README.md) |
 [Intro to AWS](../01-intro-aws/README.md) |
 [IAM](../02-iam/README.md) |
 [VPC & Subnet](../03-vpc-subnet/README.md) |

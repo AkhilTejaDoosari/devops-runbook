@@ -1,23 +1,20 @@
-[Boot](01-boot-process/README.md) |
-[Basics](02-basics/README.md) |
-[Files](03-working-with-files/README.md) |
-[Filters](04-filter-commands/README.md) |
-[sed](05-sed-stream-editor/README.md) |
-[awk](06-awk/README.md) |
-[Editors](07-text-editor/README.md) |
-[Users](08-user-&-group-management/README.md) |
-[Permissions](09-file-ownership-&-permissions/README.md) |
-[Archive](10-archiving-and-compression/README.md) |
-[Packages](11-package-management/README.md) |
-[Services](12-service-management/README.md) |
-[Networking](13-networking/README.md)
+<p align="center">
+  <img src="../../assets/linux-banner.svg" alt="linux" width="100%"/>
+</p>
+
+[← devops-runbook](../../README.md)
 
 ---
 
-# Linux Fundamentals for DevOps Engineers
-
 A production-focused Linux guide built around one running example.
 No certification fluff. No desktop Linux. Only what you actually use on servers.
+
+---
+
+## Prerequisites
+
+None. This is the first folder in the series.  
+All you need is a Linux terminal — a VM, WSL, or a cloud instance works fine.
 
 ---
 
@@ -35,7 +32,7 @@ Every lab uses the same webstore project:
 └── backup/         ← archives
 ```
 
-By the end, you will have set correct permissions on this directory, searched its logs with grep and awk, archived it with tar, installed nginx to serve it, and debugged it over the network with curl and tcpdump.
+By the end you will have set correct permissions on this directory, searched its logs with grep and awk, archived it with tar, installed nginx to serve it, and debugged it over the network with curl and tcpdump.
 
 ---
 
@@ -65,8 +62,8 @@ By the end, you will have set correct permissions on this directory, searched it
 
 ## How to Use This
 
-Read phases in order. Each one builds on the previous.
-After each phase do the lab before moving on.
+Read phases in order. Each one builds on the previous.  
+After each phase do the lab before moving on.  
 The checklist at the end of every lab is not optional.
 
 ---
@@ -79,3 +76,11 @@ The checklist at the end of every lab is not optional.
 - Install software, manage services, and configure nginx
 - Use curl, dig, ss, and tcpdump to debug network issues
 - Archive and restore directories for backups and deployments
+
+---
+
+## What Comes Next
+
+→ [02. Git & GitHub – Version Control](../02.%20Git%20%26%20GitHub%20–%20Version%20Control/README.md)
+
+Linux gives you the server foundation. Git gives you the workflow foundation — version control, collaboration, and the habit of tracking every change you make to infrastructure and code.

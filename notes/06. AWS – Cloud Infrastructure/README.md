@@ -1,110 +1,94 @@
-# ☁️ AWS & Cloud Computing — Learning Series
+<p align="center">
+  <img src="../../assets/aws-banner.svg" alt="aws" width="100%"/>
+</p>
 
-> **"From zero to cloud-fluent — one service at a time."**
->
-> This series builds your AWS knowledge from the ground up, moving inside-out:
-> starting with identity and trust (IAM), stepping outward into networking (VPC),
-> storage (EBS, EFS, S3), compute (EC2), databases (RDS), and finally into
-> automation, scaling, and infrastructure as code.
->
-> By the end, you won't just *know* AWS services — you'll think like an architect
-> who sees how they connect and why each piece matters.
+[← devops-runbook](../../README.md)
 
 ---
 
-## 📚 Series Index
-
-| # | Module | What You'll Learn |
-|---|--------|-------------------|
-| 01 | [Intro to AWS](./01-intro-aws/README.md) | Cloud computing fundamentals, why AWS, service models (IaaS / PaaS / SaaS), global infrastructure (Regions, AZs, Edge Locations), Free Tier setup |
-| 02 | [IAM](./02-iam/README.md) | Users, Groups, Policies, Roles, MFA — who gets the keys and what doors they can open |
-| 03 | [VPC & Subnet](./03-vpc-subnet/README.md) | Virtual Private Cloud, subnets, route tables, internet gateways, security groups, NACLs |
-| 04 | [EBS](./04-ebs/README.md) | Elastic Block Store — persistent block storage for EC2, volume types, snapshots, encryption |
-| 05 | [EFS](./05-efs/README.md) | Elastic File System — shared file storage across multiple EC2 instances |
-| 06 | [S3](./06-s3/README.md) | Simple Storage Service — object storage, buckets, versioning, storage classes, lifecycle policies |
-| 07 | [EC2](./07-ec2/README.md) | Elastic Compute Cloud — launching and managing virtual machines on AWS |
-| 08 | [RDS](./08-rds/README.md) | Relational Database Service — managed databases, Multi-AZ, backups, read replicas |
-| 09 | [Load Balancing & Auto Scaling](./09-Load-balancing-auto-scaling/README.md) | ALB / NLB / GWLB, health checks, Auto Scaling Groups, scaling policies |
-| 10 | [CloudWatch & SNS](./10-cloudwatch-sns/README.md) | Metrics, alarms, logs, pub/sub alerting — the eyes and bell of AWS |
-| 11 | [Lambda](./11-lambda/README.md) | Serverless compute — event-driven functions with no infrastructure to manage |
-| 12 | [Elastic Beanstalk](./12-elastic-beanstalk/README.md) | PaaS deployment — upload code, AWS handles EC2, ALB, ASG, and monitoring |
-| 13 | [Route 53](./13-route53/README.md) | Global DNS — domain registration, hosted zones, routing policies, health checks |
-| 14 | [CLI + CloudFormation](./14-cli-cloudformation/README.md) | AWS CLI commands and Infrastructure as Code using CloudFormation templates |
+A production-focused AWS guide covering the core services every DevOps engineer uses daily — from VPC design to serverless to infrastructure automation.
 
 ---
 
-## 🗺️ Learning Path
+## Prerequisites
 
-The series is designed to be followed in order — each module builds on the last.
+**Complete first:** [03. Networking – Foundations](../03.%20Networking%20–%20Foundations/README.md)
 
-```
-IAM → VPC → EBS → EFS → S3 → EC2 → RDS
-           ↓
-  Load Balancing + Auto Scaling
-           ↓
-   CloudWatch + SNS → Lambda
-           ↓
- Elastic Beanstalk → Route 53 → CLI + CloudFormation
-```
+Specifically, before starting AWS you should understand:
+- Subnets and CIDR (file 05) — VPC design is applied subnetting
+- NAT concepts (file 07) — AWS NAT Gateway is managed NAT
+- Stateful vs stateless firewalls (file 09) — Security Groups and NACLs are the cloud implementation
+
+Without these, AWS networking will feel like a configuration wizard instead of a logical system.
 
 ---
 
-## 🧱 What This Series Covers
+## The Running Example
 
-**Phase 1 — Identity & Trust**
-IAM lays the security foundation before anything else is built. Every user, service, and automation in AWS traces back to an IAM identity.
+Every service is introduced in the context of hosting and running the webstore application:
 
-**Phase 2 — Networking**
-VPC creates the private cloud environment — the roads, gates, and rules everything else runs inside.
-
-**Phase 3 — Storage**
-EBS (local disk), EFS (shared filesystem), and S3 (object warehouse) cover every storage shape an application needs.
-
-**Phase 4 — Compute & Databases**
-EC2 runs your applications; RDS stores and manages your structured data reliably.
-
-**Phase 5 — Resilience & Scale**
-Load Balancing + Auto Scaling + CloudWatch + SNS keep systems stable, observable, and self-healing under real-world load.
-
-**Phase 6 — Automation & Delivery**
-Lambda, Elastic Beanstalk, Route 53, and CloudFormation take you from manually managing resources to deploying and scaling infrastructure as code.
+| Service | Image | Port |
+|---|---|---|
+| webstore-frontend | nginx:1.24 | 80 |
+| webstore-api | nginx:1.24 | 8080 |
+| webstore-db | mongo | 27017 |
 
 ---
 
-## 🎯 Who This Is For
+## Topics
 
-- Engineers building toward an **entry-level Cloud / DevOps role**
-- Anyone who wants to understand AWS services at the *why* level, not just the *how*
-- Learners who prefer **hands-on examples, analogies, and decision tables** over pure reference docs
-
----
-
-## 🔧 Practical Example — Webstore
-
-Throughout this series, the **webstore** application serves as the running practical example — the same 3-tier app used across Docker, Kubernetes, and Networking. Each module shows how a real-world application uses that AWS service — from storing media in S3, querying metadata from RDS, running compute on EC2, to routing global traffic through Route 53.
-
----
-
-## 📎 Quick Reference
-
-| Topic | Key Service | Core Idea |
-|-------|-------------|-----------|
-| Identity | IAM | Who can do what, on which resource |
-| Networking | VPC | Private network inside AWS |
-| Block Storage | EBS | Persistent disk for one EC2 |
-| File Storage | EFS | Shared filesystem across EC2s |
-| Object Storage | S3 | Unlimited flat file storage |
-| Compute | EC2 | Rent a virtual machine |
-| Database | RDS | Managed SQL database |
-| Traffic | ALB / NLB | Distribute requests across servers |
-| Scale | Auto Scaling | Add / remove EC2 automatically |
-| Observe | CloudWatch | Metrics, logs, alarms |
-| Alert | SNS | Pub/sub notifications |
-| Serverless | Lambda | Run code without a server |
-| PaaS Deploy | Beanstalk | Upload code, AWS runs the rest |
-| DNS | Route 53 | Domain → IP, with routing logic |
-| IaC | CloudFormation | Infrastructure defined as templates |
+| # | File | What You Learn |
+|---|---|---|
+| 01 | [Intro to AWS](./01-intro-aws/README.md) | Cloud fundamentals, regions, AZs, the AWS global infrastructure |
+| 02 | [IAM](./02-iam/README.md) | Users, roles, policies, least privilege, MFA |
+| 03 | [VPC & Subnets](./03-vpc-subnet/README.md) | VPC design, subnets, routing, IGW, NAT Gateway, Security Groups, NACLs |
+| 04 | [EBS](./04-ebs/README.md) | Block storage, volume types, snapshots, encryption |
+| 05 | [EFS](./05-efs/README.md) | Elastic File System, shared storage, EBS vs EFS vs S3 |
+| 06 | [S3](./06-s3/README.md) | Object storage, buckets, versioning, lifecycle, static hosting |
+| 07 | [EC2](./07-ec2/README.md) | Virtual machines, AMIs, instance types, security groups, user data |
+| 08 | [RDS](./08-rds/README.md) | Managed databases, Multi-AZ, read replicas, backups |
+| 09 | [Load Balancing & Auto Scaling](./09-Load-balancing-auto-scaling/README.md) | ALB, NLB, target groups, Auto Scaling Groups, health checks |
+| 10 | [CloudWatch & SNS](./10-cloudwatch-sns/README.md) | Metrics, logs, alarms, dashboards, notifications |
+| 11 | [Lambda](./11-lambda/README.md) | Serverless functions, triggers, event-driven architecture |
+| 12 | [Elastic Beanstalk](./12-elastic-beanstalk/README.md) | PaaS deployment, managed environments, rolling updates |
+| 13 | [Route 53](./13-route53/README.md) | DNS, hosted zones, routing policies, health checks, failover |
+| 14 | [CLI & CloudFormation](./14-cli-cloudformation/README.md) | AWS CLI, CloudFormation templates, infrastructure as code on AWS |
 
 ---
 
-*Start with [01 — Intro to AWS](./01-intro-aws/README.md) →*
+## Labs
+
+| Status | Coverage |
+|---|---|
+| 🚧 In progress | Labs being built alongside notes |
+
+---
+
+## How to Use This
+
+Read topics in order — each one builds on the previous.  
+IAM before EC2 (you need to understand permissions before launching instances).  
+VPC before EC2 (you need to understand networking before placing instances in it).  
+EC2 before RDS (you need compute before you need managed databases).
+
+---
+
+## What You Can Do After This
+
+- Design and build a production-ready multi-tier VPC from scratch
+- Set up IAM correctly with least-privilege roles and no root usage
+- Launch and configure EC2 instances with proper security
+- Store and manage data across EBS, EFS, and S3
+- Deploy a load-balanced, auto-scaling application
+- Monitor infrastructure with CloudWatch and alert with SNS
+- Write and deploy serverless functions with Lambda
+- Manage DNS and routing with Route 53
+- Automate infrastructure with the AWS CLI and CloudFormation
+
+---
+
+## What Comes Next
+
+→ [07. Terraform – IaC Foundations](../07.%20Terraform%20–%20IaC%20Foundations/README.md)
+
+CloudFormation is AWS-only. Terraform does everything CloudFormation does — and works across every cloud provider with the same workflow. After learning what AWS resources look like, Terraform lets you define and manage them as reusable, version-controlled code.

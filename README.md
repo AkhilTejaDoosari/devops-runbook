@@ -48,6 +48,15 @@ Docker before Kubernetes — so Pods, Services, and networking are not magic.
 
 ## Structure
 
+```
+devops-runbook/
+├── assets/          ← banners and images
+├── notes/           ← lab instructions and reference material
+├── lab-work/        ← personal progress logs (grows as you work)
+├── LICENSE
+└── README.md
+```
+
 | # | Topic | Notes | Labs |
 |---|---|---|---|
 | 01 | [Linux – System Fundamentals](./notes/01.%20Linux%20–%20System%20Fundamentals/README.md) | ✅ Complete | ✅ Complete |
@@ -63,27 +72,67 @@ Docker before Kubernetes — so Pods, Services, and networking are not magic.
 
 ## How to Use This Runbook
 
-Follow this approach to get the most out of it without wasting time or getting stuck.
+This repo has two separate folders with two separate purposes:
 
-**1. Go in order**  
+```
+notes/       ← lab instructions and reference material — never edit these
+lab-work/    ← your personal progress logs — grows as you work
+```
+
+---
+
+**Step 1 — Go in order**  
 The learning order is not random. Each folder builds directly on the previous one. Skipping networking before Docker means Docker networking will feel like magic — and magic breaks in production without warning.
 
-**2. Read the notes before opening a terminal**  
+**Step 2 — Read the notes before opening a terminal**  
 Every notes file starts with the mental model. Read it fully before touching a command. Understanding why something works is what lets you debug it when it breaks.
 
-**3. Do the labs from scratch**  
+**Step 3 — Do the labs from scratch**  
 Every lab says "write from scratch." This means it. Do not copy-paste commands. Typing them yourself forces your brain to process each flag and each decision. Speed comes later — understanding comes first.
 
-**4. Break things on purpose**  
+**Step 4 — Break things on purpose**  
 Every lab has a "Break It on Purpose" section. Do not skip it. These are the failure states you will actually hit in production. Reading about them is not the same as producing the error yourself and reading the output.
 
-**5. Do not move on until the checklist is done**  
-Every lab ends with a checklist. Every box must be checked before moving to the next lab. If you cannot check a box honestly, go back and do it properly.
+**Step 5 — Log your progress in lab-work/**  
+After each lab, open your progress file and add a dated entry:
 
-**6. When stuck — read the error first**  
+```
+lab-work/
+└── 04-docker/
+    └── lab-02-networking.md
+```
+
+Each entry follows this format:
+
+```markdown
+## Session — DD Month YYYY
+
+### What I did
+- paste actual terminal output here
+- note what commands you ran and what you observed
+
+### What broke
+- what error you hit and how you fixed it
+
+### Checklist
+- [x] item one
+- [x] item two
+```
+
+When you revisit a lab later, add a new dated entry at the top of the same file. Your log grows over time and your commit history shows continuous active work.
+
+**Step 6 — Commit after every lab**
+
+```bash
+git add lab-work/
+git commit -m "lab: complete docker lab 02 — networking and volumes"
+git push
+```
+
+**Step 7 — When stuck, read the error first**  
 Before searching anything, read the full error message. Most errors tell you exactly what is wrong. The habit of reading errors carefully is more valuable than any specific command.
 
-**7. Use the networking folder as a reference**  
+**Step 8 — Use the networking folder as a reference**  
 The networking notes are the foundation for Docker, Kubernetes, and AWS. Any time something feels abstract in those tools, go back to the networking folder — the concept is explained there without tool-specific noise.
 
 ---

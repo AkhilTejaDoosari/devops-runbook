@@ -4,5 +4,5 @@
   <text x="40" y="90" font-family="monospace" font-size="28" fill="#ffffff" font-weight="500">networking</text>
   <text x="40" y="119" font-family="monospace" font-size="12" fill="#999999">ip · dns · nat · tcp · firewalls · the foundation for everything</text>
   <rect x="40" y="133" width="40" height="2" rx="1" fill="#666666" opacity="0.5"/>
-  <text x="90" y="142" font-family="monospace" font-size="10" fill="#666666">03 of 08 · requires: git</text>
+  <text x="90" y="142" font-family="monospace" font-size="10" fill="#666666">03 of 09 · requires: git</text>
 </svg>

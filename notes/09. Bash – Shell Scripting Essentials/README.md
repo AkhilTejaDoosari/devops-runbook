@@ -12,11 +12,11 @@ Shell scripting, automation, and the glue that connects every DevOps tool togeth
 
 ## Prerequisites
 
-**Complete first:** [01. Linux – System Fundamentals](../01.%20Linux%20–%20System%20Fundamentals/README.md)
+**Complete first:** [08. Ansible – Configuration Management](../08.%20Ansible%20–%20Configuration%20Management/README.md)
 
 Bash scripting is Linux commands put into files and made repeatable. You need to be comfortable with the Linux command line — file operations, process management, and text processing — before scripting makes sense.
 
-Bash becomes most useful after you have worked with the other tools in this series. It ties everything together — automating Docker builds, running Terraform, processing AWS CLI output, and building deployment pipelines.
+Bash becomes most powerful after you have worked with every other tool in this series. It ties everything together — automating Docker builds, running Terraform, processing AWS CLI output, triggering Ansible playbooks, and building deployment pipelines.
 
 ---
 
@@ -26,31 +26,35 @@ Every script in this folder operates on the webstore project — the same app us
 
 ---
 
-## Topics
+## Phases
 
-| # | File | What You Learn |
+| Phase | Topics | Lab |
 |---|---|---|
-| 01 | [Bash Foundations](./01-bash-foundations/README.md) | Shebang, variables, input, conditionals, loops, functions |
-| 02 | [Text Processing](./02-text-processing/README.md) | grep, sed, awk in scripts, parsing command output |
-| 03 | [Script Structure & Error Handling](./03-script-structure/README.md) | Exit codes, `set -e`, `trap`, logging, defensive scripting |
-| 04 | [Automation & Cron](./04-automation-cron/README.md) | crontab, scheduled tasks, log rotation, backup scripts |
-| 05 | [DevOps Scripting Patterns](./05-devops-patterns/README.md) | Deployment scripts, health checks, Docker automation, CI/CD hooks |
+| 1 — Foundations | [01 Bash Foundations](./01-bash-foundations/README.md) | Lab 01 |
+| 2 — Text Processing | [02 Text Processing](./02-text-processing/README.md) | Lab 02 |
+| 3 — Error Handling | [03 Script Structure & Error Handling](./03-script-structure/README.md) | Lab 03 |
+| 4 — Automation | [04 Automation & Cron](./04-automation-cron/README.md) | Lab 04 |
+| 5 — DevOps Patterns | [05 DevOps Scripting Patterns](./05-devops-patterns/README.md) | Lab 05 |
 
 ---
 
 ## Labs
 
-| Status | Coverage |
-|---|---|
-| 🚧 Planned | Labs to be built after notes are complete |
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| Lab 01 | Foundations | Variables, input, conditionals, loops, functions — write from scratch |
+| Lab 02 | Text Processing | grep, sed, awk in scripts — parse webstore log output |
+| Lab 03 | Error Handling | Exit codes, set -e, trap, logging — make scripts fail loudly |
+| Lab 04 | Automation & Cron | crontab, scheduled backup of webstore-db, log rotation |
+| Lab 05 | DevOps Patterns | Deployment script, health check, Docker automation, CI/CD hooks |
 
 ---
 
 ## How to Use This
 
-Read topics in order.  
-Every script should be written from scratch — not copy-pasted.  
-Test every script in a way that produces the failure state before fixing it.
+Read phases in order. Each one builds on the previous.  
+After each phase do the lab before moving on.  
+The checklist at the end of every lab is not optional.
 
 ---
 
@@ -70,12 +74,13 @@ Test every script in a way that produces the failure state before fixing it.
 Bash is the last piece. Every tool in this series has a command-line interface. Bash is what connects them:
 
 ```
-Linux commands → Bash scripts
-Git operations → Automated in CI/CD hooks
-Docker builds  → Scripted in deployment pipelines
-kubectl apply  → Wrapped in deployment scripts
-AWS CLI calls  → Automated in maintenance scripts
-Terraform runs → Orchestrated in pipeline scripts
+Linux commands  → Bash scripts
+Git operations  → Automated in CI/CD hooks
+Docker builds   → Scripted in deployment pipelines
+kubectl apply   → Wrapped in deployment scripts
+AWS CLI calls   → Automated in maintenance scripts
+Terraform runs  → Orchestrated in pipeline scripts
+Ansible plays   → Triggered from deployment scripts
 ```
 
-When you can write a Bash script that builds a Docker image, pushes it to a registry, applies a Kubernetes deployment, and sends a notification if anything fails — you are working like a DevOps engineer.
+When you can write a Bash script that builds a Docker image, pushes it to a registry, applies a Kubernetes deployment, runs an Ansible playbook, and sends a Slack notification if anything fails — you are working like a DevOps engineer.

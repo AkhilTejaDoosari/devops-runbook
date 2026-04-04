@@ -37,12 +37,14 @@ Using one consistent app across all tools means concepts connect — you are alw
 ## Learning Order
 
 ```
-Linux → Git → Networking → Docker → Kubernetes → AWS → Terraform → Bash
+Linux → Git → Networking → Docker → Kubernetes → AWS → Terraform → Ansible → Bash
 ```
 
 Networking before Docker — so Docker bridge, DNS, and NAT are not magic.  
 Networking before AWS — so VPC, Security Groups, and NAT Gateway are not magic.  
-Docker before Kubernetes — so Pods, Services, and networking are not magic.
+Docker before Kubernetes — so Pods, Services, and networking are not magic.  
+Terraform before Ansible — so you configure infrastructure you understand how to build.  
+Ansible before Bash — so Bash scripts connect tools you already know how to use.
 
 ---
 
@@ -66,7 +68,8 @@ devops-runbook/
 | 05 | [Kubernetes – Orchestration](./notes/05.%20Kubernetes%20–%20Orchestration/README.md) | ✅ Phases 00–03 | ✅ Phases 00–03 |
 | 06 | [AWS – Cloud Infrastructure](./notes/06.%20AWS%20–%20Cloud%20Infrastructure/README.md) | ✅ Complete | 🚧 In progress |
 | 07 | [Terraform – IaC Foundations](./notes/07.%20Terraform%20–%20IaC%20Foundations/README.md) | 🚧 In progress | 🚧 Planned |
-| 08 | [Bash – Shell Scripting Essentials](./notes/08.%20Bash%20–%20Shell%20Scripting%20Essentials/README.md) | 🚧 Planned | 🚧 Planned |
+| 08 | [Ansible – Configuration Management](./notes/08.%20Ansible%20–%20Configuration%20Management/README.md) | 🚧 Planned | 🚧 Planned |
+| 09 | [Bash – Shell Scripting Essentials](./notes/09.%20Bash%20–%20Shell%20Scripting%20Essentials/README.md) | 🚧 Planned | 🚧 Planned |
 
 ---
 

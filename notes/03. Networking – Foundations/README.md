@@ -36,32 +36,27 @@ Every scenario uses the same webstore application:
 
 ---
 
-## The Series
+## Phases
 
-| # | File | What You Learn |
+| Phase | Topics | Lab |
 |---|---|---|
-| 01 | [Foundation & Big Picture](./01-foundation-and-the-big-picture/README.md) | What networking is, packets, encapsulation, OSI overview |
-| 02 | [Addressing Fundamentals](./02-addressing-fundamentals/README.md) | MAC vs IP, ARP, private vs public IPs |
-| 03 | [IP Deep Dive](./03-ip-deep-dive/README.md) | DHCP, why your IP changes, static vs dynamic, localhost |
-| 04 | [Network Devices](./04-network-devices/README.md) | Switch vs router, default gateway, routing tables |
-| 05 | [Subnets & CIDR](./05-subnets-cidr/README.md) | Subnet masks, CIDR notation, IP range calculations |
-| 06 | [Ports & Transport](./06-ports-transport/README.md) | Ports, TCP vs UDP, 3-way handshake, sockets |
-| 07 | [NAT & Translation](./07-nat/README.md) | PAT, port forwarding, the NAT table |
-| 08 | [DNS](./08-dns/README.md) | DNS resolution, record types, TTL, caching |
-| 09 | [Firewalls & Security](./09-firewalls/README.md) | Stateful vs stateless, iptables, debugging connectivity |
-| 10 | [Complete Journey](./10-complete-journey/README.md) | Everything integrated — full packet flows end to end |
+| 1 — Foundation | [01 Foundation & Big Picture](./01-foundation-and-the-big-picture/README.md) · [02 Addressing](./02-addressing-fundamentals/README.md) · [03 IP Deep Dive](./03-ip-deep-dive/README.md) | [Lab 01](./networking-labs/01-foundation-addressing-ip-lab.md) |
+| 2 — Routing | [04 Network Devices](./04-network-devices/README.md) · [05 Subnets & CIDR](./05-subnets-cidr/README.md) | [Lab 02](./networking-labs/02-devices-subnets-lab.md) |
+| 3 — Transport & NAT | [06 Ports & Transport](./06-ports-transport/README.md) · [07 NAT & Translation](./07-nat/README.md) | [Lab 03](./networking-labs/03-ports-transport-nat-lab.md) |
+| 4 — DNS & Firewalls | [08 DNS](./08-dns/README.md) · [09 Firewalls & Security](./09-firewalls/README.md) | [Lab 04](./networking-labs/04-dns-firewalls-lab.md) |
+| 5 — Complete Journey | [10 Complete Journey](./10-complete-journey/README.md) | [Lab 05](./networking-labs/05-complete-journey-lab.md) |
 
 ---
 
 ## Labs
 
-| Lab | Covers |
-|---|---|
-| [Lab 01](./networking-labs/01-foundation-addressing-ip-lab.md) | ip addr, ARP table, MAC vs IP, private ranges, localhost |
-| [Lab 02](./networking-labs/02-devices-subnets-lab.md) | Routing table, traceroute, CIDR calculation, subnet design |
-| [Lab 03](./networking-labs/03-ports-transport-nat-lab.md) | ss, TCP handshake, iptables DNAT proof |
-| [Lab 04](./networking-labs/04-dns-firewalls-lab.md) | dig +trace, nslookup, iptables rules, stateful vs stateless |
-| [Lab 05](./networking-labs/05-complete-journey-lab.md) | Full end-to-end trace: DNS + routing + ports + firewalls |
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 01](./networking-labs/01-foundation-addressing-ip-lab.md) | Foundation · Addressing · IP | ip addr, ARP table, MAC vs IP, private ranges, localhost |
+| [Lab 02](./networking-labs/02-devices-subnets-lab.md) | Network Devices · Subnets | Routing table, traceroute, CIDR calculation, subnet design |
+| [Lab 03](./networking-labs/03-ports-transport-nat-lab.md) | Ports · Transport · NAT | ss, TCP handshake, iptables DNAT proof |
+| [Lab 04](./networking-labs/04-dns-firewalls-lab.md) | DNS · Firewalls | dig +trace, nslookup, iptables rules, stateful vs stateless |
+| [Lab 05](./networking-labs/05-complete-journey-lab.md) | Complete Journey | Full end-to-end trace: DNS + routing + ports + firewalls |
 
 ---
 

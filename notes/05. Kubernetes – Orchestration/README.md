@@ -31,31 +31,37 @@ Throughout every phase, the webstore app serves as the practical example — a f
 
 ---
 
-## Phase Index
+## Phases
 
-| # | Phase | Topics | Hands-On Action |
+| # | Phase | Topics | Lab |
 |---|---|---|---|
-| 00 | [Setup](./00-setup/README.md) | Job-legal toolkit — Minikube, kubectl, K9s, Helm | Install all tools. Run the cold start. Open K9s in Tab 2. |
-| 01 | [Architecture](./01-architecture/README.md) | Control Plane (API Server, etcd, Scheduler, Controller Manager), Worker Nodes | Run `kubectl get nodes` and `kubectl get pods -n kube-system` |
-| 02 | [YAML & Pods](./02-yaml-pods/README.md) | YAML syntax, Pods, Labels and Selectors | Write the webstore Pod in a `.yaml` file and apply it |
-| 03 | [Deployments](./03-deployments/README.md) | ReplicaSets, Deployments, Rolling Updates, Rollbacks, Scaling | Create a Deployment with 3 replicas. Delete one Pod and watch it self-heal. |
-| 03.5 | [Networking](./03.5-networking/README.md) | Services (ClusterIP, NodePort, LoadBalancer), Sidecar, Namespaces | Compare NodePort vs LoadBalancer using the webstore example |
-| 04 | [State & Config](./04-state/README.md) | Persistent Volumes, Claims, ConfigMaps, Secrets | Deploy webstore-db using a Secret for the password and a PVC for storage |
-| 05 | [Troubleshooting](./05-troubleshooting/README.md) | Probes, Jobs, CronJobs, DaemonSets, describe and logs | Intentionally break a Pod and use `kubectl describe` to find the error |
-| 06 | [CI/CD](./06-cicd/README.md) | GitHub Actions pipeline, ArgoCD GitOps | Build a workflow that pushes the webstore-api image and ArgoCD syncs it |
-| 07 | [Observability](./07-observability/README.md) | Prometheus, Grafana, alerting | Deploy Prometheus + Grafana via Helm, build a webstore dashboard |
-| 08 | [Cloud & EKS](./08-cloud/README.md) | AWS EKS, Ingress Controller, HPA, eksctl | Build your EKS cluster and deploy the full webstore stack to it |
+| 00 | [Setup](./00-setup/README.md) | Job-legal toolkit — Minikube, kubectl, K9s, Helm | [Lab 00](./k8s-labs/00-setup-lab.md) |
+| 01 | [Architecture](./01-architecture/README.md) | Control Plane (API Server, etcd, Scheduler, Controller Manager), Worker Nodes | [Lab 01](./k8s-labs/01-architecture-lab.md) |
+| 02 | [YAML & Pods](./02-yaml-pods/README.md) | YAML syntax, Pods, Labels and Selectors | [Lab 02](./k8s-labs/02-yaml-pods-lab.md) |
+| 03 | [Deployments](./03-deployments/README.md) | ReplicaSets, Deployments, Rolling Updates, Rollbacks, Scaling | [Lab 03](./k8s-labs/03-deployments-lab.md) |
+| 03.5 | [Networking](./03.5-networking/README.md) | Services (ClusterIP, NodePort, LoadBalancer), Sidecar, Namespaces | 🚧 Planned |
+| 04 | [State & Config](./04-state/README.md) | Persistent Volumes, Claims, ConfigMaps, Secrets | 🚧 Planned |
+| 05 | [Troubleshooting](./05-troubleshooting/README.md) | Probes, Jobs, CronJobs, DaemonSets, describe and logs | 🚧 Planned |
+| 06 | [CI/CD](./06-cicd/README.md) | GitHub Actions pipeline, ArgoCD GitOps | 🚧 Planned |
+| 07 | [Observability](./07-observability/README.md) | Prometheus, Grafana, alerting | 🚧 Planned |
+| 08 | [Cloud & EKS](./08-cloud/README.md) | AWS EKS, Ingress Controller, HPA, eksctl | 🚧 Planned |
 
 ---
 
 ## Labs
 
-| Lab | File |
-|---|---|
-| 00 — Setup | [k8s-labs/00-setup-lab.md](./k8s-labs/00-setup-lab.md) |
-| 01 — Architecture | [k8s-labs/01-architecture-lab.md](./k8s-labs/01-architecture-lab.md) |
-| 02 — YAML & Pods | [k8s-labs/02-yaml-pods-lab.md](./k8s-labs/02-yaml-pods-lab.md) |
-| 03 — Deployments | [k8s-labs/03-deployments-lab.md](./k8s-labs/03-deployments-lab.md) |
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 00](./k8s-labs/00-setup-lab.md) | Setup | Install all tools, run the cold start, open K9s in Tab 2 |
+| [Lab 01](./k8s-labs/01-architecture-lab.md) | Architecture | kubectl get nodes, kubectl get pods -n kube-system, explore control plane |
+| [Lab 02](./k8s-labs/02-yaml-pods-lab.md) | YAML & Pods | Write the webstore Pod in a .yaml file and apply it |
+| [Lab 03](./k8s-labs/03-deployments-lab.md) | Deployments | Create a Deployment with 3 replicas, delete one Pod, watch it self-heal |
+| Lab 03.5 | Networking | 🚧 Planned |
+| Lab 04 | State & Config | 🚧 Planned |
+| Lab 05 | Troubleshooting | 🚧 Planned |
+| Lab 06 | CI/CD | 🚧 Planned |
+| Lab 07 | Observability | 🚧 Planned |
+| Lab 08 | Cloud & EKS | 🚧 Planned |
 
 ---
 
@@ -123,4 +129,4 @@ These are Minikube-only shortcuts. They do not exist in production:
 
 → [06. AWS – Cloud Infrastructure](../06.%20AWS%20–%20Cloud%20Infrastructure/README.md)
 
-Phase 08 of this folder (Cloud & EKS) runs on AWS. Before reaching that phase, the AWS folder gives you the VPC, IAM, and EC2 foundations that EKS sits on top of.
+Phase 08 of this folder (Cloud & EKS) runs on AWS. The AWS folder gives you the VPC, IAM, and EC2 foundations that EKS sits on top of.

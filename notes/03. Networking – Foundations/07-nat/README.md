@@ -701,4 +701,11 @@ Router = Translator:
 ✅ Debug NAT-related connectivity issues  
 
 ---
+
+---
+
+## What This Means for the Webstore
+
+The webstore server has a private IP on the network — `10.0.1.45` or similar. When it receives a request from a browser on the internet, that request arrived at the public IP of the router, which NAT-translated it inbound to `10.0.1.45`. The browser never knew the server's private IP. When the server responds, the router translates the source IP back to public before sending it out. This NAT process is invisible in both directions. When you later configure `docker run -p 8080:80`, Docker is creating a DNAT rule in iptables — the exact same mechanism described in this file, applied at the container level. The concept is identical. The scope is smaller.
+
 → Ready to practice? [Go to Lab 03](../networking-labs/03-ports-transport-nat-lab.md)

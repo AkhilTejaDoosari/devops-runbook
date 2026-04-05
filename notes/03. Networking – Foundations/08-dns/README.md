@@ -889,3 +889,11 @@ Expires after TTL
 ✅ Plan DNS changes with TTL reduction  
 
 ---
+
+---
+
+## What This Means for the Webstore
+
+When you register `webstore.example.com` and create an A record pointing to the server's public IP, every browser goes through the full DNS resolution chain before it can connect. The TTL on that A record controls how long DNS caches the answer. If you move the webstore to a new server, old DNS caches will keep sending traffic to the old IP until the TTL expires — this is why DNS changes always require a propagation wait. On the server itself, adding an entry like `10.0.1.50 webstore-db` to `/etc/hosts` lets the API connect to the database by hostname without a real DNS server. The OS resolves it locally, the query never goes to a DNS server, and the connection works.
+
+→ Ready to practice? [Go to Lab 04](../networking-labs/04-dns-firewalls-lab.md)

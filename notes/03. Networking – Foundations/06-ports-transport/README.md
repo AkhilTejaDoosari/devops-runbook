@@ -1266,3 +1266,11 @@ Mail delivery needs both:
 ✅ Map Docker container ports  
 
 ---
+
+---
+
+## What This Means for the Webstore
+
+Three services, one server, three ports. nginx on 80, webstore-api on 8080, postgres on 5432. When a connection arrives at the server's IP, the OS reads the destination port and delivers it to the right process. When you check `ss -tlnp` on the webstore server, you will see `0.0.0.0:80` for nginx (listening on all interfaces), `0.0.0.0:8080` for the API, and `127.0.0.1:5432` for postgres (loopback only). That single difference in binding address tells you everything about what is and is not reachable from outside. Reading `ss` output is how you verify a service is actually listening before you debug anything else.
+
+→ Ready to practice? [Go to Lab 03](../networking-labs/03-ports-transport-nat-lab.md)

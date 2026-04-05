@@ -10,7 +10,13 @@
 
 # Lab 04 — DNS & Firewalls
 
-## What this lab is about
+## The Situation
+
+Nobody types `10.0.1.45` into a browser. They type `webstore.example.com`. DNS translates that name to an IP before any packet is sent. The TTL on that DNS record controls how long the translation is cached — if you move the server to a new IP, browsers will keep going to the old one until the TTL expires. This is why DNS changes always require a propagation wait.
+
+The firewall is the last gatekeeper before the server. nginx is reachable because iptables has an ACCEPT rule for port 80. postgres is not reachable from outside because port 5432 is either blocked or bound only to localhost. The distinction between stateful and stateless firewalls — auto-allowing return traffic vs requiring explicit rules for both directions — is what separates a working security configuration from a broken one.
+
+## What this lab covers
 
 You will trace a DNS query from your machine all the way to the authoritative server, query different record types, observe TTL caching, write firewall rules that block and allow traffic, and prove the difference between stateful and stateless behavior. This maps to files 08 and 09.
 
@@ -132,7 +138,7 @@ Note the TTL value (e.g., `300`).
 dig google.com | grep -A1 'ANSWER SECTION'
 ```
 
-**What to observe:** TTL has decreased — your resolver cached the result and is counting down.
+**What to observe:** TTL has decreased — your resolver cached the result and is counting down. When TTL reaches zero the cache is invalidated and a fresh lookup happens. This is why DNS changes take time to propagate.
 
 3. Check your local DNS cache
 ```bash
@@ -158,18 +164,18 @@ ping -c 1 webstore.fake
 sudo sed -i '/webstore.fake/d' /etc/hosts
 ```
 
-**What to observe:** `/etc/hosts` entries override DNS completely.
+**What to observe:** `/etc/hosts` entries override DNS completely — the OS never queries a DNS server for names found in this file. This is how development environments fake service hostnames without a real DNS server.
 
 ---
 
 ## Section 4 — Docker DNS
 
 > **This section is covered in the Docker networking lab.**
-> 
+>
 > Docker's embedded DNS server (`127.0.0.11`), container name resolution, and verifying `/etc/resolv.conf` inside containers are all hands-on exercises in the Docker lab.
-> 
+>
 > → [Docker Lab 02 — Networking & Volumes](../../04.%20Docker%20–%20Containerization/docker-labs/02-networking-volumes-lab.md)
-> 
+>
 > Complete that lab after finishing this one.
 
 ---
@@ -201,7 +207,7 @@ sudo iptables -A OUTPUT -p tcp --dport 7777 -j DROP
 curl -m 3 http://localhost:7777
 ```
 
-**What to observe:** Connection times out — iptables dropped the outbound packets.
+**What to observe:** Connection times out — iptables dropped the outbound packets before they reached the server.
 
 5. Remove the rule
 ```bash
@@ -251,7 +257,7 @@ sudo iptables -I INPUT -m state --state ESTABLISHED,RELATED -j DROP
 curl -m 3 http://localhost:6666
 ```
 
-**What to observe:** Fails — we blocked the return traffic, simulating stateless behavior.
+**What to observe:** Fails — we blocked the return traffic, simulating stateless behavior. The request got in but the response could not get back.
 
 5. Restore
 ```bash
@@ -260,7 +266,7 @@ sudo iptables -D INPUT -p tcp --dport 6666 -j ACCEPT
 kill $SERVER_PID 2>/dev/null
 ```
 
-**Key insight:** AWS Security Groups are stateful — inbound rule only needed. AWS NACLs are stateless — both inbound AND outbound rules needed including ephemeral ports.
+**Key insight:** AWS Security Groups are stateful — inbound rule only needed, return traffic auto-allowed. AWS NACLs are stateless — both inbound AND outbound rules needed including ephemeral ports. This is why NACL misconfiguration is the most common AWS networking mistake.
 
 ---
 
@@ -273,7 +279,7 @@ dig nonexistent-domain-xyz99999.com +short
 nslookup nonexistent-domain-xyz99999.com
 ```
 
-**What to observe:** NXDOMAIN — domain does not exist.
+**What to observe:** NXDOMAIN — domain does not exist. If you see this for a real domain, either the domain was deleted, the DNS record was removed, or you are querying the wrong DNS server.
 
 ### Break 2 — Query with wrong DNS server
 
@@ -281,7 +287,7 @@ nslookup nonexistent-domain-xyz99999.com
 dig @192.168.99.99 google.com
 ```
 
-**What to observe:** Timeout — DNS server unreachable.
+**What to observe:** Timeout — DNS server unreachable. This is what happens when `/etc/resolv.conf` points to a DNS server that is down or wrong.
 
 ### Break 3 — Simulate the NACL trap (stateless)
 
@@ -298,7 +304,7 @@ sudo iptables -A OUTPUT -p tcp --sport 5555 -j DROP
 curl -m 3 http://localhost:5555
 ```
 
-**What to observe:** Request gets in (inbound allowed) but response is blocked (outbound blocked) — exactly the NACL trap.
+**What to observe:** Request gets in (inbound allowed) but response is blocked (outbound blocked) — exactly the AWS NACL trap when someone forgets the outbound ephemeral port rule.
 
 ```bash
 sudo iptables -D OUTPUT -p tcp --sport 5555 -j DROP
@@ -313,11 +319,11 @@ kill $SERVER_PID 2>/dev/null
 Do not move to Lab 05 until every box is checked.
 
 - [ ] I ran `dig +trace google.com` and identified root servers, TLD servers, and authoritative servers
-- [ ] I queried A, AAAA, MX, NS, TXT, and CNAME record types
-- [ ] I queried the same domain twice and observed the TTL counting down
-- [ ] I added a fake entry to `/etc/hosts` and confirmed it overrode DNS
+- [ ] I queried A, AAAA, MX, NS, TXT, and CNAME record types and know what each one contains
+- [ ] I queried the same domain twice and observed the TTL counting down — I understand what this means for DNS changes
+- [ ] I added a fake entry to `/etc/hosts` and confirmed it overrode DNS without touching any DNS server
 - [ ] I used iptables to block a port and confirmed connection timed out, then unblocked it
 - [ ] I demonstrated stateful behavior (return traffic auto-allowed) vs stateless (return traffic blocked)
 - [ ] I queried a non-existent domain and got NXDOMAIN
-- [ ] I simulated the NACL trap — inbound allowed but response blocked
+- [ ] I simulated the NACL trap — inbound allowed but response blocked — and understood why it happens
 - [ ] I noted that Docker DNS exercises are in Docker Lab 02

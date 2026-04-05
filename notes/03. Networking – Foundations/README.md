@@ -6,8 +6,18 @@
 
 ---
 
-A practical networking guide built for DevOps and cloud engineering roles.  
+A practical networking guide built for DevOps and cloud engineering roles.
 No CCNA fluff. Only what you actually use — and only what Docker and AWS build on top of.
+
+---
+
+## Why Networking Comes Before Docker and AWS
+
+Docker bridge networking, container DNS, and port binding are all networking concepts in a container wrapper. AWS VPC, Security Groups, NAT Gateway, and Route 53 are all networking concepts in a cloud wrapper.
+
+If you learn Docker or AWS before networking, those tools feel like magic. Magic breaks in production without warning. This folder removes the magic — everything Docker and AWS do with networking has its foundation explained here first.
+
+The networking notes teach the pure concepts using only what you have right now: a Linux server running nginx serving the webstore frontend. No containers. No cloud. Just a server, a network, and the tools to understand both.
 
 ---
 
@@ -19,20 +29,28 @@ You need Git to version your lab work and notes as you go through this series.
 
 ---
 
-## Why Networking Comes Before Docker and AWS
+## The Running Example
 
-Docker bridge networking, container DNS, and port binding are all networking concepts in a container wrapper. AWS VPC, Security Groups, NAT Gateway, and Route 53 are all networking concepts in a cloud wrapper.
+Every scenario uses the same webstore application on a Linux server:
 
-If you learn Docker or AWS before networking, those tools feel like magic. Magic breaks in production without warning. This folder removes the magic — everything Docker and AWS do with networking has its foundation explained here first.
+```
+Linux server (running nginx)
+├── webstore-frontend  → nginx serving static files on port 80
+├── webstore-api       → application process on port 8080
+└── webstore-db        → postgres process on port 5432
+```
+
+The webstore server has an IP address. Its services run on ports. Its hostname resolves via DNS. Its traffic passes through NAT. Its ports are controlled by iptables. By file 10 you can trace every hop a request makes from a browser to the webstore and back.
+
+Docker and AWS apply all of these same concepts — but in their own context. That connection is made in the Docker and AWS notes, not here.
 
 ---
 
-## The Running Example
+## Where You Take the Webstore
 
-Every scenario uses the same webstore application:
-- User opens webstore.com from their laptop
-- Traffic flows through DNS, NAT, routing, VPC, load balancer, security groups
-- By file 10 you can trace every single hop of that journey
+You arrive at Networking with the webstore running on a Linux server — nginx serving the frontend, the API and database on their ports, everything on one machine. You leave with the ability to explain and debug every network layer that request passes through to reach that server.
+
+That understanding is what makes Docker networking click. When Docker says "bridge network", you already know what a bridge is. When Docker says "DNS at 127.0.0.11", you already know what DNS does. When Docker says "-p 8080:80 creates a DNAT rule", you have already seen a DNAT rule. The Docker notes explain how Docker uses these concepts — not what the concepts are.
 
 ---
 
@@ -72,27 +90,30 @@ Every scenario uses the same webstore application:
 
 1. **MAC vs IP** — MAC changes at every router hop, IP never changes end to end
 2. **Stateful vs Stateless** — stateful firewalls auto-allow return traffic, stateless don't — this causes the most common AWS NACL failures
-3. **Encapsulation** — each layer wraps the previous (Frame → Packet → Segment → Data)
+3. **DNS TTL** — DNS changes do not propagate instantly, TTL controls the delay
 
 ---
 
 ## What You Can Do After This
 
-- Design subnets and calculate CIDR blocks correctly
-- Debug "can't connect" issues systematically layer by layer
-- Understand what Docker bridge, DNS, and port binding actually do
-- Understand what AWS VPC, Security Groups, and NAT Gateway actually do
-- Set up firewall rules without breaking applications
-- Trace a full packet journey from browser to server
+- Explain what happens at every layer when a browser opens a URL
+- Debug connectivity failures systematically — DNS → routing → ports → firewall → service
+- Read `ss`, `dig`, `traceroute`, `iptables` output and know what it means
+- Design a subnet layout for a multi-tier application
+- Understand why Docker bridge networking, container DNS, and port binding work the way they do — before you ever run a container
+
+---
+
+## How to Use This
+
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
 
 ---
 
 ## What Comes Next
 
-This folder feeds directly into two tools:
+→ [04. Docker – Containerization](../04.%20Docker%20–%20Containerization/README.md)
 
-→ [04. Docker – Containerization](../04.%20Docker%20–%20Containerization/README.md)  
-Docker bridge networks, container DNS, and port binding are all built on the NAT, DNS, and routing concepts from this folder.
-
-→ [06. AWS – Cloud Infrastructure](../06.%20AWS%20–%20Cloud%20Infrastructure/README.md)  
-AWS VPC, Security Groups, NACLs, and NAT Gateway are all built on the subnetting, firewall, and NAT concepts from this folder.
+Docker runs every concept from this folder — bridges, routing, NAT, DNS — but in a container context. The Docker prerequisites section lists exactly which networking files you need before starting. Everything you learned here transfers directly.

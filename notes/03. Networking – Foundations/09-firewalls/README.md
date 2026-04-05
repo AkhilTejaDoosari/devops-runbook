@@ -823,4 +823,11 @@ Use stateless only when you need explicit DENY rules.
 ✅ Apply principle of least privilege  
 
 ---
+
+---
+
+## What This Means for the Webstore
+
+The webstore server needs exactly three inbound rules: allow port 80 (nginx), allow port 8080 (API), allow port 22 (SSH). Everything else is dropped by default. Postgres on port 5432 should never be reachable directly from outside — it accepts connections only from `127.0.0.1` or the server's local interface. A missing DROP rule on port 5432 means anyone on the internet can attempt to connect to the webstore database directly. The iptables setup from Linux Lab 05 enforces this: HTTP open to the world, SSH restricted to your IP, postgres not reachable from outside at all. This same logic is what AWS Security Groups enforce at the cloud level — different syntax, identical concept.
+
 → Ready to practice? [Go to Lab 04](../networking-labs/04-dns-firewalls-lab.md)

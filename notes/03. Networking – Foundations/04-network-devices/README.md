@@ -1098,3 +1098,11 @@ Default Gateway = Building exit
 ✅ Read and understand routing tables  
 
 ---
+
+---
+
+## What This Means for the Webstore
+
+The webstore server sits behind a router. When a request arrives from a browser in another city, it has been forwarded by 10-20 routers on the way — each one reading only the destination IP, making a routing decision, and passing the packet to the next hop. The MAC address on the packet changed at every single one of those hops. The destination IP never changed. When you run `traceroute` to the webstore server, you are watching those router hops and their latencies in real time. A latency spike at hop 8 means that is where the delay is introduced — not at your server, not in your application code.
+
+→ Ready to practice? [Go to Lab 02](../networking-labs/02-devices-subnets-lab.md)

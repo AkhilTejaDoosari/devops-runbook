@@ -815,3 +815,7 @@ Every step follows the same principles:
 **Everything else is details.**
 
 ---
+
+## What This Means for the Webstore
+
+The webstore is three processes on a Linux server — nginx on port 80, the API on port 8080, and postgres on port 5432. When a browser requests the webstore homepage, it sends a packet. That packet has a header at every layer: application (HTTP GET /), transport (TCP, destination port 80), network (the server's IP address), data link (MAC address of the next router hop). Each layer does exactly one job and hands off to the next. The webstore receives the request, nginx processes it, and the response travels back through the same stack in reverse. Everything in this series explains one piece of that journey.

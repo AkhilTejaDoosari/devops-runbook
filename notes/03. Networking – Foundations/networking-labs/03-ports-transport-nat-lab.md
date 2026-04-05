@@ -10,7 +10,13 @@
 
 # Lab 03 — Ports, Transport & NAT
 
-## What this lab is about
+## The Situation
+
+Three services share one server. nginx on port 80, webstore-api on port 8080, postgres on port 5432. When a packet arrives at the server's IP, the OS reads the destination port number and delivers it to the right process. Without ports, three services on one machine would be impossible — there would be no way to tell which traffic belonged to which application.
+
+The server also sits behind a router. Its IP address is private — `10.0.1.45` or similar. The router translates that private IP to a public one before packets leave for the internet, and translates back when responses arrive. This NAT process is invisible to both the browser and the server. But when it breaks — or when you need to deliberately expose a service — you need to understand the iptables rules that drive it.
+
+## What this lab covers
 
 You will inspect which ports are listening on your machine, watch the TCP 3-way handshake happen in real time, observe NAT in action at the iptables level, and confirm that UDP behaves differently from TCP. This maps to files 06 and 07.
 
@@ -40,6 +46,8 @@ Local   = IP:Port the service is bound to
 Process = which program owns the socket
 ```
 
+**What to observe:** If nginx is running, you will see `0.0.0.0:80`. If postgres is installed, look for `127.0.0.1:5432` — it is bound to loopback only by default, meaning nothing outside this machine can reach it.
+
 2. Show listening UDP ports too
 ```bash
 sudo ss -ulnp
@@ -50,7 +58,7 @@ sudo ss -ulnp
 ss -tnp
 ```
 
-4. Find what's on a specific port
+4. Find what is on a specific port
 ```bash
 sudo ss -tlnp | grep :22
 sudo ss -tlnp | grep :80
@@ -90,7 +98,7 @@ curl -w "DNS: %{time_namelookup}s\nConnect: %{time_connect}s\nTotal: %{time_tota
   -o /dev/null -s http://example.com
 ```
 
-**What to observe:** `time_connect` shows how long TCP handshake took.
+**What to observe:** `time_connect` shows how long the TCP handshake took. If this is high, the delay is in the network — not the application.
 
 4. Watch a connection establish and close using ss
 ```bash
@@ -134,12 +142,12 @@ dig +tcp google.com
 
 **What to observe:** Same result but uses TCP — slightly slower due to handshake overhead.
 
-5. Test a port that's not open
+5. Test a port that is not open
 ```bash
 nc -zv localhost 9999
 ```
 
-**What to observe:** `Connection refused` — TCP reached the machine but nothing listening.
+**What to observe:** `Connection refused` — TCP reached the machine but nothing is listening. This is distinct from a timeout, which means the firewall dropped the packet before it reached the machine.
 
 ---
 
@@ -154,7 +162,7 @@ sudo iptables -t nat -L -n -v
 
 **What to observe:** Existing NAT rules — PREROUTING (DNAT) and POSTROUTING (SNAT) chains.
 
-2. Manually create a port forwarding rule (DNAT) — this is exactly what Docker does
+2. Manually create a port forwarding rule (DNAT) — this is exactly what Docker does when you pass -p
 ```bash
 # Forward host port 9999 to localhost:8080
 sudo iptables -t nat -A PREROUTING -p tcp --dport 9999 -j REDIRECT --to-port 8080
@@ -184,7 +192,7 @@ sudo iptables -t nat -D PREROUTING -p tcp --dport 9999 -j REDIRECT --to-port 808
 kill $SERVER_PID 2>/dev/null
 ```
 
-> **Docker NAT walkthrough:** Docker automates all of this — every `-p host:container` flag creates iptables DNAT rules just like you did above. The full Docker-specific walkthrough (docker network inspect, verifying DNAT rules created by Docker, container-to-container vs host access) is in the Docker networking lab.
+> **Docker NAT walkthrough:** Docker automates all of this — every `-p host:container` flag creates iptables DNAT rules just like you did above. The full Docker-specific walkthrough is in the Docker networking lab.
 > → [Docker Lab 02](../../04.%20Docker%20–%20Containerization/docker-labs/02-networking-volumes-lab.md)
 
 ---
@@ -202,7 +210,7 @@ curl -s http://example.com &
 ss -tn | grep example.com
 ```
 
-**What to observe:** Each connection uses a different source port (49152-65535 range).
+**What to observe:** Each connection uses a different source port (49152-65535 range). This is how PAT tracks which response belongs to which connection.
 
 2. See your local port range
 ```bash
@@ -219,7 +227,7 @@ cat /proc/sys/net/ipv4/ip_local_port_range
 python3 -m http.server 80
 ```
 
-**What to observe:** `Permission denied` — ports below 1024 require root.
+**What to observe:** `Permission denied` — ports below 1024 require root. This is why nginx runs as root initially but drops privileges after binding to port 80.
 
 Fix it with a high port:
 ```bash
@@ -235,7 +243,7 @@ python3 -m http.server 7777 &
 python3 -m http.server 7777
 ```
 
-**What to observe:** `Address already in use` — only one process can bind to a port at a time.
+**What to observe:** `Address already in use` — only one process can bind to a port at a time. This is why starting nginx when nginx is already running fails.
 
 ```bash
 kill %1
@@ -253,7 +261,7 @@ nc -zv -w 3 192.0.2.1 80
 # Slow response after 3 seconds: "Operation timed out"
 ```
 
-**What to observe:** Refused = server reachable but nothing listening. Timeout = can't reach the server at all.
+**What to observe:** Refused = server reachable but nothing listening. Timeout = cannot reach the server at all — firewall dropped the packet or no route exists.
 
 ---
 
@@ -261,10 +269,10 @@ nc -zv -w 3 192.0.2.1 80
 
 Do not move to Lab 04 until every box is checked.
 
-- [ ] I ran `ss -tlnp` and identified at least 3 listening services and their ports
+- [ ] I ran `ss -tlnp` and identified at least 3 listening services and their ports — I noted whether each is bound to `0.0.0.0` or `127.0.0.1` and understand the difference
 - [ ] I used `curl -v` and saw the TCP connection established message
-- [ ] I timed a TCP connection with `curl -w` and noted the connect time
+- [ ] I timed a TCP connection with `curl -w` and noted the connect time vs total time
 - [ ] I used `nc -zv` to test both TCP and UDP connections to port 53
 - [ ] I manually created a DNAT iptables rule and confirmed port forwarding worked
 - [ ] I verified the iptables rule with `iptables -t nat -L PREROUTING -n`
-- [ ] I produced "Address already in use", "Connection refused", and "Permission denied" errors on purpose
+- [ ] I produced "Address already in use", "Connection refused", and "Permission denied" errors on purpose — I can explain what each one means

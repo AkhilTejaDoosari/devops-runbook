@@ -1124,4 +1124,11 @@ DHCP Reservation = Reserved hotel room
 ✅ Understand localhost (127.0.0.1)  
 
 ---
+
+---
+
+## What This Means for the Webstore
+
+Postgres on the webstore server is configured with `listen_addresses` in `postgresql.conf`. If it is set to `localhost`, only processes on the same machine can connect — correct for a production server where the API runs locally. If it is set to `*` or the server's IP, processes on other machines can connect — necessary when the API and database run on separate servers. This is not a code change. It is an IP binding decision. Understanding that `127.0.0.1` means this machine only and `0.0.0.0` means all interfaces is what lets you read a database config file and immediately know whether it is reachable from outside. The webstore's nginx is bound to `0.0.0.0:80` — it must be, to serve browsers. Postgres is bound to `127.0.0.1:5432` — it must be, to block direct external access.
+
 → Ready to practice? [Go to Lab 01](../networking-labs/01-foundation-addressing-ip-lab.md)

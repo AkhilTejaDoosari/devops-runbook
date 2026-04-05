@@ -10,9 +10,17 @@
 
 # Lab 02 — Network Devices & Subnets
 
-## What this lab is about
+## The Situation
 
-You will read your routing table and understand every line, watch traceroute reveal the router hops between you and a server, calculate CIDR blocks by hand, identify subnet boundaries, and design a basic VPC subnet plan. This maps to files 04 and 05.
+A request arrives at the webstore server. It did not teleport there. It was routed — forwarded hop by hop from the browser's machine through a chain of routers until it reached the subnet the server lives in. Each router along the way made one decision: where do I send this next?
+
+The server itself also makes routing decisions. When the webstore-api tries to reach webstore-db, the OS checks its routing table: is that IP in my subnet (send direct) or somewhere else (send to gateway)? When you deploy the webstore to AWS, you will design the subnets that control this — which services are in the same subnet, which are isolated, which can reach the internet.
+
+This lab is where you learn to read routing tables and design subnets before AWS adds its own layer on top.
+
+## What this lab covers
+
+You will read your routing table and understand every line, watch traceroute reveal the router hops between you and a server, calculate CIDR blocks by hand, identify subnet boundaries, and design a basic multi-tier subnet plan. This maps to files 04 and 05.
 
 ## Prerequisites
 
@@ -110,7 +118,7 @@ echo "=== To 8.8.8.8 ===" && traceroute -n -m 10 8.8.8.8
 echo "=== To 1.1.1.1 ===" && traceroute -n -m 10 1.1.1.1
 ```
 
-**What to observe:** Different paths to different destinations — routers make independent forwarding decisions.
+**What to observe:** Different paths to different destinations — routers make independent forwarding decisions at every hop.
 
 ---
 
@@ -200,25 +208,25 @@ echo "Gateway: $GATEWAY"
 ipcalc $MY_IP | grep -E 'Network|HostMin|HostMax'
 ```
 
-**What to observe:** The gateway IP should be within the HostMin-HostMax range — it's a device on your subnet.
+**What to observe:** The gateway IP should be within the HostMin-HostMax range — it is a device on your subnet.
 
 ---
 
-## Section 5 — Design a VPC Subnet Plan
+## Section 5 — Design a Webstore Subnet Plan
 
-**Goal:** Apply CIDR knowledge to plan a real AWS VPC.
+**Goal:** Apply CIDR knowledge to plan a real multi-tier network for the webstore.
 
 This is a paper exercise. Answer each question before moving on.
 
-**Scenario:** You're building the webstore infrastructure on AWS.
+**Scenario:** You are deploying the webstore to a server environment with three tiers.
 
 **Requirements:**
-- VPC CIDR: `10.0.0.0/16`
-- 3 tiers: web, api, database
+- Network CIDR: `10.0.0.0/16`
+- 3 tiers: web/frontend, api, database
 - 2 availability zones (AZ-a and AZ-b)
 - Web tier: needs ~50 IPs per AZ
 - API tier: needs ~100 IPs per AZ
-- DB tier: needs ~20 IPs per AZ
+- DB tier: needs ~20 IPs per AZ (postgres must be isolated — no direct internet access)
 
 **Questions to answer:**
 
@@ -226,12 +234,11 @@ This is a paper exercise. Answer each question before moving on.
 1. How many total IPs does 10.0.0.0/16 give you?
    Answer: ___
 
-2. Which CIDR would you use for each subnet?
-   (Remember: AWS reserves 5 IPs per subnet)
+2. Which CIDR would you use for each tier?
    
-   Web tier:  needs 50 IPs → use /__ (gives ___ usable)
+   Web tier:  needs 50 IPs  → use /__ (gives ___ usable)
    API tier:  needs 100 IPs → use /__ (gives ___ usable)
-   DB tier:   needs 20 IPs → use /__ (gives ___ usable)
+   DB tier:   needs 20 IPs  → use /__ (gives ___ usable)
 
 3. Assign non-overlapping CIDRs:
    
@@ -242,22 +249,23 @@ This is a paper exercise. Answer each question before moving on.
    db-az-a:   10.0.___.0/___
    db-az-b:   10.0.___.0/___
 
-4. Do any of your subnets overlap? Check by listing ranges:
-   web-az-a: 10.0.___.0 - 10.0.___.___
-   web-az-b: 10.0.___.0 - 10.0.___.___
-   (and so on)
+4. Do any of your subnets overlap? Check by listing ranges.
+
+5. Which subnets should be public (reachable from internet)?
+   Which should be private (no direct internet access)?
+   Why does the database subnet need to be private?
 ```
 
 **Reference answer structure (fill in your own values):**
 ```
-VPC: 10.0.0.0/16
+Network: 10.0.0.0/16
 
-web-az-a:  10.0.1.0/24   (254 usable, 251 in AWS)
-web-az-b:  10.0.11.0/24
-api-az-a:  10.0.2.0/24
+web-az-a:  10.0.1.0/24   (254 usable) ← public
+web-az-b:  10.0.11.0/24               ← public
+api-az-a:  10.0.2.0/24               ← public or private
 api-az-b:  10.0.12.0/24
-db-az-a:   10.0.3.0/24
-db-az-b:   10.0.13.0/24
+db-az-a:   10.0.3.0/24               ← private (no internet route)
+db-az-b:   10.0.13.0/24              ← private
 ```
 
 ---
@@ -272,22 +280,19 @@ db-az-b:   10.0.13.0/24
 ping -c 3 192.168.2.1
 ```
 
-**What to observe:** Either times out (no device there) or succeeds via routing — in either case, your machine sent it to the gateway first because it's a different subnet.
+**What to observe:** Either times out or succeeds via routing — in either case your machine sent it to the gateway first because it is a different subnet.
 
 Prove it with traceroute:
 ```bash
 traceroute -n 192.168.2.1
 ```
 
-**What to observe:** First hop is your gateway — even for an address that "looks local."
+**What to observe:** First hop is your gateway — even for an address that looks local.
 
-### Break 2 — Remove default route (careful — restores itself on reconnect)
+### Break 2 — Remove default route (restores on reconnect)
 
 ```bash
-# View current routes
-ip route
-
-# Note your default gateway IP before proceeding
+# Note your default gateway before proceeding
 GATEWAY=$(ip route | grep default | awk '{print $3}')
 IFACE=$(ip route | grep default | awk '{print $5}')
 
@@ -305,7 +310,7 @@ ip route
 ping -c 2 8.8.8.8
 ```
 
-**What to observe:** Without default route, internet is unreachable. The routing table entry is not optional.
+**What to observe:** Without default route, internet is unreachable. Packets with no matching route are dropped. The routing table entry is not optional.
 
 ---
 
@@ -318,5 +323,5 @@ Do not move to Lab 03 until every box is checked.
 - [ ] I ran traceroute to 8.8.8.8 and identified the first hop as my router
 - [ ] I calculated total and usable IPs for /24, /16, and /28 by hand — then verified with ipcalc
 - [ ] I confirmed my gateway IP is within my subnet range
-- [ ] I designed a 6-subnet VPC plan with no overlapping CIDRs
+- [ ] I designed a 6-subnet webstore plan with non-overlapping CIDRs and identified which subnets should be public vs private
 - [ ] I removed the default route temporarily and confirmed internet was unreachable, then restored it

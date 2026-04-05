@@ -697,4 +697,11 @@ How?
 ✅ Plan for growth and future expansion  
 
 ---
+
+---
+
+## What This Means for the Webstore
+
+When you deploy the webstore to a server environment, you decide what subnet it lives in. A single server on a `/24` subnet shares that network with 253 other possible addresses. When you need to separate webstore-api from webstore-db for security — putting the database in a private subnet with no internet route — you need two subnets: one public (`10.0.1.0/24`) for the frontend and API tier, one private (`10.0.2.0/24`) for the database. Postgres lives on `10.0.2.50`. A browser on the internet cannot reach postgres directly — not because of a firewall rule, but because there is no route to that subnet from outside. This is the network design pattern AWS VPC implements, and you will lay it out exactly this way when you get there.
+
 → Ready to practice? [Go to Lab 02](../networking-labs/02-devices-subnets-lab.md)

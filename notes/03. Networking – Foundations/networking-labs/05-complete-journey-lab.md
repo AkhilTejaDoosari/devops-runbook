@@ -10,7 +10,15 @@
 
 # Lab 05 — The Complete Journey
 
-## What this lab is about
+## The Situation
+
+A user types `webstore.example.com` into a browser and presses Enter. You are the engineer who built that server. Something is wrong — the page is not loading. You have a terminal.
+
+This is the lab where every concept from the previous four labs converges into one skill: systematic debugging. DNS, routing, ports, NAT, firewalls — you have practiced each one separately. Now you use all of them together, in order, working from the outside in until you find where the chain breaks.
+
+By the end of this lab you can trace a complete request from browser to server, document every layer, and answer the interview question that every DevOps role asks: "Walk me through what happens when a user opens a URL."
+
+## What this lab covers
 
 You will trace a complete request from your machine to a real server using every tool from the previous labs — DNS, routing, ports, NAT, firewalls — and document every layer. Then you will simulate a production debugging scenario and use a systematic approach to find and fix the problem. This maps to file 10.
 
@@ -23,7 +31,7 @@ You will trace a complete request from your machine to a real server using every
 
 ## Section 1 — Full Packet Trace to google.com
 
-**Goal:** Document every step of a real request using the tools you've learned.
+**Goal:** Document every step of a real request using the tools you have learned.
 
 Run each command and write down what you observe.
 
@@ -77,14 +85,14 @@ curl -v https://google.com 2>&1 | head -50
 sudo tcpdump -i any -n host google.com -c 20 2>/dev/null &
 TCPDUMP_PID=$!
 
-# In another terminal — make a request
+# Make a request
 curl -s http://google.com > /dev/null
 
 sleep 2
 kill $TCPDUMP_PID 2>/dev/null
 ```
 
-**What to observe:** Real packets with source/destination IPs and ports. Note how your source port is an ephemeral number.
+**What to observe:** Real packets with source/destination IPs and ports. Note how your source port is an ephemeral number — a different one for each connection.
 
 ---
 
@@ -141,7 +149,7 @@ Return journey:
 
 ## Section 4 — Production Debugging Simulation
 
-**Goal:** Use the systematic debugging framework to find and fix a broken connection.
+**Goal:** Use the systematic debugging framework to find and fix three broken connections.
 
 **Setup — start a web server:**
 ```bash
@@ -150,10 +158,11 @@ SERVER_PID=$!
 curl -s http://localhost:4444 > /dev/null && echo "Server working"
 ```
 
+---
+
 **Break 1 — DNS failure simulation:**
 ```bash
 echo "127.0.0.1 broken-webstore.com" | sudo tee -a /etc/hosts
-
 nslookup working-webstore.com
 ```
 
@@ -177,7 +186,6 @@ sudo sed -i '/webstore.com/d' /etc/hosts
 **Break 2 — Port blocked:**
 ```bash
 sudo iptables -A INPUT -p tcp --dport 4444 -j DROP
-
 curl -m 3 http://localhost:4444
 ```
 
@@ -188,7 +196,7 @@ ping -c 2 localhost
 
 # Step 2: Port open?
 nc -zv localhost 4444
-# Finding: timeout — firewall blocking
+# Finding: timeout — firewall blocking, not "connection refused"
 
 # Step 3: Check firewall rules
 sudo iptables -L INPUT -n | grep 4444
@@ -205,7 +213,6 @@ curl http://localhost:4444 -s > /dev/null && echo "Fixed"
 **Break 3 — Service not running:**
 ```bash
 kill $SERVER_PID 2>/dev/null
-
 curl -m 3 http://localhost:4444
 ```
 
@@ -213,7 +220,7 @@ curl -m 3 http://localhost:4444
 ```bash
 # Port open?
 nc -zv localhost 4444
-# Connection refused — nothing listening
+# Connection refused — nothing listening (different from timeout)
 
 # What's listening?
 ss -tlnp | grep 4444
@@ -242,12 +249,12 @@ Your answer should cover:
 - DNS resolution (what servers are involved)
 - TCP handshake
 - NAT at the home router
-- Internet routing (what changes and what stays the same)
-- Cloud entry (IGW, NACL, load balancer, security group)
+- Internet routing (what changes at each hop and what stays the same)
+- How the server's firewall decides to accept or drop the connection
 - Server receives and responds
 - Return path
 
-Time yourself. Aim for 90 seconds covering all key points.
+Time yourself. Aim for 90 seconds covering all key points without looking at notes.
 
 ---
 
@@ -257,6 +264,6 @@ Time yourself. Aim for 90 seconds covering all key points.
 - [ ] I filled in the complete journey template with my actual observed values
 - [ ] I identified my public IP with `curl ifconfig.me` and confirmed it differs from my private IP
 - [ ] I noted that the Docker webstore simulation is in Docker Lab 02
-- [ ] I debugged all 3 break scenarios using the systematic framework (DNS → reachability → port → service)
+- [ ] I debugged all 3 break scenarios using the systematic framework (DNS → reachability → port → service) — I can explain what "connection refused" vs "timeout" each tells you
 - [ ] I can explain the full packet journey from browser to server in 90 seconds without notes
 - [ ] I reviewed the networking map and understand every row

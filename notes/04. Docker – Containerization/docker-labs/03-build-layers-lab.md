@@ -9,7 +9,13 @@
 
 # Lab 03 — Layers, Build & Dockerfile
 
-## What this lab is about
+## The Situation
+
+The webstore network is wired and the database persists data. But webstore-api is still running as a placeholder nginx container. The actual API is code on your laptop — a Node.js application that needs to be packaged into a Docker image before it can run anywhere else.
+
+This lab is where you build that image. You will understand why layer order matters before you write a single line of Dockerfile, then write the webstore-api Dockerfile correctly from scratch. By the end `webstore-api:1.0` is a real image that runs the actual API — ready to be pushed to a registry in Lab 04.
+
+## What this lab covers
 
 You will inspect real image layers, watch Docker caching work and break, write a Dockerfile for webstore-api from scratch, create a proper `.dockerignore`, build and run the image, then break the build on purpose in ways that teach you how the cache and ordering rules actually work. Every file is written from scratch.
 
@@ -54,7 +60,7 @@ docker history node:20-alpine
 docker system df
 ```
 
-**What to observe:** total size is less than alpine + node added together — shared layers are not duplicated
+**What to observe:** total size is less than alpine + node added together — shared layers are not duplicated on disk
 
 ---
 
@@ -116,7 +122,7 @@ docker build -t cache-test:v2 .
 - Layer 3 (echo modified) → rebuilt
 - Layer 4 (echo layer four) → rebuilt even though you didn't change it
 
-**Why:** changing layer 3 invalidates the filesystem state that layer 4 depends on. Docker cannot safely reuse it.
+**Why:** changing layer 3 invalidates the filesystem state that layer 4 depends on. Docker cannot safely reuse it. This is why stable instructions go first — volatile code goes last.
 
 ---
 

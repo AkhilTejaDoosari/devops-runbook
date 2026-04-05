@@ -10,155 +10,102 @@
 [Registry](../09-docker-registry/README.md) |
 [Compose](../10-docker-compose/README.md)
 
-# 06. Docker Volumes
+# Docker Volumes
 
-This file teaches **how to manage persistent data in Docker**. If you can use everything here, you can safely store database data, handle application state, work with configuration files, and clean up volumes without losing important data.
+## What This File Is About
 
-1. [The Core Problem (Why Volumes Exist)](#1-the-core-problem-why-volumes-exist)
-2. [Proof: Data Dies With Containers](#2-proof-data-dies-with-containers)
-3. [Volume Types (Only Two)](#3-volume-types-only-two)
-4. [Named Volumes (Step-by-Step)](#4-named-volumes-step-by-step)
-5. [Bind Mounts (Step-by-Step)](#5-bind-mounts-step-by-step)
+Containers are ephemeral. When a container is deleted, everything written inside it is gone — including database rows, uploaded files, and logs. Volumes are Docker's answer to this problem. They store data outside the container so it survives container replacement, deletion, and rebuilds.
+
+---
+
+## Table of Contents
+
+1. [The Core Problem](#1-the-core-problem)
+2. [Types of Storage](#2-types-of-storage)
+3. [Named Volumes — Docker Managed](#3-named-volumes--docker-managed)
+4. [Bind Mounts — You Control the Path](#4-bind-mounts--you-control-the-path)
+5. [Bind Mount Workflow](#5-bind-mount-workflow)
 6. [Volume Management Commands](#6-volume-management-commands)
-7. [When to Use What (Decision Table)](#7-when-to-use-what-decision-table)
-8. [Real-World Database Example](#8-real-world-database-example)
-9. [Safe Delete Flow (Volumes Edition)](#9-safe-delete-flow-volumes-edition)  
-[Final Compression (Memorize)](#final-compression-memorize)
+7. [When to Use What](#7-when-to-use-what)
+8. [Real-World Database Example — webstore-db](#8-real-world-database-example--webstore-db)
+9. [Safe Delete Flow](#9-safe-delete-flow)
+[Final Compression](#final-compression-memorize)
 
 ---
 
-## 1. The Core Problem (Why Volumes Exist)
+## 1. The Core Problem
 
-**Situation:**
-- Containers are designed to be disposable
-- Containers can stop, be deleted, and be recreated anytime
-- Anything written **inside a container's filesystem** dies when the container is deleted
+A container is a running process with a temporary filesystem. Everything inside that filesystem lives only as long as the container lives.
 
-**Problem:**
-- Databases need to save data
-- Applications upload files
-- Logs need to persist
-- Configuration changes must survive
-
-**Solution:**
-Docker separates **compute** (containers) from **data** (volumes).
-
-**Mental model:**
 ```
-Container (temporary) ──> Volume (permanent)
-     ↓ dies                    ↓ survives
+docker run postgres:15          → database starts, stores data inside container
+docker stop webstore-db         → container stops
+docker rm webstore-db           → container deleted
+docker run postgres:15          → fresh container, ALL DATA IS GONE
 ```
+
+This is intentional — containers are designed to be replaceable. The solution is to store data in a volume that lives independently of any container.
 
 ---
 
-## 2. Proof: Data Dies With Containers
+## 2. Types of Storage
 
-### Experiment: Write data, delete container, check if data survives
-
-| Step | What you do | Command | Expected result |
-|---:|---|---|---|
-| 1 | Create container and enter it | `docker run -it --name test-container ubuntu:22.04` | You're inside container |
-| 2 | Create folder and write data | `mkdir /my-data`<br>`echo "hello" > /my-data/file.txt` | File created |
-| 3 | Verify file exists | `cat /my-data/file.txt` | Prints: `hello` |
-| 4 | Exit container | `exit` | Back to host terminal |
-| 5 | Restart same container | `docker start -i test-container` | You're inside again |
-| 6 | Check if file still exists | `cat /my-data/file.txt` | Prints: `hello` (still there) |
-| 7 | Exit again | `exit` | Back to host |
-| 8 | **Delete the container** | `docker rm test-container` | Container removed |
-| 9 | Create new container (same image) | `docker run -it --name test-container ubuntu:22.04` | Fresh container |
-| 10 | Try to read the file | `cat /my-data/file.txt` | **Error: file not found** |
-
-**Conclusion:**
-- Stopping a container → data survives
-- Deleting a container → data is destroyed
-- **This is why volumes exist**
+| Type | Who controls the path | Where data lives | Best for |
+|---|---|---|---|
+| **Named Volume** | Docker | Docker-managed location on host | Database data, critical persistent state |
+| **Bind Mount** | You | Exact path you specify on host | Development — edit code on host, see changes in container |
+| **tmpfs** | OS | RAM only, not on disk | Sensitive data that must not touch disk |
 
 ---
 
-## 3. Volume Types (Only Two)
+## 3. Named Volumes — Docker Managed
 
-### 1) Named Volumes (Recommended for most use cases)
-- Managed by Docker
-- Lives in Docker's storage area
-- Independent of your host file system
-- Best for: databases, production data, anything critical
-
-### 2) Bind Mounts (Developer convenience)
-- Direct link to a specific host directory
-- You control the exact location
-- Best for: source code, config files, local development
-
-**Mental model:**
-```
-Named Volume:    Docker manages storage location
-                 (You don't care where, Docker handles it)
-
-Bind Mount:      You specify exact host path
-                 (You control where files live on your laptop)
-```
-
-![](./readme-assets/volumes.jpg)
-
----
-
-## 4. Named Volumes (Step-by-Step)
-
-### Goal: Create persistent storage that survives container deletion
+Docker creates and manages the storage location. You give the volume a name and mount it to a path inside the container.
 
 | Step | What you do | Command format | Example you run |
 |---:|---|---|---|
-| 11 | Create a named volume | `docker volume create VOLUME_NAME` | `docker volume create my-data` |
-| 12 | List all volumes | `docker volume ls` | `docker volume ls` |
-| 13 | Inspect volume details | `docker volume inspect VOLUME_NAME` | `docker volume inspect my-data` |
-| 14 | Run container with volume attached | `docker run -it --rm -v VOLUME_NAME:/container/path IMAGE` | `docker run -it --rm -v my-data:/app/data ubuntu:22.04` |
+| 1 | Create a named volume | `docker volume create VOLUME_NAME` | `docker volume create webstore-db-data` |
+| 2 | Run container with named volume | `docker run -v VOLUME_NAME:/container/path IMAGE` | `docker run -v webstore-db-data:/var/lib/postgresql/data postgres:15` |
+| 3 | List all volumes | `docker volume ls` | `docker volume ls` |
+| 4 | Inspect a volume | `docker volume inspect VOLUME_NAME` | `docker volume inspect webstore-db-data` |
 
-### Workflow: Create volume, write data, verify persistence
+**What you observe:**
 
-| Step | What you do | Command | What happens |
-|---:|---|---|---|
-| 15 | Create volume | `docker volume create app-storage` | Volume created (empty) |
-| 16 | Run container with volume | `docker run -it --rm -v app-storage:/data ubuntu:22.04` | Container started, `/data` mapped to volume |
-| 17 | Write data inside container | `echo "persistent data" > /data/file.txt` | Data written to volume |
-| 18 | Verify data | `cat /data/file.txt` | Prints: `persistent data` |
-| 19 | Exit container | `exit` | Container deleted (because of `--rm`) |
-| 20 | Run NEW container with SAME volume | `docker run -it --rm -v app-storage:/data ubuntu:22.04` | Fresh container, same volume |
-| 21 | Check if data survived | `cat /data/file.txt` | **Prints: `persistent data`** ✅ |
-
-**Key insight:**
-- Container A writes to volume → container deleted
-- Container B reads from same volume → **data is still there**
+The volume mounts the named volume to PostgreSQL's data directory. PostgreSQL writes to `/var/lib/postgresql/data`. The data actually goes to the `webstore-db-data` volume on the host. If you delete the container and run a new one with the same volume, all data survives.
 
 **Syntax breakdown:**
 ```bash
-docker run -v VOLUME_NAME:/container/path IMAGE
-           ↑              ↑
-         volume name    where it appears inside container
+docker run -v webstore-db-data:/var/lib/postgresql/data postgres:15
+           ↑                    ↑
+     volume name          path inside container
 ```
 
 ---
 
-## 5. Bind Mounts (Step-by-Step)
+## 4. Bind Mounts — You Control the Path
 
-### Goal: Link a host folder directly into a container
+You specify an absolute path on your host. That host directory is mounted directly into the container at the specified container path. Changes in either location are instantly visible in the other.
 
 | Step | What you do | Command format | Example you run |
 |---:|---|---|---|
-| 22 | Check your current location | `pwd` | `pwd` (note the output) |
-| 23 | Create a folder on host | `mkdir host-data` | `mkdir host-data` |
-| 24 | Run container with bind mount | `docker run -it --rm -v /absolute/host/path:/container/path IMAGE` | `docker run -it --rm -v $(pwd)/host-data:/data ubuntu:22.04` |
+| 5 | Check your current location | `pwd` | `pwd` (note the output) |
+| 6 | Create a folder on host | `mkdir host-data` | `mkdir host-data` |
+| 7 | Run container with bind mount | `docker run -it --rm -v /absolute/host/path:/container/path IMAGE` | `docker run -it --rm -v $(pwd)/host-data:/data ubuntu:22.04` |
 
-### Workflow: Bind mount, write data, verify on host
+---
+
+## 5. Bind Mount Workflow
 
 | Step | What you do | Command | What happens |
 |---:|---|---|---|
-| 25 | Create folder on host | `mkdir ~/my-app-data` | Folder created on your laptop |
-| 26 | Run container with bind mount | `docker run -it --rm -v ~/my-app-data:/data ubuntu:22.04` | `/data` inside container = `~/my-app-data` on host |
-| 27 | Write file inside container | `echo "from container" > /data/test.txt` | File written |
-| 28 | Exit container | `exit` | Container deleted |
-| 29 | Check file on host | `cat ~/my-app-data/test.txt` | **Prints: `from container`** ✅ |
-| 30 | Edit file on host | `echo "from host" >> ~/my-app-data/test.txt` | Modified on laptop |
-| 31 | Run new container with same mount | `docker run -it --rm -v ~/my-app-data:/data ubuntu:22.04` | Fresh container |
-| 32 | Read file inside container | `cat /data/test.txt` | Sees both lines (changes from host appear immediately) |
+| 8 | Create folder on host | `mkdir ~/my-app-data` | Folder created on your laptop |
+| 9 | Run container with bind mount | `docker run -it --rm -v ~/my-app-data:/data ubuntu:22.04` | `/data` inside container = `~/my-app-data` on host |
+| 10 | Write file inside container | `echo "from container" > /data/test.txt` | File written |
+| 11 | Exit container | `exit` | Container deleted |
+| 12 | Check file on host | `cat ~/my-app-data/test.txt` | **Prints: `from container`** ✅ |
+| 13 | Edit file on host | `echo "from host" >> ~/my-app-data/test.txt` | Modified on laptop |
+| 14 | Run new container with same mount | `docker run -it --rm -v ~/my-app-data:/data ubuntu:22.04` | Fresh container |
+| 15 | Read file inside container | `cat /data/test.txt` | Sees both lines (changes from host appear immediately) |
 
 **Key insight:**
 - Changes in container → visible on host immediately
@@ -179,11 +126,11 @@ docker run -v /host/path:/container/path IMAGE
 
 | Step | What you do | Command format | Example you run |
 |---:|---|---|---|
-| 33 | List all volumes | `docker volume ls` | `docker volume ls` |
-| 34 | Inspect a volume (see location, driver, etc.) | `docker volume inspect VOLUME_NAME` | `docker volume inspect app-storage` |
-| 35 | Delete a specific volume | `docker volume rm VOLUME_NAME` | `docker volume rm app-storage` |
-| 36 | Delete all unused volumes | `docker volume prune` | `docker volume prune` |
-| 37 | Force delete all unused volumes (no confirmation) | `docker volume prune -f` | `docker volume prune -f` |
+| 16 | List all volumes | `docker volume ls` | `docker volume ls` |
+| 17 | Inspect a volume (see location, driver, etc.) | `docker volume inspect VOLUME_NAME` | `docker volume inspect webstore-db-data` |
+| 18 | Delete a specific volume | `docker volume rm VOLUME_NAME` | `docker volume rm webstore-db-data` |
+| 19 | Delete all unused volumes | `docker volume prune` | `docker volume prune` |
+| 20 | Force delete all unused volumes (no confirmation) | `docker volume prune -f` | `docker volume prune -f` |
 
 **Important rule:**
 - You cannot delete a volume that is currently being used by a container
@@ -191,11 +138,11 @@ docker run -v /host/path:/container/path IMAGE
 
 ---
 
-## 7. When to Use What (Decision Table)
+## 7. When to Use What
 
 | Situation | Use | Why |
 |---|---|---|
-| Database data (MySQL, MongoDB, PostgreSQL) | Named Volume | Data must survive container replacement |
+| Database data (PostgreSQL, MySQL) | Named Volume | Data must survive container replacement |
 | Application uploads (user files, images) | Named Volume | Critical data, managed by Docker |
 | Production state, logs | Named Volume | Needs to persist across deployments |
 | Source code during development | Bind Mount | You edit files on laptop, changes appear in container immediately |
@@ -210,43 +157,42 @@ If you need to edit files frequently from host → Bind Mount
 
 ---
 
-## 8. Real-World Database Example
-
-### MongoDB with named volume
+## 8. Real-World Database Example — webstore-db
 
 **Problem:**
-- MongoDB stores data in `/data/db` inside the container
-- If container is deleted, database is lost
+- PostgreSQL stores data in `/var/lib/postgresql/data` inside the container
+- If the container is deleted, the webstore database is gone
 - We need data to survive container deletion
 
 **Solution:**
 ```bash
 docker run -d \
-  --name mongodb \
-  -p 27017:27017 \
-  -v mongodata:/data/db \
-  -e MONGO_INITDB_ROOT_USERNAME=admin \
-  -e MONGO_INITDB_ROOT_PASSWORD=secret \
-  mongo:6
+  --name webstore-db \
+  --network webstore-network \
+  -e POSTGRES_DB=webstore \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=secret \
+  -v webstore-db-data:/var/lib/postgresql/data \
+  postgres:15
 ```
 
 **What this does:**
-- `-v mongodata:/data/db` → creates volume `mongodata` and mounts it to MongoDB's data directory
-- MongoDB writes to `/data/db`
-- Data actually goes to the `mongodata` volume
+- `-v webstore-db-data:/var/lib/postgresql/data` → creates volume `webstore-db-data` and mounts it to PostgreSQL's data directory
+- PostgreSQL writes to `/var/lib/postgresql/data`
+- Data actually goes to the `webstore-db-data` volume
 - If you delete the container and create a new one with the same volume, **all data is still there**
 
 **Verification flow:**
 
 | Step | Command | What happens |
 |---:|---|---|
-| 1 | Run MongoDB with volume | `docker run -d --name mongodb -v mongodata:/data/db mongo:6` | Container starts, volume created |
-| 2 | Connect and create data | `docker exec -it mongodb mongosh` | Enter MongoDB shell |
-| 3 | Insert test data | `use testdb`<br>`db.users.insertOne({name: "Alice"})` | Data written |
-| 4 | Exit | `exit` | Back to host |
-| 5 | Stop and delete container | `docker stop mongodb`<br>`docker rm mongodb` | Container gone |
-| 6 | Start new container with same volume | `docker run -d --name mongodb -v mongodata:/data/db mongo:6` | Fresh container, same volume |
-| 7 | Check if data survived | `docker exec -it mongodb mongosh`<br>`use testdb`<br>`db.users.find()` | **Data still exists** ✅ |
+| 1 | Run webstore-db with volume | `docker run -d --name webstore-db -v webstore-db-data:/var/lib/postgresql/data -e POSTGRES_DB=webstore -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=secret postgres:15` | Container starts, volume created |
+| 2 | Connect and create data | `docker exec -it webstore-db psql -U admin -d webstore` | Enter PostgreSQL shell |
+| 3 | Insert test data | `CREATE TABLE products (id SERIAL, name TEXT);` then `INSERT INTO products (name) VALUES ('Widget');` | Data written |
+| 4 | Exit | `\q` | Back to host |
+| 5 | Stop and delete container | `docker stop webstore-db` then `docker rm webstore-db` | Container gone |
+| 6 | Start new container with same volume | `docker run -d --name webstore-db -v webstore-db-data:/var/lib/postgresql/data -e POSTGRES_DB=webstore -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=secret postgres:15` | Fresh container, same volume |
+| 7 | Check if data survived | `docker exec -it webstore-db psql -U admin -d webstore -c "SELECT * FROM products;"` | **Data still exists** ✅ |
 
 ---
 
@@ -258,9 +204,9 @@ docker run -d \
 
 | Step | What you do | Command format | Example |
 |---:|---|---|---|
-| 38 | Stop container (if running) | `docker stop CONTAINER_NAME` | `docker stop mongodb` |
-| 39 | Remove container | `docker rm CONTAINER_NAME` | `docker rm mongodb` |
-| 40 | **Only if you want to delete data:** Remove volume | `docker volume rm VOLUME_NAME` | `docker volume rm mongodata` |
+| 21 | Stop container (if running) | `docker stop CONTAINER_NAME` | `docker stop webstore-db` |
+| 22 | Remove container | `docker rm CONTAINER_NAME` | `docker rm webstore-db` |
+| 23 | **Only if you want to delete data:** Remove volume | `docker volume rm VOLUME_NAME` | `docker volume rm webstore-db-data` |
 
 **Critical safety rule:**
 - Removing a container does **NOT** delete its volumes
@@ -294,8 +240,8 @@ Volumes are permanent → data survives container deletion
 **Commands to memorize:**
 ```bash
 # Named volume
-docker volume create my-vol
-docker run -v my-vol:/data IMAGE
+docker volume create webstore-db-data
+docker run -v webstore-db-data:/var/lib/postgresql/data postgres:15
 
 # Bind mount
 docker run -v /host/path:/container/path IMAGE
@@ -319,7 +265,7 @@ Container (code runs here)  ──>  Volume (data lives here)
 3. (Optional) Remove volume
 
 **Never forget:**
-Data in containers = temporary  
+Data in containers = temporary
 Data in volumes = permanent
 
 → Ready to practice? [Go to Lab 02](../docker-labs/02-networking-volumes-lab.md)

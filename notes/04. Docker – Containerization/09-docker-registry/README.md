@@ -10,7 +10,7 @@
 [Registry](../09-docker-registry/README.md) |
 [Compose](../10-docker-compose/README.md)
 
-# 09. Container Registries
+# Container Registries
 
 ## 1) What a Container Registry Is
 
@@ -136,7 +136,92 @@ You do not manage tokens manually at this stage.
 
 ---
 
-## 8) Publish webstore-api to Docker Hub (End-to-End Process)
+## 8) Tagging Strategy — How Real Teams Version Images
+
+Tags are not just labels. They are the mechanism CI/CD pipelines use to decide what to deploy. A poorly thought-out tagging strategy causes deployments to pull stale images, makes rollbacks difficult, and makes production incidents harder to debug.
+
+**The `latest` trap:**
+
+`latest` is the default tag when no tag is specified. It sounds useful but causes serious problems in real pipelines:
+
+```bash
+# This is what latest actually means:
+docker push myrepo/webstore-api:latest
+# "latest" = whatever was pushed most recently
+# NOT "the most stable version"
+# NOT "the version that passed QA"
+# NOT reproducible — tomorrow it may be a different image
+
+# Three weeks later on production:
+docker pull myrepo/webstore-api:latest
+# What did you just pull? Impossible to know without checking the registry.
+# If it breaks, what do you roll back to?
+```
+
+**The rule:** never deploy `latest` to production. Always deploy a specific, immutable tag.
+
+**Semantic versioning tags — the standard for releases:**
+
+```
+v1.0.0    ← major.minor.patch
+v1.1.0    ← new feature, backward compatible
+v1.1.1    ← bug fix
+v2.0.0    ← breaking change
+```
+
+```bash
+# Tag and push a release
+docker build -t webstore-api:v1.0.0 .
+docker tag webstore-api:v1.0.0 akhiltejadoosari/webstore-api:v1.0.0
+docker push akhiltejadoosari/webstore-api:v1.0.0
+```
+
+**Git SHA tags — the standard for CI/CD:**
+
+Every commit produces an image. Tag it with the Git commit SHA so you can trace any deployed image back to the exact commit that built it.
+
+```bash
+# In a CI pipeline:
+GIT_SHA=$(git rev-parse --short HEAD)
+docker build -t webstore-api:${GIT_SHA} .
+docker push akhiltejadoosari/webstore-api:${GIT_SHA}
+
+# Example output:
+# akhiltejadoosari/webstore-api:a3f92c1
+```
+
+When production has a bug, you check the deployed tag (`a3f92c1`), run `git show a3f92c1`, and see exactly what changed.
+
+**Environment tags — for promotion workflows:**
+
+Some teams tag images with the environment they are deployed to:
+
+```bash
+# Tag the same image for staging
+docker tag webstore-api:v1.0.0 akhiltejadoosari/webstore-api:staging
+
+# Promote to production after QA passes
+docker tag webstore-api:v1.0.0 akhiltejadoosari/webstore-api:production
+```
+
+The underlying image is identical — only the tag changes. This makes rollback trivial: retag the previous version as `production` and redeploy.
+
+**Tagging decision table:**
+
+| Context | Tag to use | Example |
+|---|---|---|
+| Every CI build | Git SHA | `webstore-api:a3f92c1` |
+| Versioned releases | Semantic version | `webstore-api:v1.0.0` |
+| Current stable dev | `latest` | Only for local development |
+| Production deploy | Specific SHA or semver | Never `latest` |
+| Environment tracking | Environment name | `webstore-api:staging` |
+
+**One-line rule:**
+In production, every image tag must be immutable and traceable — either a Git SHA or a semantic version. `latest` is for local development only.
+
+---
+
+## 9) Publish webstore-api to Docker Hub (End-to-End Process)
 
 Goal:
 - Take the local image you built in section 08 (`webstore-api:1.0`)
@@ -213,12 +298,6 @@ Logout first:
 ```bash
 docker logout
 ```
-
-Why logout/login helps:
-
-* it clears stale credentials in the credential store
-* avoids "pushing to the wrong account" mistakes
-* fixes "denied: requested access to the resource is denied" when the wrong user is cached
 
 Now login again:
 

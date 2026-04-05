@@ -10,7 +10,7 @@
 [Registry](../09-docker-registry/README.md) |
 [Compose](../10-docker-compose/README.md)
 
-# 10. Docker Compose — Same System, Automated
+# Docker Compose — Same System, Automated
 
 ## 1) Mental Model First (What You Are About to Read)
 
@@ -26,19 +26,18 @@ version: "3.9"
 
 services:
   webstore-db:
-    image: mongo
+    image: postgres:15
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: secret
+      POSTGRES_DB: webstore
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - webstore-db-data:/var/lib/postgresql/data
 
-  mongo-express:
-    image: mongo-express
+  adminer:
+    image: adminer
     ports:
-      - "8081:8081"
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: secret
-      ME_CONFIG_MONGODB_URL: mongodb://admin:secret@webstore-db:27017
+      - "8081:8080"
     depends_on:
       - webstore-db
 
@@ -47,17 +46,25 @@ services:
     ports:
       - "8080:8080"
     environment:
-      MONGO_URL: mongodb://admin:secret@webstore-db:27017
+      DB_HOST: webstore-db
+      DB_PORT: 5432
+      DB_NAME: webstore
+      DB_USER: admin
+      DB_PASSWORD: secret
     depends_on:
       - webstore-db
+
+volumes:
+  webstore-db-data:
 ```
 
 What this shows at a glance:
 
 * Three containers
 * One private Docker network (created automatically)
-* Two ports exposed for human access (8080 for app, 8081 for DB UI)
+* Two ports exposed for human access (8080 for API, 8081 for DB UI)
 * One database accessed internally by hostname
+* One named volume for database persistence
 
 Everything below explains **this file**, line by line.
 
@@ -75,6 +82,7 @@ It automates:
 * DNS (service names)
 * port binding
 * startup order
+* volume creation
 
 ---
 
@@ -107,76 +115,74 @@ Meaning:
 * Used by other containers to connect
 
 ```yaml
-    image: mongo
+    image: postgres:15
 ```
 
 Meaning:
 
-* Use the official MongoDB image
+* Use PostgreSQL version 15 — pinned, not `latest`
 * Pulled automatically if missing
 
 ```yaml
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: secret
+      POSTGRES_DB: webstore
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
 ```
 
 Meaning:
 
 * Environment variables passed into the container
-* MongoDB uses them on first startup
-* Creates the initial admin user
+* PostgreSQL uses them on first startup to create the database and admin user
+
+```yaml
+    volumes:
+      - webstore-db-data:/var/lib/postgresql/data
+```
+
+Meaning:
+
+* Mount the named volume to PostgreSQL's data directory
+* Data survives `docker compose down` — it is not deleted unless you explicitly remove the volume
 
 Important:
 
 * No `ports` section
 * Database is internal-only
-* Not exposed to the host
+* Not reachable from your browser or the internet
 
 ---
 
-## 5) mongo-express Service (UI Client)
+## 5) adminer Service (Database UI)
 
 ```yaml
-  mongo-express:
+  adminer:
 ```
 
 Meaning:
 
-* UI tool container
-* Hostname becomes `mongo-express`
+* Lightweight database management UI
+* Supports PostgreSQL, MySQL, SQLite
+* No configuration needed — connects using the form in the browser
 
 ```yaml
-    image: mongo-express
+    image: adminer
 ```
 
 Meaning:
 
-* Uses the Mongo Express image
-* Provides a web interface for the database
+* Uses the official adminer image
 
 ```yaml
     ports:
-      - "8081:8081"
+      - "8081:8080"
 ```
 
 Meaning:
 
-* Host port `8081` forwards to container port `8081`
-* Required so the browser can access the DB UI
-
-```yaml
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: secret
-      ME_CONFIG_MONGODB_URL: mongodb://admin:secret@webstore-db:27017
-```
-
-Meaning:
-
-* Credentials for the database
-* Connection uses hostname `webstore-db`
-* DNS is provided automatically by Compose
+* adminer listens on port 8080 inside the container
+* Host port `8081` forwards to container port `8080`
+* Open `http://localhost:8081` in your browser to access the UI
 
 ```yaml
     depends_on:
@@ -185,9 +191,16 @@ Meaning:
 
 Meaning:
 
-* webstore-db container starts first
-* Controls start order only
-* Does not guarantee readiness
+* webstore-db container starts before adminer
+* Controls start order only — does not guarantee the database is ready to accept connections
+
+**How to use adminer:**
+1. Open `http://localhost:8081`
+2. System: PostgreSQL
+3. Server: `webstore-db` (Docker DNS resolves this)
+4. Username: `admin`
+5. Password: `secret`
+6. Database: `webstore`
 
 ---
 
@@ -223,14 +236,18 @@ Meaning:
 
 ```yaml
     environment:
-      MONGO_URL: mongodb://admin:secret@webstore-db:27017
+      DB_HOST: webstore-db
+      DB_PORT: 5432
+      DB_NAME: webstore
+      DB_USER: admin
+      DB_PASSWORD: secret
 ```
 
 Meaning:
 
-* Database connection string for the app
-* Uses service name `webstore-db`
-* Same rule as manual Docker networking — containers talk by name
+* Database connection details for the app
+* Uses service name `webstore-db` — same rule as manual Docker networking
+* Containers talk by name, never by IP
 
 ```yaml
     depends_on:
@@ -241,11 +258,27 @@ Meaning:
 
 * Starts webstore-db before the app
 * Prevents obvious startup failures
-* Not a health check
+* Not a health check — the app may still need retry logic for DB connections
 
 ---
 
-## 7) What Compose Creates Automatically
+## 7) Volumes Block
+
+```yaml
+volumes:
+  webstore-db-data:
+```
+
+Meaning:
+
+* Declares the named volume at the top level
+* Docker creates it if it does not exist
+* Survives `docker compose down`
+* Only deleted with `docker compose down -v` or `docker volume rm`
+
+---
+
+## 8) What Compose Creates Automatically
 
 When you run:
 
@@ -255,15 +288,16 @@ docker compose up
 
 Compose automatically creates:
 
-* one bridge network
+* one bridge network named `<project>_default`
 * DNS entries for each service
 * containers attached to that network
+* named volumes declared in the `volumes` block
 
 You do not need to define networks explicitly for this setup.
 
 ---
 
-## 8) Running the System
+## 9) Running the System
 
 Start everything:
 
@@ -277,22 +311,23 @@ Start in background:
 docker compose up -d
 ```
 
-Stop and clean up:
+Stop and clean up containers and network (volumes survive):
 
 ```bash
 docker compose down
 ```
 
-This removes:
+Stop and delete everything including volumes:
 
-* containers
-* Compose-created network
+```bash
+docker compose down -v
+```
 
-Images and volumes remain unchanged.
+**Warning:** `docker compose down -v` deletes the database volume. All data is gone. Use only when you want a completely clean reset.
 
 ---
 
-## 9) About the `-f` Flag
+## 10) About the `-f` Flag
 
 Default behavior:
 
@@ -311,7 +346,7 @@ If the file is named `docker-compose.yml` and you are in that folder, do not use
 
 ---
 
-## 10) Manual vs Compose
+## 11) Manual vs Compose
 
 ![](./readme-assets/docker-run-compose.jpeg)
 
@@ -331,12 +366,12 @@ Use Docker Compose when:
 
 App path:
 ```
-Browser → localhost:8080 → webstore-api → webstore-db:27017 → webstore-db
+Browser → localhost:8080 → webstore-api → webstore-db:5432 → webstore-db
 ```
 
 Debug path:
 ```
-Browser → localhost:8081 → mongo-express → webstore-db:27017 → webstore-db
+Browser → localhost:8081 → adminer → webstore-db:5432 → webstore-db
 ```
 
 One-line truth:

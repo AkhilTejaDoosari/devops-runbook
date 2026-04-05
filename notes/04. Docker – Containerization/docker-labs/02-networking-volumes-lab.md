@@ -9,9 +9,17 @@
 
 # Lab 02 — Networking & Volumes
 
-## What this lab is about
+## The Situation
 
-You will prove that containers cannot talk to each other without a network, create a Docker network, connect the webstore-db and webstore-api containers so they communicate by name, verify Docker DNS at the resolver level, prove that port binding is just iptables NAT, prove that container data dies without volumes, attach a named volume to a database, delete and recreate the container, and confirm the data survived. Every command is typed from scratch.
+The webstore-frontend is running as a container. But the real webstore is three services: a frontend, an API, and a database. Those three services need to talk to each other. The database needs to store data that survives container restarts.
+
+Right now containers are isolated. webstore-api cannot reach webstore-db because nothing connects them. And if webstore-db is deleted, every row in the database is gone with it. This lab fixes both problems.
+
+By the end, webstore-api talks to webstore-db using the container name as a hostname, Docker DNS resolves it automatically, port binding is proven to be iptables NAT, and the database data survives complete container deletion. This is the foundation Lab 03 builds on — you cannot build the API image until the network and storage are wired correctly.
+
+## What this lab covers
+
+You will prove that containers cannot talk to each other without a network, create a Docker network, connect webstore-db and webstore-api so they communicate by name, verify Docker DNS at the resolver level, prove that port binding is iptables NAT, prove that container data dies without volumes, attach a named volume to postgres, delete and recreate the container, and confirm the data survived. Every command is typed from scratch.
 
 ## Prerequisites
 
@@ -75,21 +83,19 @@ docker network ls
 docker run -d \
   --name webstore-db \
   --network webstore-network \
-  -e MONGO_INITDB_ROOT_USERNAME=admin \
-  -e MONGO_INITDB_ROOT_PASSWORD=secret \
-  mongo
+  -e POSTGRES_DB=webstore \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=secret \
+  postgres:15
 ```
 
-4. Run mongo-express on the same network
+4. Run adminer on the same network
 ```bash
 docker run -d \
-  --name mongo-express \
+  --name adminer \
   --network webstore-network \
-  -p 8081:8081 \
-  -e ME_CONFIG_MONGODB_ADMINUSERNAME=admin \
-  -e ME_CONFIG_MONGODB_ADMINPASSWORD=secret \
-  -e ME_CONFIG_MONGODB_URL="mongodb://admin:secret@webstore-db:27017" \
-  mongo-express
+  -p 8081:8080 \
+  adminer
 ```
 
 5. Wait about 10 seconds then open your browser:
@@ -97,17 +103,24 @@ docker run -d \
 http://localhost:8081
 ```
 
-**What to observe:** mongo-express UI loads and connects to webstore-db — it reached the database using the hostname `webstore-db`
+Log in with:
+- System: PostgreSQL
+- Server: `webstore-db`
+- Username: `admin`
+- Password: `secret`
+- Database: `webstore`
 
-6. Enter mongo-express container and ping webstore-db by name
+**What to observe:** adminer UI loads and connects to webstore-db — it reached the database using the hostname `webstore-db`, not an IP address
+
+6. Enter the adminer container and ping webstore-db by name
 ```bash
-docker exec -it mongo-express /bin/sh
+docker exec -it adminer /bin/sh
 ping webstore-db
 ```
 
 **What to observe:** ping resolves and gets a response — Docker DNS is working
 
-7. Now go deeper — check what DNS server the container is using
+7. Check what DNS server the container is using
 ```bash
 cat /etc/resolv.conf
 ```
@@ -142,7 +155,7 @@ The container name `webstore-db` resolved to its private IP. Docker DNS answered
 exit
 ```
 
-10. Now check the network from the outside — see all containers and their IPs
+10. Check the network from the outside — see all containers and their IPs
 ```bash
 docker network inspect webstore-network
 ```
@@ -181,7 +194,7 @@ curl http://localhost:8080
 
 **What to observe:** nginx responds — request hit host port 8080, was translated to container port 80.
 
-5. Now look at the actual iptables rule Docker created
+5. Look at the actual iptables rule Docker created
 ```bash
 sudo iptables -t nat -L DOCKER -n
 ```
@@ -193,7 +206,7 @@ target  prot  opt  source      destination
 DNAT    tcp   --   0.0.0.0/0   0.0.0.0/0   tcp dpt:8080 to:172.17.0.X:80
 ```
 
-This DNAT rule is what makes port binding work. Every `-p` flag you use creates an entry exactly like this. Docker is not doing anything special — it is writing iptables rules on your behalf.
+This DNAT rule is what makes port binding work. Every `-p` flag you use creates an entry exactly like this.
 
 6. Access the container directly by its IP (bypassing NAT entirely)
 ```bash
@@ -201,39 +214,38 @@ CONTAINER_IP=$(docker inspect nat-proof | grep '"IPAddress"' | tail -1 | awk -F'
 curl http://$CONTAINER_IP:80
 ```
 
-**What to observe:** direct container access on port 80 also works — no NAT needed when you are already on the same Docker network.
+**What to observe:** direct container access works — no NAT needed when already on the same network.
 
 7. Clean up
 ```bash
 docker stop nat-proof && docker rm nat-proof
 ```
 
-> **The Rule:** `-p host:container` = `iptables DNAT rule`. Docker translates host traffic to the container's private IP. This is identical to how your home router does port forwarding for a game server.
+> **The Rule:** `-p host:container` = `iptables DNAT rule`. Docker translates host traffic to the container's private IP. This is identical to how your home router does port forwarding.
 
 ---
 
 ## Section 3 — Prove Data Dies Without a Volume
 
-**Goal:** write data into a container, delete it, confirm data is gone.
+**Goal:** write data into a postgres container, delete it, confirm data is gone.
 
 1. Enter the running webstore-db container
 ```bash
-docker exec -it webstore-db mongosh \
-  -u admin -p secret --authenticationDatabase admin
+docker exec -it webstore-db psql -U admin -d webstore
 ```
 
-2. Create a database and insert a document
-```bash
-use webstore
-db.products.insertOne({ name: "keyboard", price: 79 })
-db.products.find()
+2. Create a table and insert a row
+```sql
+CREATE TABLE products (id SERIAL PRIMARY KEY, name TEXT, price INT);
+INSERT INTO products (name, price) VALUES ('keyboard', 79);
+SELECT * FROM products;
 ```
 
-**What to observe:** document inserted and visible
+**What to observe:** row inserted and visible
 
-3. Exit mongosh
-```bash
-exit
+3. Exit psql
+```sql
+\q
 ```
 
 4. Stop and delete the container
@@ -247,34 +259,24 @@ docker rm webstore-db
 docker run -d \
   --name webstore-db \
   --network webstore-network \
-  -e MONGO_INITDB_ROOT_USERNAME=admin \
-  -e MONGO_INITDB_ROOT_PASSWORD=secret \
-  mongo
+  -e POSTGRES_DB=webstore \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=secret \
+  postgres:15
 ```
 
-6. Enter and check for your data
+6. Wait a few seconds then check for your data
 ```bash
-docker exec -it webstore-db mongosh \
-  -u admin -p secret --authenticationDatabase admin
+docker exec -it webstore-db psql -U admin -d webstore -c "SELECT * FROM products;"
 ```
 
-```bash
-use webstore
-db.products.find()
-```
-
-**What to observe:** empty result — data is gone. This is why volumes exist.
-
-7. Exit
-```bash
-exit
-```
+**What to observe:** error — table does not exist. Data is gone. This is why volumes exist.
 
 ---
 
 ## Section 4 — Named Volume (Data Survives)
 
-**Goal:** attach a named volume to the database and prove data survives container deletion.
+**Goal:** attach a named volume to postgres and prove data survives container deletion.
 
 1. Stop and remove the no-volume container
 ```bash
@@ -297,28 +299,27 @@ docker volume ls
 docker run -d \
   --name webstore-db \
   --network webstore-network \
-  -p 27017:27017 \
-  -v webstore-db-data:/data/db \
-  -e MONGO_INITDB_ROOT_USERNAME=admin \
-  -e MONGO_INITDB_ROOT_PASSWORD=secret \
-  mongo
+  -v webstore-db-data:/var/lib/postgresql/data \
+  -e POSTGRES_DB=webstore \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=secret \
+  postgres:15
 ```
 
-5. Insert data again
+5. Wait a few seconds then create data
 ```bash
-docker exec -it webstore-db mongosh \
-  -u admin -p secret --authenticationDatabase admin
+docker exec -it webstore-db psql -U admin -d webstore
 ```
 
-```bash
-use webstore
-db.products.insertOne({ name: "keyboard", price: 79 })
-db.products.insertOne({ name: "mouse", price: 35 })
-db.products.find()
-exit
+```sql
+CREATE TABLE products (id SERIAL PRIMARY KEY, name TEXT, price INT);
+INSERT INTO products (name, price) VALUES ('keyboard', 79);
+INSERT INTO products (name, price) VALUES ('mouse', 49);
+SELECT * FROM products;
+\q
 ```
 
-6. Stop and delete the container
+6. Stop and delete the container — deliberately
 ```bash
 docker stop webstore-db
 docker rm webstore-db
@@ -329,33 +330,26 @@ docker rm webstore-db
 docker volume ls
 ```
 
-**What to observe:** volume is still there even though the container is gone
+**What to observe:** `webstore-db-data` is still there — volumes are independent of containers
 
-8. Run a brand new container with the same volume
+8. Run a new container with the same volume
 ```bash
 docker run -d \
   --name webstore-db \
   --network webstore-network \
-  -p 27017:27017 \
-  -v webstore-db-data:/data/db \
-  -e MONGO_INITDB_ROOT_USERNAME=admin \
-  -e MONGO_INITDB_ROOT_PASSWORD=secret \
-  mongo
+  -v webstore-db-data:/var/lib/postgresql/data \
+  -e POSTGRES_DB=webstore \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=secret \
+  postgres:15
 ```
 
 9. Check for your data
 ```bash
-docker exec -it webstore-db mongosh \
-  -u admin -p secret --authenticationDatabase admin
+docker exec -it webstore-db psql -U admin -d webstore -c "SELECT * FROM products;"
 ```
 
-```bash
-use webstore
-db.products.find()
-exit
-```
-
-**What to observe:** both documents are there — data survived full container deletion and recreation
+**What to observe:** both rows are there — data survived full container deletion and recreation
 
 ---
 
@@ -367,6 +361,7 @@ exit
 ```bash
 mkdir ~/webstore-config
 echo "db_host=webstore-db" > ~/webstore-config/app.conf
+echo "db_port=5432" >> ~/webstore-config/app.conf
 ```
 
 2. Run a container with the folder bind-mounted
@@ -383,7 +378,7 @@ cat /config/app.conf
 
 4. Add a line from inside the container
 ```bash
-echo "db_port=27017" >> /config/app.conf
+echo "api_port=8080" >> /config/app.conf
 cat /config/app.conf
 exit
 ```
@@ -403,7 +398,7 @@ cat ~/webstore-config/app.conf
 
 This section fulfills the redirect from [Networking Lab 05](../../03.%20Networking%20–%20Foundations/networking-labs/05-complete-journey-lab.md).
 
-1. Confirm webstore-db and mongo-express are still running
+1. Confirm webstore-db and adminer are still running
 ```bash
 docker ps
 ```
@@ -413,20 +408,17 @@ If they are not running, bring them back:
 docker run -d \
   --name webstore-db \
   --network webstore-network \
-  -p 27017:27017 \
-  -v webstore-db-data:/data/db \
-  -e MONGO_INITDB_ROOT_USERNAME=admin \
-  -e MONGO_INITDB_ROOT_PASSWORD=secret \
-  mongo
+  -v webstore-db-data:/var/lib/postgresql/data \
+  -e POSTGRES_DB=webstore \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=secret \
+  postgres:15
 
 docker run -d \
-  --name mongo-express \
+  --name adminer \
   --network webstore-network \
-  -p 8081:8081 \
-  -e ME_CONFIG_MONGODB_ADMINUSERNAME=admin \
-  -e ME_CONFIG_MONGODB_ADMINPASSWORD=secret \
-  -e ME_CONFIG_MONGODB_URL="mongodb://admin:secret@webstore-db:27017" \
-  mongo-express
+  -p 8081:8080 \
+  adminer
 ```
 
 2. Run a webstore-api placeholder (nginx standing in for the real API)
@@ -463,24 +455,24 @@ docker exec webstore-api ip route
 
 **Layer 3-4 — Can the container reach the database port?**
 ```bash
-docker exec webstore-api nc -zv webstore-db 27017
+docker exec webstore-api nc -zv webstore-db 5432
 ```
 
-Record: port 27017 reachable? ___
+Record: port 5432 reachable? ___
 
-**NAT — Port binding proof: see the iptables rules for all three containers**
+**NAT — Port binding proof: see the iptables rules for all containers**
 ```bash
 sudo iptables -t nat -L DOCKER -n
 ```
 
-**What to observe:** three DNAT rules — one for port 8080 (api), one for 8081 (mongo-express), one for 27017 (db). Each maps a host port to a container IP.
+**What to observe:** DNAT rules — one for port 8080 (api), one for 8081 (adminer). Each maps a host port to a container IP. webstore-db has no entry — it is internal only.
 
-**Network isolation — confirm webstore-db has NO public port exposure**
+**Network isolation — confirm webstore-db has no public port exposure**
 ```bash
 docker inspect webstore-db | grep -A 5 '"Ports"'
 ```
 
-**What to observe:** even though webstore-db has `-p 27017:27017` in this lab for inspection purposes, in a production setup you would remove that flag. Containers on the same network reach each other directly — no port binding needed.
+**What to observe:** empty or no host port mapping — webstore-db is unreachable from outside Docker.
 
 **The complete data flow:**
 ```
@@ -490,7 +482,7 @@ Browser → localhost:8080
 host port 8080 → webstore-api container (172.18.0.X:80)
     │
     ▼ Docker DNS resolves "webstore-db"
-webstore-api → webstore-db:27017 (172.18.0.Y:27017)
+webstore-api → webstore-db:5432 (172.18.0.Y:5432)
     │
     ▼ direct container-to-container (no NAT needed)
 webstore-db receives connection
@@ -502,10 +494,10 @@ webstore-db receives connection
 curl -s http://localhost:8080 | head -5
 
 # From inside api — hits DNS then direct network
-docker exec webstore-api nc -zv webstore-db 27017
+docker exec webstore-api nc -zv webstore-db 5432
 
 # From inside api — confirm db is unreachable on localhost
-docker exec webstore-api nc -zv localhost 27017
+docker exec webstore-api nc -zv localhost 5432
 ```
 
 **What to observe on the last command:** connection refused — `localhost` inside webstore-api is the container itself, not webstore-db. This is the localhost rule in action.
@@ -537,48 +529,20 @@ docker stop isolated && docker rm isolated
 
 ### Break 2 — Wrong hostname in connection string
 
-1. Run mongo-express with a typo in the DB hostname
+Check what happens when the container name is wrong:
 ```bash
-docker stop mongo-express && docker rm mongo-express
-
-docker run -d \
-  --name mongo-express \
-  --network webstore-network \
-  -p 8081:8081 \
-  -e ME_CONFIG_MONGODB_ADMINUSERNAME=admin \
-  -e ME_CONFIG_MONGODB_ADMINPASSWORD=secret \
-  -e ME_CONFIG_MONGODB_URL="mongodb://admin:secret@wrong-host:27017" \
-  mongo-express
+docker exec webstore-api nc -zv wrong-host 5432
 ```
 
-2. Check logs
-```bash
-docker logs mongo-express
-```
-
-**What to observe:** connection refused or timeout — `wrong-host` does not exist on the network, Docker DNS cannot resolve it
-
-3. Fix it — recreate with the correct hostname
-```bash
-docker stop mongo-express && docker rm mongo-express
-
-docker run -d \
-  --name mongo-express \
-  --network webstore-network \
-  -p 8081:8081 \
-  -e ME_CONFIG_MONGODB_ADMINUSERNAME=admin \
-  -e ME_CONFIG_MONGODB_ADMINPASSWORD=secret \
-  -e ME_CONFIG_MONGODB_URL="mongodb://admin:secret@webstore-db:27017" \
-  mongo-express
-```
+**What to observe:** DNS resolution fails — `wrong-host` does not exist on the network
 
 ### Break 3 — Use localhost instead of container name
 
 ```bash
-docker exec webstore-api nc -zv localhost 27017
+docker exec webstore-api nc -zv localhost 5432
 ```
 
-**What to observe:** `Connection refused` — `localhost` inside webstore-api is the container itself. Port 27017 is not running inside webstore-api. This is why you always use container names, never localhost, in Docker connection strings.
+**What to observe:** `Connection refused` — `localhost` inside webstore-api is the container itself. Port 5432 is not running inside webstore-api. This is why you always use container names, never localhost, in Docker connection strings.
 
 ---
 
@@ -586,12 +550,12 @@ docker exec webstore-api nc -zv localhost 27017
 
 1. Stop all containers
 ```bash
-docker stop webstore-api webstore-db mongo-express
+docker stop webstore-api webstore-db adminer
 ```
 
 2. Remove all containers
 ```bash
-docker rm webstore-api webstore-db mongo-express
+docker rm webstore-api webstore-db adminer
 ```
 
 3. Remove the network
@@ -606,7 +570,7 @@ docker volume rm webstore-db-data
 
 5. Remove images
 ```bash
-docker rmi mongo mongo-express nginx:1.24 ubuntu:22.04
+docker rmi postgres:15 adminer nginx:1.24 ubuntu:22.04
 ```
 
 6. Confirm everything is clean
@@ -625,7 +589,7 @@ Do not move to Lab 03 until every box is checked.
 
 - [ ] I ran two containers with no network and confirmed they cannot reach each other by name
 - [ ] I created `webstore-network` and confirmed DNS resolution works between containers on it
-- [ ] I opened mongo-express in the browser and it connected to webstore-db using the hostname — not an IP
+- [ ] I opened adminer in the browser and it connected to webstore-db using the hostname — not an IP
 - [ ] I ran `cat /etc/resolv.conf` inside a container and confirmed the DNS server is `127.0.0.11`
 - [ ] I ran `nslookup webstore-db` from inside a container and got back the container's IP
 - [ ] I ran `docker network inspect webstore-network` and matched the IP from nslookup to the IP in the inspect output
@@ -636,5 +600,4 @@ Do not move to Lab 03 until every box is checked.
 - [ ] I used a bind mount, wrote a file from inside the container, and saw it appear on my laptop
 - [ ] I traced the full webstore stack — DNS resolution, default gateway, port reachability, iptables rules, and data flow
 - [ ] I confirmed that `localhost` inside a container does NOT reach another container — connection refused
-- [ ] I broke the connection string with a wrong hostname and read the error in the logs
 - [ ] I deleted everything in the correct order: stop → rm containers → rm network → rm volume → rmi images

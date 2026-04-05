@@ -9,9 +9,17 @@
 
 # Lab 04 — Registry & Compose
 
-## What this lab is about
+## The Situation
 
-You will push the webstore-api image you built in Lab 03 to Docker Hub, pull it back to confirm it works, then write a `docker-compose.yml` from scratch that brings up the full webstore system — api, database, and DB UI — with one command. You will break the compose file on purpose, fix it, and do a clean teardown. Every file is written from scratch.
+`webstore-api:1.0` exists on your laptop. It runs correctly. But it only exists on your laptop — no CI system can pull it, no production server can run it, no teammate can use it. And bringing up the full three-tier webstore still requires running three separate `docker run` commands in the right order with all the right flags.
+
+This lab finishes both problems. You push the image to Docker Hub so it is available everywhere. Then you write a `docker-compose.yml` that captures the entire webstore — api, database, and DB UI — in one file. From this point forward, bringing up the entire webstore is one command: `docker compose up`.
+
+This is the state Kubernetes picks up from. K8s does not run `docker run` commands — it pulls images from a registry and runs them based on manifest files. What you do in this lab is exactly the pattern Kubernetes uses, just at the orchestration layer.
+
+## What this lab covers
+
+You will push the webstore-api image to Docker Hub, pull it back to confirm it works, then write a `docker-compose.yml` from scratch that brings up the full webstore system — api, postgres database, and adminer UI — with one command. You will break the compose file on purpose, fix it, and do a clean teardown. Every file is written from scratch.
 
 ## Prerequisites
 
@@ -132,19 +140,18 @@ version: "3.9"
 services:
 
   webstore-db:
-    image: mongo
+    image: postgres:15
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: secret
+      POSTGRES_DB: webstore
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - webstore-db-data:/var/lib/postgresql/data
 
-  mongo-express:
-    image: mongo-express
+  adminer:
+    image: adminer
     ports:
-      - "8081:8081"
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: secret
-      ME_CONFIG_MONGODB_URL: mongodb://admin:secret@webstore-db:27017
+      - "8081:8080"
     depends_on:
       - webstore-db
 
@@ -153,9 +160,16 @@ services:
     ports:
       - "8080:8080"
     environment:
-      MONGO_URL: mongodb://admin:secret@webstore-db:27017
+      DB_HOST: webstore-db
+      DB_PORT: 5432
+      DB_NAME: webstore
+      DB_USER: admin
+      DB_PASSWORD: secret
     depends_on:
       - webstore-db
+
+volumes:
+  webstore-db-data:
 ```
 
 4. Start the full system
@@ -168,8 +182,15 @@ Watch the startup logs — you will see all three containers initializing.
 5. Open your browser and confirm both endpoints work:
 ```
 http://localhost:8080   ← webstore-api
-http://localhost:8081   ← mongo-express DB UI
+http://localhost:8081   ← adminer DB UI
 ```
+
+For adminer, log in with:
+- System: PostgreSQL
+- Server: `webstore-db`
+- Username: `admin`
+- Password: `secret`
+- Database: `webstore`
 
 6. Stop with `Ctrl+C`, then bring it back up in the background
 ```bash
@@ -214,6 +235,14 @@ docker network inspect webstore_default
 
 **What to observe:** all three containers are attached to the same network with their service names as DNS hostnames
 
+4. Verify adminer reaches the database using the service name
+```bash
+docker exec webstore-adminer-1 nslookup webstore-db 2>/dev/null || \
+docker exec $(docker ps -qf name=adminer) nslookup webstore-db
+```
+
+**What to observe:** DNS resolves `webstore-db` to its container IP — same as manual networking
+
 ---
 
 ## Section 5 — Break It on Purpose
@@ -225,9 +254,9 @@ docker network inspect webstore_default
 docker compose down
 ```
 
-2. Edit `docker-compose.yml` — change the DB hostname in the mongo-express URL
+2. Edit `docker-compose.yml` — change the DB_HOST in webstore-api
 ```yaml
-ME_CONFIG_MONGODB_URL: mongodb://admin:secret@wrong-db:27017
+      DB_HOST: wrong-db
 ```
 
 3. Bring it back up
@@ -235,14 +264,14 @@ ME_CONFIG_MONGODB_URL: mongodb://admin:secret@wrong-db:27017
 docker compose up -d
 ```
 
-4. Check mongo-express logs
+4. Check webstore-api logs
 ```bash
-docker compose logs mongo-express
+docker compose logs webstore-api
 ```
 
 **What to observe:** connection error — `wrong-db` does not exist as a hostname on the network
 
-5. Fix it — restore the correct hostname `webstore-db`
+5. Fix it — restore `DB_HOST: webstore-db`
 ```bash
 docker compose down
 # fix the file
@@ -283,7 +312,7 @@ docker compose down
 docker compose up
 ```
 
-**What to observe:** webstore-api and mongo-express may start before webstore-db is ready and log connection errors
+**What to observe:** webstore-api and adminer may start before webstore-db is ready and log connection errors
 
 4. Fix it — restore both `depends_on` blocks
 ```bash
@@ -302,19 +331,24 @@ docker compose up -d
 docker compose down
 ```
 
-2. Confirm everything is gone
+2. Confirm containers and network are gone
 ```bash
 docker ps -a
 docker network ls
 ```
 
-3. Remove images built by Compose
+3. Remove the volume (only when you want to discard all database data)
 ```bash
-docker rmi webstore-api:1.0 YOUR_DOCKERHUB_USERNAME/webstore-api:1.0
-docker rmi mongo mongo-express nginx:1.24
+docker compose down -v
 ```
 
-4. Final check
+4. Remove images
+```bash
+docker rmi YOUR_DOCKERHUB_USERNAME/webstore-api:1.0
+docker rmi postgres:15 adminer nginx:1.24
+```
+
+5. Final check
 ```bash
 docker images
 docker ps -a
@@ -328,16 +362,17 @@ Everything should be clean.
 
 ## Checklist
 
-Do not move on until every box is checked.
+Do not move to Kubernetes until every box is checked.
 
 - [ ] I confirmed my local webstore-api image existed before starting
 - [ ] I tagged it correctly as `YOUR_DOCKERHUB_USERNAME/webstore-api:1.0` and pushed it
 - [ ] I verified the push on Docker Hub in the browser — the `1.0` tag was visible
 - [ ] I deleted the local image and pulled it back from Docker Hub — it ran correctly
-- [ ] I wrote `docker-compose.yml` from scratch — I did not copy-paste it
+- [ ] I wrote `docker-compose.yml` from scratch using postgres:15 and adminer — I did not copy-paste it
 - [ ] I brought the full system up with `docker compose up -d` and hit both browser endpoints
+- [ ] I logged into adminer using `webstore-db` as the server hostname — Docker DNS resolved it
 - [ ] I inspected the auto-created network and confirmed all three containers were on it
-- [ ] I broke the connection string with a wrong hostname and read the error in the logs
+- [ ] I broke the DB_HOST with a wrong name and read the connection error in the logs
 - [ ] I produced a port conflict error by running a container on 8080 before Compose started
 - [ ] I removed `depends_on` and observed startup order problems in the logs
 - [ ] I ran `docker compose down` and confirmed containers and network were removed cleanly

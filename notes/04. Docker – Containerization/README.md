@@ -29,11 +29,20 @@ Every note, every lab, every command uses the same 3-tier app:
 
 | Service | Image | Port |
 |---|---|---|
+| webstore-frontend | nginx:1.24 | 80 |
 | webstore-api | nginx:1.24 (then custom) | 8080 |
-| webstore-db | mongo | 27017 |
-| mongo-express | mongo-express | 8081 |
+| webstore-db | postgres:15 | 5432 |
+| adminer | adminer | 8081 (dev only) |
 
 By the end, this app is containerized, networked, persisted, built from a Dockerfile, pushed to a registry, and running with a single Compose command.
+
+---
+
+## Where You Take the Webstore
+
+You arrive at Docker with the webstore running on a Linux server and version-controlled in Git. It works on your machine. It does not work anywhere else without manual setup.
+
+You leave Docker with the webstore as three container images — webstore-frontend, webstore-api, webstore-db — running from a single `docker compose up`. The API image is pushed to Docker Hub tagged as `v1.0`. That tag is what Kubernetes pulls when you get there.
 
 ---
 
@@ -55,28 +64,28 @@ By the end, this app is containerized, networked, persisted, built from a Docker
 |---|---|
 | [Lab 01](./docker-labs/01-containers-portbinding-lab.md) | Pull images, run containers, port binding, debug, safe delete |
 | [Lab 02](./docker-labs/02-networking-volumes-lab.md) | Docker networks, DNS between containers, iptables DNAT proof, named volumes, bind mounts |
-| [Lab 03](./docker-labs/03-build-layers-lab.md) | Layer inspection, cache behavior, Dockerfile ordering, .dockerignore |
-| [Lab 04](./docker-labs/04-registry-compose-lab.md) | Push to Docker Hub, pull and verify, write and run docker-compose.yml |
+| [Lab 03](./docker-labs/03-build-layers-lab.md) | Layer inspection, cache behavior, Dockerfile ordering, .dockerignore, multi-stage builds |
+| [Lab 04](./docker-labs/04-registry-compose-lab.md) | Push to Docker Hub, tagging strategy, pull and verify, write and run docker-compose.yml |
 
 ---
 
 ## How to Use This
 
-Read phases in order. Each one builds on the previous.  
-After each phase do the lab before moving on.  
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
 The checklist at the end of every lab is not optional.
 
 ---
 
 ## What You Can Do After This
 
-- Explain what a container actually is and how Linux makes it work
-- Run any service in a container without installing it on your host
-- Connect multi-container apps over a Docker network using DNS names
-- Persist data correctly so it survives container deletion
-- Write a Dockerfile from scratch with correct layer ordering
-- Build, tag, and push images to a registry
-- Bring up a full multi-container system with one command
+- Run any containerized service on your laptop or a server
+- Wire multi-container apps together with Docker networks and DNS
+- Persist data correctly with named volumes
+- Write production-ready Dockerfiles with correct layer ordering
+- Build multi-stage images that are small and safe
+- Push images to a registry and pull them anywhere
+- Bring up the full webstore stack with one command
 
 ---
 
@@ -84,4 +93,4 @@ The checklist at the end of every lab is not optional.
 
 → [05. Kubernetes – Orchestration](../05.%20Kubernetes%20–%20Orchestration/README.md)
 
-Docker runs containers on one machine. Kubernetes manages containers across many machines — with self-healing, rolling updates, and auto-scaling. Everything you learned about containers, networking, and images applies directly.
+Kubernetes orchestrates containers. Everything you built here — images, tags, port mappings, environment variables — is what Kubernetes reads from your manifests. Docker is the prerequisite, not a stepping stone.

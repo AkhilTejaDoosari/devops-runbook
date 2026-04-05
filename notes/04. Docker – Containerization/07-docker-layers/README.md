@@ -10,7 +10,7 @@
 [Registry](../09-docker-registry/README.md) |
 [Compose](../10-docker-compose/README.md)
 
-# 07. Docker Layers
+# Docker Layers
 
 ## What this file is about
 

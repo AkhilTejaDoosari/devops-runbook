@@ -9,7 +9,13 @@
 
 # Lab 01 — Containers & Port Binding
 
-## What this lab is about
+## The Situation
+
+The webstore ran on a Linux server. Now you are going to containerize it — but before you containerize your own app, you need to understand how containers work at the most basic level. What does it mean to run nginx as a container? How do you reach it from a browser? What happens when it crashes?
+
+This lab uses prebuilt images — nginx for the webstore-frontend, MySQL for an example of a service that requires configuration at startup. By the end you will have run, inspected, debugged, and cleaned up containers confidently. Lab 02 picks up here to wire multiple containers together into the actual webstore stack.
+
+## What this lab covers
 
 You will run containers interactively and as background services, pass configuration at startup, observe and debug running containers, expose a service to your browser using port binding, and clean up safely. Every command is typed from scratch. Nothing is copy-pasted.
 
@@ -40,7 +46,7 @@ docker pull ubuntu
 docker pull ubuntu:22.04
 ```
 
-4. Pull nginx
+4. Pull nginx — the image that will serve the webstore-frontend
 ```bash
 docker pull nginx:1.24
 ```
@@ -115,7 +121,7 @@ exit
 
 ## Section 3 — Service Mode + Port Binding
 
-**Goal:** run nginx as a background service and reach it from your browser.
+**Goal:** run nginx as the webstore-frontend background service and reach it from your browser.
 
 1. Run nginx in the background with port binding
 ```bash
@@ -166,7 +172,7 @@ docker ps -a
 docker logs mysql-test
 ```
 
-**What to observe:** container exited immediately — MySQL requires a root password
+**What to observe:** container exited immediately — MySQL requires a root password. This is exactly what happens when you run webstore-db without the required postgres environment variables.
 
 3. Run MySQL with the required environment variable
 ```bash

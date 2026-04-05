@@ -66,7 +66,7 @@ This isolation is a feature, not a bug. It is what makes containers safe to run 
 | Your laptop terminal | Your laptop |
 | webstore-api container | webstore-api container only |
 | webstore-db container | webstore-db container only |
-| mongo-express container | mongo-express container only |
+| adminer container | adminer container only |
 
 Each container has its own network namespace. Its own localhost. Completely separate from every other container and from the host machine.
 
@@ -75,12 +75,14 @@ Each container has its own network namespace. Its own localhost. Completely sepa
 ```bash
 # Inside webstore-api container — this ALWAYS fails
 # Because localhost means webstore-api itself, not webstore-db
-MONGO_URL="mongodb://admin:secret@localhost:27017"
+DB_HOST="localhost"
+DB_PORT=5432
 ```
 
 ```bash
 # This works — using the container name as hostname
-MONGO_URL="mongodb://admin:secret@webstore-db:27017"
+DB_HOST="webstore-db"
+DB_PORT=5432
 ```
 
 **The fix:** containers talk to each other using **container names**, not localhost. Docker DNS translates the container name to its IP automatically. This is covered in Section 5.
@@ -113,9 +115,9 @@ When Docker installs, it creates a virtual network bridge on your host called `d
 │  │   (virtual cable)      (virtual cable)      (virtual cable)    │        │
 │  │        │                    │                    │             │        │
 │  │  ┌─────▼──────┐      ┌──────▼─────┐      ┌──────▼──────┐       │        │
-│  │  │webstore-api│      │webstore-db │      │mongo-express│       │        │
+│  │  │webstore-api│      │webstore-db │      │  adminer    │       │        │
 │  │  │172.18.0.2  │─────▶│172.18.0.3  │◀─────│172.18.0.4   │       │        │
-│  │  │  :8080     │ DNS  │  :27017    │ DNS  │   :8081     │       │        │
+│  │  │  :8080     │ DNS  │  :5432     │ DNS  │   :8080     │       │        │
 │  │  └────────────┘      └────────────┘      └─────────────┘       │        │
 │  └────────────────────────────────────────────────────────────────┘        │
 └────────────────────────────────────────────────────────────────────────────┘
@@ -178,7 +180,7 @@ When you create a custom Docker network, Docker starts an embedded DNS server fo
 ```
 webstore-api container
     │
-    │  "Connect to webstore-db:27017"
+    │  "Connect to webstore-db:5432"
     │
     ▼
 Docker DNS (127.0.0.11)
@@ -187,7 +189,7 @@ Docker DNS (127.0.0.11)
     │  Answer:  "172.18.0.3"
     │
     ▼
-webstore-api connects to 172.18.0.3:27017
+webstore-api connects to 172.18.0.3:5432
     │
     ▼
 webstore-db container receives the connection
@@ -223,7 +225,7 @@ Address: 172.18.0.3
 The default `bridge` network does not enable Docker DNS. Containers on it cannot resolve each other by name — only by IP. This is one of the main reasons you always create a named network for your app.
 
 **What happens when a container restarts:**
-When webstore-db restarts, it may get a different IP (e.g., `172.18.0.5` instead of `172.18.0.3`). Docker DNS updates automatically — webstore-api still connects to `webstore-db:27017` and gets the new IP without any configuration change. This is the same principle as Kubernetes labels and selectors — never hardcode IPs, always use names.
+When webstore-db restarts, it may get a different IP (e.g., `172.18.0.5` instead of `172.18.0.3`). Docker DNS updates automatically — webstore-api still connects to `webstore-db:5432` and gets the new IP without any configuration change. This is the same principle as Kubernetes labels and selectors — never hardcode IPs, always use names.
 
 ---
 
@@ -256,7 +258,7 @@ sudo iptables -t nat -L DOCKER -n
 Chain DOCKER (2 references)
 target  prot  opt  source    destination
 DNAT    tcp   --   0.0.0.0/0 0.0.0.0/0   tcp dpt:8080 to:172.18.0.2:8080
-DNAT    tcp   --   0.0.0.0/0 0.0.0.0/0   tcp dpt:8081 to:172.18.0.4:8081
+DNAT    tcp   --   0.0.0.0/0 0.0.0.0/0   tcp dpt:8080 to:172.18.0.4:8080
 ```
 
 **The port binding format:**
@@ -298,13 +300,14 @@ Docker lets you create multiple networks and control exactly which containers ca
 ┌─────────────────── webstore-network ──────────────────────┐
 │                                                           │
 │  webstore-frontend ──▶ webstore-api ──▶ webstore-db       │
-│  (nginx)                (app)            (mongo)          │
+│  (nginx:1.24)           (app)            (postgres:15)    │
 │                                                           │
 └───────────────────────────────────────────────────────────┘
 
 webstore-frontend: port 80 exposed to host (-p 80:80)
 webstore-api:      port 8080 exposed to host (-p 8080:8080)
 webstore-db:       NO port exposed — internal only
+adminer:           port 8080 exposed to host (-p 8081:8080) — dev only
 ```
 
 `webstore-db` has no `-p` flag. It is unreachable from your browser, from the internet, from any other Docker network. Only containers on `webstore-network` can connect to it. This is production-safe database isolation without any firewall rules.
@@ -316,14 +319,14 @@ docker network create frontend-network
 docker network create backend-network
 
 # webstore-frontend only on frontend
-docker run --network frontend-network --name webstore-frontend nginx
+docker run --network frontend-network --name webstore-frontend nginx:1.24
 
 # webstore-api on both — the bridge between the two tiers
-docker run --network frontend-network --name webstore-api node-app
+docker run --network frontend-network --name webstore-api webstore-api
 docker network connect backend-network webstore-api
 
 # webstore-db only on backend — invisible to frontend
-docker run --network backend-network --name webstore-db mongo
+docker run --network backend-network --name webstore-db postgres:15
 ```
 
 ```
@@ -351,7 +354,7 @@ This is the full webstore stack brought up manually. Every flag is explained.
 ```
 webstore-api    = client  (connects TO the database)
 webstore-db     = server  (waits for connections)
-mongo-express   = client  (connects TO the database for the UI)
+adminer         = client  (connects TO the database for the UI)
 ```
 
 **Step 1 — Create the network**
@@ -366,30 +369,28 @@ This creates a private bridge network with Docker DNS enabled. Every container t
 
 ```bash
 docker run -d \
-  -p 27017:27017 \
   --name webstore-db \
   --network webstore-network \
-  -e MONGO_INITDB_ROOT_USERNAME=admin \
-  -e MONGO_INITDB_ROOT_PASSWORD=secret \
-  mongo
+  -e POSTGRES_DB=webstore \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=secret \
+  -v webstore-db-data:/var/lib/postgresql/data \
+  postgres:15
 ```
 
 Start the server before the clients. webstore-api will fail to connect if the database is not ready when it starts.
 
-**Step 3 — Start mongo-express (database UI)**
+**Step 3 — Start adminer (database UI)**
 
 ```bash
 docker run -d \
-  -p 8081:8081 \
-  --name mongo-express \
+  -p 8081:8080 \
+  --name adminer \
   --network webstore-network \
-  -e ME_CONFIG_MONGODB_ADMINUSERNAME=admin \
-  -e ME_CONFIG_MONGODB_ADMINPASSWORD=secret \
-  -e ME_CONFIG_MONGODB_URL="mongodb://admin:secret@webstore-db:27017" \
-  mongo-express
+  adminer
 ```
 
-`webstore-db` in the connection URL is the container name — Docker DNS resolves it to the container's IP automatically.
+Adminer connects to any database using the connection form in the browser. Use `webstore-db` as the server hostname — Docker DNS resolves it automatically.
 
 **Step 4 — Build and start the API**
 
@@ -400,98 +401,69 @@ docker run -d \
   -p 8080:8080 \
   --name webstore-api \
   --network webstore-network \
-  -e MONGO_URL="mongodb://admin:secret@webstore-db:27017" \
+  -e DB_HOST=webstore-db \
+  -e DB_PORT=5432 \
+  -e DB_NAME=webstore \
+  -e DB_USER=admin \
+  -e DB_PASSWORD=secret \
   webstore-api
 ```
 
 **The final data flows:**
 
 ```
-App path:   Browser → localhost:8080 → webstore-api → webstore-db:27017
-Debug path: Browser → localhost:8081 → mongo-express → webstore-db:27017
-```
-
-**Verify everything is connected:**
-
-```bash
-# Check all containers are running
-docker ps
-
-# Check the network and which containers joined it
-docker network inspect webstore-network
-
-# Confirm DNS resolution from inside api container
-docker exec webstore-api nslookup webstore-db
-
-# Confirm api can reach db
-docker exec webstore-api curl -s webstore-db:27017
-```
-
-**Teardown:**
-
-```bash
-docker stop webstore-api mongo-express webstore-db
-docker rm webstore-api mongo-express webstore-db
-docker network rm webstore-network
+App path:   Browser → localhost:8080 → webstore-api → webstore-db:5432
+Debug path: Browser → localhost:8081 → adminer → webstore-db:5432
 ```
 
 ---
 
 ## 9. Debugging Docker Networking
 
-When containers cannot talk to each other, work through this checklist in order.
-
-**Step 1 — Are both containers on the same network?**
+**Symptom: container cannot reach another container**
 
 ```bash
-docker network inspect webstore-network
+# Step 1 — Are they on the same network?
+docker inspect webstore-api | grep -A 5 "Networks"
+docker inspect webstore-db | grep -A 5 "Networks"
 
-# Look for "Containers" section — both should appear
-# If a container is missing, it was not started with --network webstore-network
-```
-
-**Step 2 — Can Docker DNS resolve the name?**
-
-```bash
+# Step 2 — Can the container resolve the hostname?
 docker exec webstore-api nslookup webstore-db
 
-# If this fails — DNS is not working
-# Most likely cause: containers on different networks or using default bridge
+# Step 3 — Can the container reach the port?
+docker exec webstore-api nc -zv webstore-db 5432
+
+# Step 4 — Check what the container is actually trying to connect to
+docker logs webstore-api
 ```
 
-**Step 3 — Can the container reach the port?**
+**Symptom: browser cannot reach container**
 
 ```bash
-docker exec webstore-api nc -zv webstore-db 27017
+# Step 1 — Is the port binding active?
+docker ps | grep webstore-api
+# Look for: 0.0.0.0:8080->8080/tcp
 
-# Success: "Connection to webstore-db 27017 port [tcp] succeeded"
-# Failure: "Connection refused" = db not listening on that port
-#          Timeout = wrong network or firewall
-```
-
-**Step 4 — Is the target container actually running?**
-
-```bash
+# Step 2 — Is the container running?
 docker ps
-docker logs webstore-db
+
+# Step 3 — Is the app inside listening on the right port?
+docker exec webstore-api ss -tlnp
 ```
 
-**Step 5 — Check the connection string**
+**Symptom: containers on same network cannot find each other**
+
+Most common cause: using the default `bridge` network instead of a named network.
 
 ```bash
-docker exec webstore-api env | grep MONGO_URL
-# Confirm the URL uses the container name, not localhost or an IP
+# Wrong — default bridge, no DNS
+docker run --name webstore-api nginx
+docker run --name webstore-db postgres:15
+
+# Right — named network, DNS works
+docker network create webstore-network
+docker run --network webstore-network --name webstore-api nginx
+docker run --network webstore-network --name webstore-db postgres:15
 ```
-
-**Common errors and what they mean:**
-
-| Error | Meaning | Fix |
-|---|---|---|
-| `Connection refused` | Container running but nothing listening on that port | Check the port number, check container logs |
-| `Name resolution failure` | Docker DNS cannot find the container name | Check both containers are on the same named network |
-| `Connection timeout` | Network unreachable | Check both containers are on the same network |
-| `Authentication failed` | DNS worked, port open, but credentials wrong | Check env vars match between client and server |
-
-> **The Rule:** If two containers need to talk, they must be on the same Docker network. Same host is not enough. Same `docker run` command is not enough. Same network — explicitly set with `--network` — is the only thing that matters.
 
 → Ready to practice? [Go to Lab 02](../docker-labs/02-networking-volumes-lab.md)

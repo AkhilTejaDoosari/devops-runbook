@@ -363,11 +363,105 @@ EXPOSE <app-port>   # metadata only
 CMD ["<start-command>"]
 ```
 
-Later we use multi-stage builds to keep runtime images small (covered separately).
+---
+
+## 16) Multi-Stage Builds — Production Images
+
+A single-stage build puts everything into one image — build tools, compiler, test dependencies, and the runtime. This produces large images that contain code that should never run in production.
+
+Multi-stage builds solve this. You define multiple `FROM` stages in one Dockerfile. The final stage copies only what it needs from earlier stages. Build tools never make it into the production image.
+
+**Why this matters for the webstore-api:**
+
+```
+Single-stage build:
+  Base image (node:20)           ~900MB
+  + npm install (all deps)       ~200MB
+  + source code                  ~5MB
+  Total image size: ~1.1GB
+
+Multi-stage build:
+  Builder stage:  node:20 + all deps + source code (discarded)
+  Runtime stage:  node:20-alpine + production deps + compiled output only
+  Total image size: ~150MB
+```
+
+The runtime image is smaller, faster to pull, has fewer installed packages meaning fewer attack vectors, and contains nothing a developer would not want running in production.
+
+**Multi-stage Dockerfile for webstore-api:**
+
+```dockerfile
+# Stage 1 — Builder
+# This stage installs all dependencies and builds the app
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy dependency manifest first (cache this layer)
+COPY package.json package-lock.json ./
+
+# Install ALL dependencies including dev deps needed for build
+RUN npm ci
+
+# Copy source code and build
+COPY . .
+RUN npm run build
+
+# Stage 2 — Production runtime
+# This stage produces the final image — only what runs in production
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+# Copy only production dependency manifest
+COPY package.json package-lock.json ./
+
+# Install only production dependencies
+RUN npm ci --only=production
+
+# Copy built output from builder stage — not the source code
+COPY --from=builder /app/dist ./dist
+
+EXPOSE 8080
+
+CMD ["node", "dist/server.js"]
+```
+
+**Key lines explained:**
+
+```
+FROM node:20-alpine AS builder
+↑ Each FROM starts a new stage. AS builder names it.
+
+COPY --from=builder /app/dist ./dist
+↑ This is the multi-stage copy — pulling built output from the builder stage.
+  Only the compiled files come through. No node_modules from dev deps.
+  No source TypeScript. No test files.
+
+FROM node:20-alpine AS production
+↑ This is the final stage. When you docker build, this is what you get.
+  Everything from builder exists only during the build — it is discarded.
+```
+
+**Build and verify size reduction:**
+
+```bash
+# Build the multi-stage image
+docker build -t webstore-api:1.0 .
+
+# Check the image size
+docker images webstore-api
+
+# Confirm build tools are not in the final image
+docker run --rm webstore-api:1.0 which tsc
+# Should print nothing — TypeScript compiler not present
+```
+
+**The rule:** if your app has a build step — TypeScript compilation, webpack bundling, Go compilation — use multi-stage builds. The builder stage does the work. The runtime stage runs the result.
 
 ---
 
-## 16) The Ordering Law (Memorize This)
+## 17) The Ordering Law (Memorize This)
 
 > **Stable first. Volatile last.**
 
@@ -386,7 +480,7 @@ Reason:
 
 ---
 
-## 17) Instruction Laws (Quick Reference)
+## 18) Instruction Laws (Quick Reference)
 
 * `FROM` → starting filesystem + tools
 * `WORKDIR` → default folder (creates it)
@@ -408,7 +502,7 @@ OS package managers are Linux-specific.
 
 ---
 
-## 18) One-Line Truth
+## 19) One-Line Truth
 
 > A Dockerfile is a cached, ordered, Linux build recipe that separates build-time from run-time to create reproducible images.
 

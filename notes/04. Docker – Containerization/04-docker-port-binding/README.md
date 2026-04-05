@@ -10,7 +10,7 @@
 [Registry](../09-docker-registry/README.md) |
 [Compose](../10-docker-compose/README.md)
 
-# 05. Docker Port Binding
+# Docker Port Binding
 
 ## **1) The Problem**
 * Containers are isolated.

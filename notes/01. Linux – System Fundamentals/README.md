@@ -11,28 +11,44 @@ No certification fluff. No desktop Linux. Only what you actually use on servers.
 
 ---
 
+## Why Linux — and Why Ubuntu
+
+Every server you will ever SSH into in a DevOps role runs Linux. AWS EC2 instances run Linux. Docker containers run Linux. Kubernetes nodes run Linux. The CI runners that build your images run Linux. Learning Linux is not optional in this stack — it is the ground everything else stands on.
+
+Ubuntu is the distribution this runbook uses because it is the default for AWS EC2, the most common choice in DevOps job environments, and the distribution all tooling in this series assumes. The concepts transfer directly to any other Linux distribution — the package manager and a few paths change, nothing fundamental does.
+
+---
+
 ## Prerequisites
 
-None. This is the first folder in the series.  
-All you need is a Linux terminal — a VM, WSL, or a cloud instance works fine.
+None. This is the first folder in the series.
+All you need is a Linux terminal — a VM, WSL, or an EC2 instance works fine.
 
 ---
 
 ## The Running Example
 
-Every lab uses the same webstore project:
+Every note and every lab uses the same webstore project on disk. This is the same app that gets containerized in Docker, orchestrated in Kubernetes, and deployed to AWS. It starts here as a directory on a Linux server.
 
 ```
 ~/webstore/
-├── frontend/       ← static files served by nginx
+├── frontend/       ← static files nginx will serve
 ├── api/            ← application code
 ├── db/             ← database schemas
 ├── logs/           ← access.log, error.log
 ├── config/         ← webstore.conf
-└── backup/         ← archives
+└── backup/         ← archives before deploys
 ```
 
-By the end you will have set correct permissions on this directory, searched its logs with grep and awk, archived it with tar, installed nginx to serve it, and debugged it over the network with curl and tcpdump.
+By the end of Linux you will have built this structure from scratch, written config files into it, searched its logs with grep and awk, set correct ownership and permissions on every folder, archived it with tar, installed nginx to serve the frontend, managed nginx as a systemd service, and debugged it live over the network with curl and tcpdump.
+
+---
+
+## Where You Take the Webstore
+
+You arrive at Linux with nothing — a blank server and a project idea. You leave with the webstore running on that server, files organized, permissions locked, nginx serving the frontend, logs being written, and the whole project archived and ready to hand off.
+
+That is the state Git picks up from. You do not start Git with a blank folder — you start it with a working server setup that already has history worth tracking.
 
 ---
 
@@ -60,22 +76,22 @@ By the end you will have set correct permissions on this directory, searched its
 
 ---
 
-## How to Use This
+## What You Can Do After This
 
-Read phases in order. Each one builds on the previous.  
-After each phase do the lab before moving on.  
-The checklist at the end of every lab is not optional.
+- Navigate any Linux server confidently over SSH with no GUI
+- Search and analyze log files to debug real incidents
+- Create users and groups, set correct file ownership and permissions
+- Install software, manage services, and configure nginx
+- Use curl, dig, ss, and tcpdump to debug network issues live
+- Archive and restore directories for backups and deploys
 
 ---
 
-## What You Can Do After This
+## How to Use This
 
-- Navigate any Linux server confidently without a GUI
-- Search and analyze log files to debug real incidents
-- Create users, groups, and set correct file permissions
-- Install software, manage services, and configure nginx
-- Use curl, dig, ss, and tcpdump to debug network issues
-- Archive and restore directories for backups and deployments
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
 
 ---
 
@@ -83,4 +99,4 @@ The checklist at the end of every lab is not optional.
 
 → [02. Git & GitHub – Version Control](../02.%20Git%20%26%20GitHub%20–%20Version%20Control/README.md)
 
-Linux gives you the server foundation. Git gives you the workflow foundation — version control, collaboration, and the habit of tracking every change you make to infrastructure and code.
+Linux gives you the server foundation. Git gives you the workflow foundation — version control, collaboration, and the habit of tracking every change you make to infrastructure and code. The webstore directory you built here becomes the first Git repository you initialize.

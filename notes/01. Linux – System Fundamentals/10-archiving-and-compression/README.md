@@ -1,438 +1,258 @@
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
 # Archiving and Compression
 
+Before every deploy, you archive the current state of the webstore. Before rotating logs, you compress last month's access log. When you need to move the entire project to a new server, you pack it into one file and transfer it. These are not optional practices — they are the habits that let you recover when something goes wrong.
+
+This file covers two distinct operations that are often confused:
+
+- **Archiving** — combining multiple files and directories into one file. No size reduction. The purpose is portability and organization.
+- **Compression** — reducing a file's size. The purpose is storage efficiency and faster transfer.
+
+`tar` archives. `gzip` compresses. Used together — `tar.gz` — you get both.
+
+---
+
 ## Table of Contents
 
-- [1. Compression vs Archiving](#1-compression-vs-archiving)
-- [2. ZIP – Compress & Archive Multiple Files](#2-zip--compress--archive-multiple-files)
-- [3. unzip – Extract ZIP Files](#3-unzip--extract-zip-files)
-- [4. zip -r – Archive a Directory](#4-zip--r--archive-a-directory)
-- [5. gzip – Compress a Single File](#5-gzip--compress-a-single-file)
-- [6. zcat / zmore / zless – View Compressed Content](#6-zcat--zmore--zless--view-compressed-content)
-- [7. gunzip – Decompress `.gz` Files](#7-gunzip--decompress-gz-files)
-- [8. tar -cvf – Archive Files](#8-tar--cvf--archive-files)
-- [9. tar -xzvf – Extract from `.tar.gz`](#9-tar--xzvf--extract-from-targz)
-- [10. tar -tvf – View Contents of `.tar.gz`](#10-tar--tvf--view-contents-of-targz)
-- [11. tar -czvf – Archive + Compress Files](#11-tar--czvf--archive--compress-files)
-- [12. Backup a Directory](#12-backup-a-directory)
+- [1. Archiving vs Compression](#1-archiving-vs-compression)
+- [2. tar — The Standard Tool](#2-tar--the-standard-tool)
+- [3. gzip — Compressing Single Files](#3-gzip--compressing-single-files)
+- [4. Reading Compressed Files Without Extracting](#4-reading-compressed-files-without-extracting)
+- [5. zip and unzip](#5-zip-and-unzip)
+- [6. The Webstore Backup Workflow](#6-the-webstore-backup-workflow)
+- [7. Quick Reference](#7-quick-reference)
 
 ---
 
-<details>
-<summary><strong>1. Compression vs Archiving</strong></summary>
+## 1. Archiving vs Compression
 
-## Theory
+| Tool | What it does | Output |
+|---|---|---|
+| `tar` | Combines files into one archive — no compression | `.tar` |
+| `gzip` | Compresses a single file | `.gz` |
+| `tar + gzip` | Archives and compresses in one step — the Linux standard | `.tar.gz` or `.tgz` |
+| `zip` | Archives and compresses — common on Windows, cross-platform | `.zip` |
 
-- **Compression** = reduce file size (faster transfer, less storage)
-- **Archiving** = combine multiple files into one (no size reduction)
-
-| Tool         | Function                        |
-|--------------|----------------------------------|
-| `zip`        | Compress + Archive               |
-| `gzip`       | Compress only (single file)      |
-| `tar`        | Archive only                     |
-| `tar + gzip` | Archive + Compress (Linux std)   |
-
-</details>
+**The rule in practice:** on Linux servers you use `tar.gz`. It preserves file permissions, ownership, symlinks, and directory structure — everything you need to restore a backup to an identical state. `zip` does not preserve Unix permissions reliably, which matters when restoring a webstore with carefully set `chmod` values.
 
 ---
 
-<details>
-<summary><strong>2. ZIP – Compress & Archive Multiple Files</strong></summary>
+## 2. tar — The Standard Tool
 
-## Theory
+`tar` reads like a sentence: what to do, how to do it, what to name the result, what to include.
 
-`zip` compresses and archives multiple files into a `.zip` file.
+**The flags you use constantly:**
+
+| Flag | Meaning |
+|---|---|
+| `c` | Create a new archive |
+| `x` | Extract from an archive |
+| `t` | List contents without extracting |
+| `z` | Compress or decompress with gzip |
+| `v` | Verbose — print each file as it is processed |
+| `f` | The next argument is the archive filename — always required |
+
+The order matters: `tar -czvf archive.tar.gz source/` — flags first, archive name second, source last.
+
+**Create an archive:**
+
+```bash
+# Archive the entire webstore directory — no compression yet
+tar -cvf webstore.tar ~/webstore/
+
+# Output — verbose shows every file being added:
+# webstore/
+# webstore/config/
+# webstore/config/webstore.conf
+# webstore/logs/
+# webstore/logs/access.log
+# webstore/logs/error.log
+# ...
+```
+
+**Create a compressed archive (the one you actually use):**
+
+```bash
+# Archive + compress the webstore in one step
+tar -czvf webstore-backup.tar.gz ~/webstore/
+
+# With a timestamp in the filename — essential for multiple backups
+tar -czvf webstore-backup-$(date +%Y-%m-%d).tar.gz ~/webstore/
+# Creates: webstore-backup-2025-04-05.tar.gz
+```
+
+**List contents without extracting — always do this before extracting:**
+
+```bash
+tar -tzvf webstore-backup-2025-04-05.tar.gz
+
+# Output shows permissions, owner, size, date, path:
+# drwxr-xr-x akhil/webstore-team    0  2025-04-05  webstore/
+# -rw-r--r-- akhil/webstore-team  128  2025-04-05  webstore/config/webstore.conf
+# -rw-rw-r-- akhil/webstore-team 2.4K  2025-04-05  webstore/logs/access.log
+```
+
+This confirms the archive contains what you expect before you extract it. Extracting blindly into the wrong directory can overwrite files.
+
+**Extract an archive:**
+
+```bash
+# Extract into the current directory
+tar -xzvf webstore-backup-2025-04-05.tar.gz
+
+# Extract into a specific directory — safer than extracting in place
+tar -xzvf webstore-backup-2025-04-05.tar.gz -C /tmp/restore/
+
+# Extract a single file from the archive
+tar -xzvf webstore-backup-2025-04-05.tar.gz webstore/config/webstore.conf
+```
+
+The `-C` flag is important. Without it, tar extracts relative to your current directory. With it, you control exactly where things land — critical when restoring to a non-default path.
 
 ---
 
-### Syntax:
-```bash
-zip [options] <archive_name.zip> <file1> <file2> ...
-```
+## 3. gzip — Compressing Single Files
 
-### Example:
+`gzip` compresses one file and replaces it with a `.gz` version. The original file is gone after compression — this is different from `tar` which always creates a new file.
 
 ```bash
-zip logs.zip access.log error.log
+# Compress last month's access log — original is replaced
+gzip ~/webstore/logs/access.log.old
+ls -lh ~/webstore/logs/
+# -rw-rw-r-- akhil webstore-team 312K access.log.old.gz
+# (was 1.8M before compression — typical 80% reduction for log files)
+
+# Maximum compression — slower but smallest output
+gzip -9 ~/webstore/logs/error.log.old
+
+# Keep the original file (do not replace it)
+gzip -k ~/webstore/logs/access.log.old
+
+# Decompress — restores the original file
+gunzip ~/webstore/logs/access.log.old.gz
 ```
 
-### Output:
-
-```text
-  adding: access.log (deflated 60%)
-  adding: error.log (deflated 55%)
-```
-
-Result:
-
-```bash
-ls -lh
-# -rw-r--r-- 1 user group 4.1K Jul 01 18:00 logs.zip
-```
-
-</details>
+**When you reach for gzip directly:**
+Log rotation — compressing last month's logs before archiving them off the server. Individual config file backup before editing. Log files compress extremely well (60-85% reduction) because they contain repetitive text.
 
 ---
 
-<details>
-<summary><strong>3. unzip – Extract ZIP Files</strong></summary>
+## 4. Reading Compressed Files Without Extracting
 
-## Theory
+When a log file is compressed, you do not have to decompress it to search it. These commands work directly on `.gz` files:
 
-The `unzip` command extracts contents from a `.zip` file.
+```bash
+# Print the entire contents of a compressed log
+zcat ~/webstore/logs/access.log.gz
+
+# Page through it
+zless ~/webstore/logs/access.log.gz
+
+# Search for 500 errors inside the compressed log — no extraction needed
+zcat ~/webstore/logs/access.log.gz | grep '500'
+
+# Count 500 errors in the compressed log
+zcat ~/webstore/logs/access.log.gz | grep -c '500'
+```
+
+This is the pattern for searching historical logs. You keep old logs compressed to save space, and `zcat` lets you query them without decompressing to disk.
 
 ---
 
-### Syntax:
+## 5. zip and unzip
+
+`zip` is useful when you need to share files with systems that expect `.zip` — Windows, certain APIs, email attachments. On Linux servers between themselves, use `tar.gz`.
 
 ```bash
-unzip <archive_name.zip>
+# Zip specific files
+zip webstore-logs.zip ~/webstore/logs/access.log ~/webstore/logs/error.log
+
+# Zip an entire directory recursively
+zip -r webstore-config.zip ~/webstore/config/
+
+# List contents without extracting
+unzip -l webstore-config.zip
+
+# Extract
+unzip webstore-config.zip
+
+# Extract to a specific directory
+unzip webstore-config.zip -d /tmp/restore/
 ```
 
-### Example:
-
-```bash
-unzip logs.zip
-```
-
-### Output:
-
-```text
-Archive:  logs.zip
-  inflating: access.log
-  inflating: error.log
-```
-
-</details>
+**zip vs tar.gz on Linux:**
+`tar.gz` preserves Unix permissions, ownership, and symlinks. `zip` may not. If you archive the webstore with `zip` and extract it on another Linux server, the file permissions may be wrong and you will have to run `chmod` and `chown` again. Use `tar.gz` for Linux-to-Linux transfers.
 
 ---
 
-<details>
-<summary><strong>4. zip -r – Archive a Directory</strong></summary>
+## 6. The Webstore Backup Workflow
 
-## Theory
+This is the sequence you run before every significant change to the webstore on a server — before a deploy, before editing config files, before a system update.
 
-`zip -r` archives an entire directory including its subfolders.
+```bash
+# Step 1 — create a timestamped backup of the entire project
+tar -czvf ~/webstore/backup/webstore-$(date +%Y-%m-%d-%H%M).tar.gz \
+    --exclude='~/webstore/backup' \
+    ~/webstore/
+
+# Step 2 — verify the archive is not corrupted and contains what you expect
+tar -tzvf ~/webstore/backup/webstore-2025-04-05-0914.tar.gz | head -20
+
+# Step 3 — confirm the size is reasonable
+ls -lh ~/webstore/backup/
+
+# Step 4 — if something goes wrong after your change, restore:
+tar -xzvf ~/webstore/backup/webstore-2025-04-05-0914.tar.gz -C /tmp/restore/
+# Then verify the restore, swap the directories, restart nginx
+```
+
+The `--exclude` flag prevents the backup directory from being included inside itself — without it, each backup would contain all previous backups.
+
+**Log rotation backup — compress old logs monthly:**
+
+```bash
+# Compress logs older than 30 days
+find ~/webstore/logs/ -name "*.log" -mtime +30 -exec gzip {} \;
+
+# Verify compression happened
+ls -lh ~/webstore/logs/
+```
 
 ---
 
-### Syntax:
+## 7. Quick Reference
 
-```bash
-zip -r <archive_name.zip> <directory_path>
-```
-
-### Example:
-
-```bash
-zip -r webstore-logs.zip /var/log/webstore
-```
-
-### Output:
-
-```text
-  adding: /var/log/webstore/ (stored 0%)
-  adding: /var/log/webstore/access.log (deflated 40%)
-  adding: /var/log/webstore/error.log (deflated 42%)
-```
-
-</details>
+| Command | What it does | Example |
+|---|---|---|
+| `tar -czvf <archive> <source>` | Create compressed archive | `tar -czvf backup.tar.gz ~/webstore/` |
+| `tar -tzvf <archive>` | List contents without extracting | `tar -tzvf backup.tar.gz` |
+| `tar -xzvf <archive>` | Extract compressed archive | `tar -xzvf backup.tar.gz` |
+| `tar -xzvf <archive> -C <dir>` | Extract to specific directory | `tar -xzvf backup.tar.gz -C /tmp/restore/` |
+| `tar -xzvf <archive> <file>` | Extract a single file | `tar -xzvf backup.tar.gz webstore/config/webstore.conf` |
+| `gzip <file>` | Compress file — replaces original | `gzip access.log.old` |
+| `gzip -k <file>` | Compress file — keep original | `gzip -k access.log` |
+| `gzip -9 <file>` | Maximum compression | `gzip -9 error.log.old` |
+| `gunzip <file>.gz` | Decompress | `gunzip access.log.gz` |
+| `zcat <file>.gz` | Print compressed file contents | `zcat access.log.gz` |
+| `zless <file>.gz` | Page through compressed file | `zless access.log.gz` |
+| `zcat <file>.gz \| grep <pattern>` | Search inside compressed file | `zcat access.log.gz \| grep '500'` |
+| `zip -r <archive> <dir>` | Zip a directory | `zip -r config.zip ~/webstore/config/` |
+| `unzip <archive> -d <dir>` | Extract zip to directory | `unzip config.zip -d /tmp/restore/` |
 
 ---
-
-<details>
-<summary><strong>5. gzip – Compress a Single File</strong></summary>
-
-## Theory
-
-`gzip` compresses one file and replaces it with a `.gz` version.
-
----
-
-### Syntax:
-
-```bash
-gzip [options] <filename>
-```
-
-### Example:
-
-```bash
-gzip access.log
-```
-
-### Output:
-
-```bash
-ls -lh
-# -rw-r--r-- 1 user group 2.1K Jul 01 18:10 access.log.gz
-```
-
-Maximum compression:
-
-```bash
-gzip -9 error.log
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>6. zcat / zmore / zless – View Compressed Content</strong></summary>
-
-## Theory
-
-These commands let you view compressed `.gz` files without extracting.
-
----
-
-### Syntax:
-
-```bash
-zcat <file.gz>
-zmore <file.gz>
-zless <file.gz>
-```
-
-### Example:
-
-```bash
-zcat access.log.gz
-```
-
-### Output:
-
-```text
-192.168.1.10 GET /api/products 200
-192.168.1.14 POST /api/orders 500
-...
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>7. gunzip – Decompress `.gz` Files</strong></summary>
-
-## Theory
-
-`gunzip` restores the original file by removing the `.gz` compression.
-
----
-
-### Syntax:
-
-```bash
-gunzip <file.gz>
-```
-
-### Example:
-
-```bash
-gunzip access.log.gz
-```
-
-### Output:
-
-```bash
-ls -lh
-# -rw-r--r-- 1 user group 4.8K Jul 01 18:11 access.log
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>8. tar -cvf – Archive Files</strong></summary>
-
-## Theory
-
-`tar -cvf` creates an archive file from multiple files, without compression.
-
----
-
-### Syntax:
-
-```bash
-tar -cvf <archive_name.tar> <file1> <file2> ...
-```
-
-### Example:
-
-```bash
-tar -cvf webstore-configs.tar nginx.conf webstore.conf
-```
-
-### Output:
-
-```text
-nginx.conf
-webstore.conf
-```
-
-```bash
-ls -lh
-# -rw-r--r-- 1 user group 6.0K Jul 01 18:12 webstore-configs.tar
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>9. tar -xzvf – Extract from `.tar.gz`</strong></summary>
-
-## Theory
-
-`tar -xzvf` extracts and decompresses a `.tar.gz` file.
-
----
-
-### Syntax:
-
-```bash
-tar -xzvf <archive.tar.gz>
-```
-
-### Example:
-
-```bash
-tar -xzvf webstore-configs.tar.gz
-```
-
-### Output:
-
-```text
-nginx.conf
-webstore.conf
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>10. tar -tvf – View Contents of `.tar.gz`</strong></summary>
-
-## Theory
-
-Lists the contents of a compressed `.tar.gz` archive without extracting.
-
----
-
-### Syntax:
-
-```bash
-tar -tvf <archive.tar.gz>
-```
-
-### Example:
-
-```bash
-tar -tvf webstore-configs.tar.gz
-```
-
-### Output:
-
-```text
--rw-r--r-- user/group  2096 2025-07-01 17:59 nginx.conf
--rw-r--r-- user/group  1800 2025-07-01 17:59 webstore.conf
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>11. tar -czvf – Archive + Compress Files</strong></summary>
-
-## Theory
-
-Combines archiving + compression. Produces a `.tar.gz` file from files/folders.
-
----
-
-### Syntax:
-
-```bash
-tar -czvf <archive.tar.gz> <file1> <file2> ...
-```
-
-### Example:
-
-```bash
-tar -czvf webstore-configs.tar.gz nginx.conf webstore.conf
-```
-
-### Output:
-
-```text
-nginx.conf
-webstore.conf
-```
-
-```bash
-ls -lh
-# -rw-r--r-- 1 user group 3.5K Jul 01 18:15 webstore-configs.tar.gz
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>12. Backup a Directory</strong></summary>
-
-## Theory
-
-`tar -czvf` can compress and archive full directories (with subfolders and metadata).
-
----
-
-### Syntax:
-
-```bash
-tar -czvf <backup_name.tar.gz> <directory_path>
-```
-
-### Example:
-
-```bash
-tar -czvf webstore-backup.tar.gz /var/log/webstore
-```
-
-### Output:
-
-```text
-/var/log/webstore/
-/var/log/webstore/access.log
-/var/log/webstore/error.log
-```
-
-To extract:
-
-```bash
-tar -xzvf webstore-backup.tar.gz
-```
-
-</details>
 
 → Ready to practice? [Go to Lab 04](../linux-labs/04-archive-packages-services-lab.md)

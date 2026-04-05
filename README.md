@@ -13,53 +13,76 @@ A personal DevOps runbook — structured notes and labs built from fundamentals 
 
 ## Why This Exists
 
-Most DevOps content teaches tools in isolation. Commands work but nothing connects.  
+Most DevOps content teaches tools in isolation. Commands work but nothing connects.
 This runbook takes the opposite approach — every tool is learned in context, every concept links back to its foundation, and the same application runs through every layer.
 
-The goal is the kind of understanding that holds up under production pressure — not just knowing the command, but knowing what happens when you run it.
+The goal is the kind of understanding that holds up under production pressure — not just knowing the command, but knowing what happens when you run it and why it was designed that way.
 
 ---
 
 ## The Webstore App
 
-Every notes file and lab uses the same 3-tier application as the running example:
+Every notes file and every lab uses the same 3-tier application as the running example. Nothing is abstract. The same app gets more complex as the tools advance — by the end it is running on AWS EKS with a full CI/CD pipeline, monitored with Prometheus and Grafana.
 
-| Service | Image | Port |
+| Service | Image | Port | Role |
+|---|---|---|---|
+| webstore-frontend | nginx:1.24 | 80 | Serves the store UI |
+| webstore-api | nginx:1.24 | 8080 | Handles products and orders |
+| webstore-db | postgres:15 | 5432 | Stores products, orders, users |
+
+This stack is locked. Every tool in this runbook operates on these three services.
+
+---
+
+## Where the Webstore Goes — Tool by Tool
+
+This is the thread. Each tool picks up exactly where the previous one left off.
+
+| Tool | What you do to the webstore | State of the app after |
 |---|---|---|
-| webstore-frontend | nginx:1.24 | 80 |
-| webstore-api | nginx:1.24 | 8080 |
-| webstore-db | mongo | 27017 |
+| **Linux** | Create the project directory structure, write config files, set permissions, install nginx, manage it as a service, debug it over the network | Running on a Linux server, files organized, nginx serving the frontend, logs being written |
+| **Git** | Initialize a repo, commit the project history, create feature branches, tag the first release, push to GitHub | Version controlled, full commit history, v1.0 tagged, live on GitHub |
+| **Networking** | Trace every packet from browser to webstore-api — DNS resolution, IP routing, TCP handshake, port binding, response | You can explain and debug every network hop the app makes |
+| **Docker** | Containerize all three services, connect them on a Docker network, persist the database, build a custom image, push to registry, run the full stack with one Compose command | Fully containerized, portable, reproducible on any machine |
+| **Kubernetes** | Deploy on a local cluster, add self-healing, rolling updates, persistent storage for the database, config and secret management | Orchestrated, self-healing, running on Minikube |
+| **AWS** | Provision cloud infrastructure — EKS for the cluster, RDS PostgreSQL for the database, ALB for the load balancer, S3 for assets, CloudWatch for monitoring | Running in production on AWS |
+| **Terraform** | Define all AWS infrastructure as code — VPC, subnets, EKS cluster, RDS, IAM roles | Infrastructure is version controlled, reproducible, destroyable and rebuildable in minutes |
+| **Ansible** | Write playbooks that configure EC2 servers — install packages, manage services, push config files, enforce state across all nodes without touching them manually | Server configuration is automated, consistent, and repeatable across every environment |
+| **Bash** | Write scripts that automate deployments, health checks, log rotation, and backup — the glue that holds the pipeline together | Operational automation in place, manual toil eliminated |
 
-Using one consistent app across all tools means concepts connect — you are always building on something already familiar.
+---
+
+## Why These Tools
+
+Every tool in this runbook was chosen deliberately. These are the reasons.
+
+| Tool | Why this one | Why not the alternative |
+|---|---|---|
+| **Linux (Ubuntu)** | Industry standard for servers. AWS EC2 default. All DevOps tooling assumes it. | Windows Server — not used for containerized workloads. CentOS — dying in enterprise. |
+| **Git + GitHub** | Git is non-negotiable for version control. GitHub is where the jobs, PRs, Actions, and open source ecosystem live. | GitLab and Bitbucket use the same Git — different UI, smaller ecosystem for CI/CD integrations. |
+| **Docker** | The container standard. Every Kubernetes node runs containers. Every CI pipeline builds images. | Podman — rootless but niche. containerd — runtime only, no build tooling for learning. |
+| **Kubernetes** | The orchestration standard. AWS EKS, Google GKE, Azure AKS are all managed Kubernetes. Interviewers expect it. | Docker Swarm — dead in enterprise. Nomad — niche, used mainly at HashiCorp shops. |
+| **AWS** | Largest cloud market share (~32%). Most job postings reference AWS. EKS, RDS, and EC2 are interview staples. | GCP — strong in data and ML, smaller DevOps job market. Azure — dominant in Microsoft enterprise shops, not where most DevOps roles are. |
+| **Terraform** | IaC standard. Cloud-agnostic. Declarative. Used in the majority of DevOps job descriptions. Massive community and module ecosystem. | Pulumi — code-based IaC, growing but niche. CloudFormation — AWS-only and verbose. |
+| **Ansible** | Agentless — no software needed on target servers. YAML-based playbooks — same syntax as Kubernetes manifests. Dominant in DevOps job postings for configuration management. | Chef and Puppet — require agents on every server, fading in enterprise. SaltStack — niche. |
+| **Bash** | Pre-installed on every Linux server and CI runner. The glue language of DevOps. What you reach for on a server at 2am when nothing else is available. | Python — better for complex scripting, but Bash is the first tool on every machine. Both matter, Bash comes first. |
 
 ---
 
 ## Learning Order
-
-```
+````
 Linux → Git → Networking → Docker → Kubernetes → AWS → Terraform → Ansible → Bash
-```
-
-Networking before Docker — so Docker bridge, DNS, and NAT are not magic.  
-Networking before AWS — so VPC, Security Groups, and NAT Gateway are not magic.  
-Docker before Kubernetes — so Pods, Services, and networking are not magic.  
-Terraform before Ansible — so you configure infrastructure you understand how to build.  
-Ansible before Bash — so Bash scripts connect tools you already know how to use.
+````
+Networking before Docker — so Docker bridge, DNS, and NAT are not magic.
+Networking before AWS — so VPC, Security Groups, and NAT Gateway are not magic.
+Docker before Kubernetes — so Pods, Services, and image pulling are not magic.
+Terraform before Ansible — Terraform provisions the infrastructure, Ansible configures what runs on it.
 
 ---
 
 ## Structure
 
-```
-devops-runbook/
-├── assets/          ← banners and images
-├── notes/           ← lab instructions and reference material
-├── lab-work/        ← personal progress logs (grows as you work)
-├── LICENSE
-└── README.md
-```
-
-| # | Topic | Notes | Labs |
+| # | Tool | Notes | Labs |
 |---|---|---|---|
 | 01 | [Linux – System Fundamentals](./notes/01.%20Linux%20–%20System%20Fundamentals/README.md) | ✅ Complete | ✅ Complete |
 | 02 | [Git & GitHub – Version Control](./notes/02.%20Git%20%26%20GitHub%20–%20Version%20Control/README.md) | ✅ Complete | ✅ Complete |
@@ -75,68 +98,26 @@ devops-runbook/
 
 ## How to Use This Runbook
 
-This repo has two separate folders with two separate purposes:
+**1. Go in order.**
+The learning order is not random. Each tool builds directly on the previous one. Skipping Networking before Docker means Docker networking will feel like magic — and magic breaks in production without warning.
 
-```
-notes/       ← lab instructions and reference material — never edit these
-lab-work/    ← your personal progress logs — grows as you work
-```
-
----
-
-**Step 1 — Go in order**  
-The learning order is not random. Each folder builds directly on the previous one. Skipping networking before Docker means Docker networking will feel like magic — and magic breaks in production without warning.
-
-**Step 2 — Read the notes before opening a terminal**  
+**2. Read the notes before opening a terminal.**
 Every notes file starts with the mental model. Read it fully before touching a command. Understanding why something works is what lets you debug it when it breaks.
 
-**Step 3 — Do the labs from scratch**  
+**3. Do the labs from scratch.**
 Every lab says "write from scratch." This means it. Do not copy-paste commands. Typing them yourself forces your brain to process each flag and each decision. Speed comes later — understanding comes first.
 
-**Step 4 — Break things on purpose**  
+**4. Break things on purpose.**
 Every lab has a "Break It on Purpose" section. Do not skip it. These are the failure states you will actually hit in production. Reading about them is not the same as producing the error yourself and reading the output.
 
-**Step 5 — Log your progress in lab-work/**  
-After each lab, open your progress file and add a dated entry:
+**5. Do not move on until the checklist is done.**
+Every lab ends with a checklist. Every box must be checked before moving to the next lab. If you cannot check a box honestly, go back and do it properly.
 
-```
-lab-work/
-└── 04-docker/
-    └── lab-02-networking.md
-```
-
-Each entry follows this format:
-
-```markdown
-## Session — DD Month YYYY
-
-### What I did
-- paste actual terminal output here
-- note what commands you ran and what you observed
-
-### What broke
-- what error you hit and how you fixed it
-
-### Checklist
-- [x] item one
-- [x] item two
-```
-
-When you revisit a lab later, add a new dated entry at the top of the same file. Your log grows over time and your commit history shows continuous active work.
-
-**Step 6 — Commit after every lab**
-
-```bash
-git add lab-work/
-git commit -m "lab: complete docker lab 02 — networking and volumes"
-git push
-```
-
-**Step 7 — When stuck, read the error first**  
+**6. When stuck — read the error first.**
 Before searching anything, read the full error message. Most errors tell you exactly what is wrong. The habit of reading errors carefully is more valuable than any specific command.
 
-**Step 8 — Use the networking folder as a reference**  
-The networking notes are the foundation for Docker, Kubernetes, and AWS. Any time something feels abstract in those tools, go back to the networking folder — the concept is explained there without tool-specific noise.
+**7. Use the Networking folder as a reference.**
+The networking notes are the foundation for Docker, Kubernetes, and AWS. Any time something feels abstract in those tools, go back to the Networking folder — the concept is explained there without tool-specific noise.
 
 ---
 
@@ -150,7 +131,7 @@ Credits to the DevOps and cloud community at large.
 
 ## License
 
-This repository is licensed under the [MIT License](./LICENSE).  
+This repository is licensed under the [MIT License](./LICENSE).
 You are free to use, adapt, and share the content — just keep the copyright notice.
 
 ---

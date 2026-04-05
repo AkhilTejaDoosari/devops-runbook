@@ -1,338 +1,431 @@
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 Networking
+# Linux Networking
 
-## Table of Contents
-1. [ping – Check if a computer is online](#1-ping-–-check-if-a-computer-is-online)  
-2. [traceroute – See the path packets take](#2-traceroute-–-see-the-path-packets-take)  
-3. [dig – Look up website addresses](#3-dig-–-look-up-website-addresses)  
-4. [curl – Download or talk to a website](#4-curl-–-download-or-talk-to-a-website)  
-5. [ip – View and set your computer’s network address](#5-ip-–-view-and-set-your-computers-network-address)  
-6. [ss – See your computer’s connections](#6-ss-–-see-your-computers-connections)  
-7. [tcpdump – Capture live network traffic](#7-tcpdump-–-capture-live-network-traffic)  
-8. [netcat (nc) – Talk on open ports](#8-netcat-nc-–-talk-on-open-ports)  
-9. [nmap – Scan a network for computers](#9-nmap-–-scan-a-network-for-computers)  
-10. [iftop – Watch network speed live](#10-iftop-–-watch-network-speed-live)  
-11. [Quick Practice Examples](#11-quick-practice-examples)
+When something is wrong with a running service, the problem is often in the network layer. nginx is running but not responding. The API cannot reach the database. A port that should be open is not. A request is arriving but taking 3 seconds to respond and you do not know where the delay is.
+
+These tools are how you answer those questions from the command line. No GUI. No external monitoring tool. Just the terminal and the commands that let you see exactly what is happening on the network right now.
 
 ---
 
-<details>
-<summary><strong>1. ping – Check if a computer is online</strong></summary>
+## Table of Contents
 
-**Why use it?** To see if another computer (or website) can talk back.
+- [1. ip — Inspect Network Interfaces](#1-ip--inspect-network-interfaces)
+- [2. ping — Confirm Reachability](#2-ping--confirm-reachability)
+- [3. traceroute — Find Where Delay Lives](#3-traceroute--find-where-delay-lives)
+- [4. dig — Query DNS](#4-dig--query-dns)
+- [5. curl — Test HTTP Endpoints](#5-curl--test-http-endpoints)
+- [6. ss — See What Is Listening](#6-ss--see-what-is-listening)
+- [7. nc — Test Port Connectivity](#7-nc--test-port-connectivity)
+- [8. tcpdump — Capture Live Traffic](#8-tcpdump--capture-live-traffic)
+- [9. nmap — Scan Open Ports](#9-nmap--scan-open-ports)
+- [10. iftop — Watch Bandwidth Live](#10-iftop--watch-bandwidth-live)
+- [11. The Webstore Debug Workflow](#11-the-webstore-debug-workflow)
+- [12. Quick Reference](#12-quick-reference)
 
-- **What it does**: Sends a small message called an ICMP echo request. If the other computer is on and reachable, it sends the same message back.
-- **Basic use**:
-  ```bash
-  ping example.com
+---
 
+## 1. ip — Inspect Network Interfaces
 
-This keeps sending messages until you stop it (Ctrl+C).
+`ip` shows and configures network interfaces — the connections your server has to the network. When you SSH into a server for the first time, `ip addr` tells you what IP addresses the machine has and on which interfaces.
 
-* **Count option**: Send only a few messages.
+```bash
+# Show all interfaces and their IP addresses
+ip addr show
 
-  ```bash
-  ping -c 3 example.com
-  ```
+# Output:
+# 1: lo: <LOOPBACK,UP,LOWER_UP>
+#     inet 127.0.0.1/8 scope host lo
+# 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP>
+#     inet 10.0.1.45/24 brd 10.0.1.255 scope global eth0
+```
 
-  * `-c 3` means “stop after 3 messages.”
+`lo` is the loopback interface — `127.0.0.1`, the address a service uses to talk to itself on the same machine. `eth0` (or `enp3s0` on newer systems) is the real network interface with the server's actual IP.
 
-* **What you’ll see**:
+```bash
+# Show the routing table — how the server decides where to send traffic
+ip route show
 
-  ```text
-  PING example.com (93.184.216.34): 56 data bytes
-  64 bytes from 93.184.216.34: icmp_seq=0 ttl=56 time=10.2 ms
-  64 bytes from 93.184.216.34: icmp_seq=1 ttl=56 time=10.5 ms
-  64 bytes from 93.184.216.34: icmp_seq=2 ttl=56 time=10.1 ms
-  --- example.com ping statistics ---
-  3 packets transmitted, 3 received, 0% packet loss
-  round-trip min/avg/max = 10.1/10.3/10.5 ms
-  ```
+# Output:
+# default via 10.0.1.1 dev eth0        ← default gateway
+# 10.0.1.0/24 dev eth0 proto kernel    ← local network route
 
-  * **`time=10.2 ms`** tells you how fast (lower is better).
+# Show only a specific interface
+ip addr show eth0
+```
 
-</details>
+**When you reach for `ip`:**
+Confirming the server's IP after provisioning. Checking which interface is active when you have multiple network cards. Verifying the default gateway when traffic is not routing correctly.
 
-<details>
-<summary><strong>2. traceroute – See the path packets take</strong></summary>
+---
 
-**Why use it?** To find where network delays happen between you and another server.
+## 2. ping — Confirm Reachability
 
-* **What it does**: Sends test messages with increasing “time to live” (TTL). Each router along the way shows where it passed through and how long each step took.
+`ping` sends ICMP echo requests to a target and measures whether it responds and how long it takes. It answers the most basic question: can this machine reach that machine?
 
-* **Basic use**:
+```bash
+# Ping the webstore-api from another container or server
+ping webstore-api
 
-  ```bash
-  traceroute example.com
-  ```
+# Stop after 4 packets
+ping -c 4 webstore-api
 
-* **Skip name lookups** (faster output):
+# Output:
+# PING webstore-api (172.18.0.3): 56 data bytes
+# 64 bytes from 172.18.0.3: icmp_seq=0 ttl=64 time=0.312 ms
+# 64 bytes from 172.18.0.3: icmp_seq=1 ttl=64 time=0.287 ms
+# --- webstore-api ping statistics ---
+# 4 packets transmitted, 4 received, 0% packet loss
+# round-trip min/avg/max = 0.287/0.299/0.312 ms
+```
 
-  ```bash
-  traceroute -n example.com
-  ```
+**Reading ping output:**
+`time=0.312 ms` is round-trip latency — how long the packet took to go and come back. On a local network this should be under 1ms. Across the internet, 10–50ms is normal. Packet loss above 0% means something is dropping packets between the two machines.
 
-  * `-n` shows only IP addresses without trying to turn them into names.
+**When `ping` fails:**
+A failed ping does not always mean the host is down. Some servers block ICMP deliberately. If ping fails, follow up with `nc` or `curl` to test a specific port before concluding the host is unreachable.
 
-* **What you’ll see**:
+```bash
+# Ping the database to confirm network connectivity
+ping -c 3 webstore-db
 
-  ```text
-   1  192.168.1.1   1.123 ms  0.987 ms  1.045 ms
-   2  10.0.0.1     10.234 ms 10.456 ms 10.112 ms
-   3  93.184.216.34 20.333 ms 20.221 ms 20.412 ms
-  ```
+# Ping localhost to confirm the loopback interface is up
+ping -c 2 localhost
+```
 
-  * Each numbered line is one “hop” (router).
-  * The times are how long each hop took.
+---
 
-</details>
+## 3. traceroute — Find Where Delay Lives
 
-<details>
-<summary><strong>3. dig – Look up website addresses</strong></summary>
+`traceroute` maps every router hop between you and a destination, showing the latency at each step. When a request is slow and you do not know where the delay is, `traceroute` tells you exactly which hop is adding the time.
 
-**Why use it?** To see the IP address (and other info) behind a website name.
+```bash
+# Trace the path to the webstore API server
+traceroute webstore-api.example.com
 
-* **What it does**: Asks DNS servers “What IP is example.com?”
+# Skip DNS lookups — faster, shows only IPs
+traceroute -n webstore-api.example.com
 
-* **Basic use**:
+# Output:
+#  1  10.0.1.1      0.891 ms  0.823 ms  0.812 ms     ← your gateway
+#  2  172.16.0.1    1.234 ms  1.198 ms  1.211 ms     ← ISP router
+#  3  54.239.1.1    8.456 ms  8.421 ms  8.433 ms     ← AWS edge
+#  4  54.239.2.15  10.123 ms 10.098 ms 10.112 ms     ← destination
+```
 
-  ```bash
-  dig example.com
-  ```
+Each line is one hop. Three time values are three probes sent to that hop. `* * *` means a router is blocking traceroute probes — not necessarily broken, just silent.
 
-* **Short answer only**:
+**When you reach for `traceroute`:**
+API response times jumped from 50ms to 800ms. `traceroute` shows hop 3 suddenly adding 700ms — you know the delay is at the ISP level, not your server.
 
-  ```bash
-  dig +short example.com
-  ```
+---
 
-  * `+short` means “just show me the IP(s).”
+## 4. dig — Query DNS
 
-* **What you’ll see**:
+`dig` queries DNS servers directly and shows the full response. When a hostname is not resolving, or resolving to the wrong IP, `dig` shows you exactly what the DNS server returned and which server answered.
 
-  ```text
-  93.184.216.34
-  ```
+```bash
+# Look up the IP for webstore-api
+dig webstore-api.example.com
 
-</details>
+# Short answer only — just the IP
+dig +short webstore-api.example.com
+# 54.239.28.81
 
-<details>
-<summary><strong>4. curl – Download or talk to a website</strong></summary>
+# Query a specific DNS server — bypass your default resolver
+dig @8.8.8.8 webstore-api.example.com
 
-**Why use it?** To grab a page or talk to a web service without a browser.
+# Look up the DNS server responsible for a domain (NS record)
+dig webstore-api.example.com NS
 
-* **What it does**: Sends HTTP or HTTPS requests and shows you the response.
-* **Basic use** (download a page):
+# Trace the full DNS resolution path from root servers down
+dig +trace webstore-api.example.com
 
-  ```bash
-  curl http://example.com
-  ```
-* **See headers only**:
+# Check if a domain has an MX record
+dig webstore-api.example.com MX
+```
 
-  ```bash
-  curl -I http://example.com
-  ```
+**What the `dig` output tells you:**
 
-  * `-I` means “show only the response headers, not the page body.”
-* **Save output to a file**:
+```
+;; ANSWER SECTION:
+webstore-api.example.com.  300  IN  A  54.239.28.81
+#                          ^^^
+#                          TTL — seconds until this record expires from cache
+```
 
-  ```bash
-  curl http://example.com -o page.html
-  ```
+TTL (Time to Live) is how long resolvers cache this answer. A TTL of 300 means DNS changes take up to 5 minutes to propagate. If you just updated a DNS record and it is not working yet, check the TTL.
 
-  * `-o page.html` writes the response into `page.html`.
+**When you reach for `dig`:**
+You deployed to a new server and updated the DNS record but traffic is still hitting the old server. `dig +short` shows the old IP is still being returned — the TTL has not expired yet.
 
-</details>
+---
 
-<details>
-<summary><strong>5. ip – View and set your computer’s network address</strong></summary>
+## 5. curl — Test HTTP Endpoints
 
-**Why use it?** To check or change your computer’s IP address and network interfaces.
+`curl` makes HTTP requests from the terminal. It is how you test whether a service is responding correctly without opening a browser — essential on a server with no GUI.
 
-* **What it does**: Replaces older tools like `ifconfig` with more details.
-* **Show your IP addresses**:
+```bash
+# Test the webstore-api is responding
+curl http://localhost:8080
 
-  ```bash
-  ip addr show
-  ```
-* **Bring an interface up** (turn it on):
+# Test with verbose output — see request headers and response headers
+curl -v http://localhost:8080/api/products
 
-  ```bash
-  sudo ip link set eth0 up
-  ```
+# Test only the response headers — useful for checking status codes
+curl -I http://localhost:8080/api/products
+# HTTP/1.1 200 OK
+# Content-Type: application/json
+# ...
 
-  * `eth0` is the interface name (yours might be `enp3s0` or `wlan0`).
-* **Add a new IP**:
+# POST request with a JSON body — testing the orders endpoint
+curl -X POST http://localhost:8080/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{"product_id": 1, "quantity": 2}'
 
-  ```bash
-  sudo ip addr add 192.168.1.50/24 dev eth0
-  ```
+# Follow redirects automatically
+curl -L http://webstore.example.com
 
-  * Sets your computer’s address to `192.168.1.50` on a 255.255.255.0 network.
+# Test with a specific Host header — testing virtual host routing
+curl -H "Host: webstore.example.com" http://localhost
 
-</details>
+# Set a timeout — fail if no response in 5 seconds
+curl --max-time 5 http://localhost:8080/api/products
 
-<details>
-<summary><strong>6. ss – See your computer’s connections</strong></summary>
+# Save response to a file
+curl http://localhost:8080/api/products -o products.json
+```
 
-**Why use it?** To list which programs are talking to the network.
+**Reading curl -I output:**
+The HTTP status code tells you immediately what happened — `200 OK` means success, `301/302` means redirect, `404` means not found, `502 Bad Gateway` means nginx received the request but the upstream API did not respond, `503 Service Unavailable` means nginx could not reach the upstream at all.
 
-* **What it does**: Shows active TCP/UDP sockets (connections).
-* **Show all TCP connections**:
+**When you reach for `curl`:**
+After a deploy, before announcing the service is up. After editing nginx config, to confirm the new routing is working. When a user reports an endpoint is broken — reproduce it from the server with curl to confirm and capture the exact response.
 
-  ```bash
-  ss -t
-  ```
-* **Show listening ports only**:
+---
 
-  ```bash
-  ss -l
-  ```
+## 6. ss — See What Is Listening
 
-  * `-l` means “listening” (waiting for connections).
-* **Full view (no name lookups)**:
+`ss` shows socket statistics — every active network connection and every port the server is listening on. It replaced `netstat` on modern Linux systems.
 
-  ```bash
-  ss -tunp
-  ```
+```bash
+# Show all listening TCP ports with process names
+sudo ss -tlnp
 
-  * `-t` TCP, `-u` UDP, `-n` numeric only, `-p` show process name.
+# Output:
+# State    Recv-Q  Send-Q  Local Address:Port  Peer Address:Port  Process
+# LISTEN   0       511     0.0.0.0:80         0.0.0.0:*          users:(("nginx",pid=1235,fd=6))
+# LISTEN   0       128     0.0.0.0:22         0.0.0.0:*          users:(("sshd",pid=845,fd=3))
+# LISTEN   0       128     127.0.0.1:5432     0.0.0.0:*          users:(("postgres",pid=987,fd=5))
+```
 
-</details>
+Reading this output: port 80 is nginx listening on all interfaces (`0.0.0.0`) — accessible from outside. Port 5432 is postgres listening only on `127.0.0.1` — only accessible locally, not from outside the server. Port 22 is sshd.
 
-<details>
-<summary><strong>7. tcpdump – Capture live network traffic</strong></summary>
+```bash
+# Show all TCP and UDP connections with process names — numeric only
+sudo ss -tunp
 
-**Why use it?** To record exactly what goes in and out of your network interface.
+# Show connections to a specific port — who is connected to port 8080
+sudo ss -t dst :8080
 
-* **What it does**: Saves raw packets so you can inspect them.
-* **Basic capture**:
+# Show established connections only
+sudo ss -t state established
 
-  ```bash
-  sudo tcpdump -i eth0 -c 5 -nn
-  ```
+# Check if nginx is listening on port 80
+sudo ss -tlnp | grep :80
+```
 
-  * `-i eth0` choose interface, `-c 5` stop after 5 packets, `-nn` no name lookups.
-* **Save to a file**:
+**When you reach for `ss`:**
+You deployed nginx but `curl http://localhost` is not responding. `ss -tlnp` shows nginx is not in the list — it failed to start or is not bound to the expected port. Or you see port 8080 is not in the list — the API service is not running.
 
-  ```bash
-  sudo tcpdump -i eth0 -w capture.pcap
-  ```
+---
 
-  * `-w capture.pcap` writes packets to `capture.pcap` for later analysis.
+## 7. nc — Test Port Connectivity
 
-</details>
+`nc` (netcat) opens a raw TCP or UDP connection to a port. It is the fastest way to test whether a specific port is open and accepting connections — without needing to speak the full protocol of whatever service is running there.
 
-<details>
-<summary><strong>8. netcat (nc) – Talk on open ports</strong></summary>
+```bash
+# Test if port 8080 on the API server is accepting connections
+nc -zv webstore-api 8080
+# Connection to webstore-api 8080 port [tcp/*] succeeded!
 
-**Why use it?** To send or receive raw data over TCP or UDP, often for testing.
+# Test if the database port is reachable
+nc -zv webstore-db 5432
+# Connection to webstore-db 5432 port [tcp/*] succeeded!
 
-* **What it does**: Opens a simple connection to a port.
-* **Check if port 80 is open**:
+# Test with a timeout — fail after 3 seconds
+nc -zv -w 3 webstore-api 8080
 
-  ```bash
-  nc -vz example.com 80
-  ```
+# Test if port 80 is open on a remote server
+nc -zv webstore.example.com 80
+```
 
-  * `-v` verbose, `-z` zero-I/O (just test connect).
-* **Listen on a port** (simple server):
+`-z` means zero I/O — just test the connection, do not send data. `-v` is verbose — shows whether the connection succeeded or failed.
 
-  ```bash
-  nc -l -p 1234 > received.txt
-  ```
+**When you reach for `nc`:**
+The API cannot connect to the database. Before debugging the application, use `nc -zv webstore-db 5432` from the API server. If nc fails, it is a network problem. If nc succeeds, the problem is in the application layer — wrong credentials, wrong database name, wrong connection string.
 
-  * Waits on port 1234 and writes incoming data to `received.txt`.
+---
 
-</details>
+## 8. tcpdump — Capture Live Traffic
 
-<details>
-<summary><strong>9. nmap – Scan a network for computers</strong></summary>
+`tcpdump` captures raw network packets in real time. It shows you exactly what is going over the wire — every request, every response, every header. It is the deepest debugging tool in this list and the one you reach for when everything else has failed to explain what is happening.
 
-**Why use it?** To find which computers and services are available on a network.
+```bash
+# Capture all traffic on eth0 — stop with Ctrl+C
+sudo tcpdump -i eth0
 
-* **What it does**: Probes a range of IPs and ports.
-* **Scan a single host**:
+# Capture only HTTP traffic on port 80
+sudo tcpdump -i eth0 port 80
 
-  ```bash
-  nmap example.com
-  ```
-* **Scan a subnet**:
+# Capture traffic to or from the webstore-api IP
+sudo tcpdump -i eth0 host 10.0.1.45
 
-  ```bash
-  nmap 192.168.1.0/24
-  ```
-* **Fast scan specific ports**:
+# Capture with no DNS lookups — shows IPs not hostnames
+sudo tcpdump -i eth0 -n port 80
 
-  ```bash
-  nmap -p 22,80,443 example.com
-  ```
+# Capture and show packet contents in ASCII
+sudo tcpdump -i eth0 -A port 8080
 
-</details>
+# Save capture to a file for analysis
+sudo tcpdump -i eth0 -w webstore-capture.pcap port 8080
 
-<details>
-<summary><strong>10. iftop – Watch network speed live</strong></summary>
+# Read from a saved capture file
+sudo tcpdump -r webstore-capture.pcap
+```
 
-**Why use it?** To see which connections use the most bandwidth right now.
+**When you reach for `tcpdump`:**
+`curl` returns a response but it looks wrong. `ss` shows connections are being established. But something in the data is not right. `tcpdump -A port 8080` shows you the raw HTTP request and response — every header, every body. You can see exactly what nginx is sending and what it is receiving.
 
-* **What it does**: Shows a real-time table of data rates per connection.
-* **Run on interface**:
+---
 
-  ```bash
-  sudo iftop -i eth0
-  ```
-* **Show only IPs** (no DNS lookups):
+## 9. nmap — Scan Open Ports
 
-  ```bash
-  sudo iftop -n -i eth0
-  ```
+`nmap` probes a host or range of hosts and reports which ports are open. On your own servers, it confirms your firewall is configured correctly — that only the ports you intend to expose are exposed.
 
-</details>
+```bash
+# Scan the webstore server — which ports are open?
+nmap webstore.example.com
 
-<details>
-<summary><strong>11. Quick Practice Examples</strong></summary>
+# Scan specific ports only
+nmap -p 22,80,443,8080 webstore.example.com
 
-Try these in your terminal:
+# Scan with service version detection
+nmap -sV webstore.example.com
 
-1. Check if Google is online and stop after 2 pings:
+# Fast scan — top 100 most common ports
+nmap -F webstore.example.com
 
-   ```bash
-   ping -c 2 google.com
-   ```
-2. Find how many hops to your router:
+# Output:
+# PORT     STATE  SERVICE
+# 22/tcp   open   ssh
+# 80/tcp   open   http
+# 8080/tcp open   http-proxy
+# 5432/tcp closed postgresql   ← good — DB should not be exposed
+```
 
-   ```bash
-   traceroute -n 192.168.1.1
-   ```
-3. See your own IP address:
+**When you reach for `nmap`:**
+After configuring a firewall, confirm that port 5432 (database) is closed to the outside world and port 80 is open. `nmap` from an external machine gives you the attacker's view of your server — what they can see.
 
-   ```bash
-   ip addr show
-   ```
-4. Download example.com homepage into a file:
+---
 
-   ```bash
-   curl http://example.com -o homepage.html
-   ```
-5. List listening TCP ports:
+## 10. iftop — Watch Bandwidth Live
 
-   ```bash
-   ss -ltnp
-   ```
+`iftop` shows a real-time view of network bandwidth usage per connection. When a server is saturating its network link and you need to know which connection is consuming it, `iftop` shows you immediately.
 
-</details>
+```bash
+# Watch all traffic on eth0
+sudo iftop -i eth0
+
+# Show IPs only — no DNS lookups
+sudo iftop -n -i eth0
+```
+
+Press `q` to quit. The display shows source and destination IPs with bandwidth rates — 2s, 10s, and 40s averages.
+
+**When you reach for `iftop`:**
+A server's network usage jumped to 90% of capacity. `iftop` shows one IP address consuming almost all of it — a likely sign of a backup job, a runaway log shipper, or a DDoS attempt.
+
+---
+
+## 11. The Webstore Debug Workflow
+
+This is the sequence you follow when something is wrong with the webstore and you need to isolate where the problem is. Work from the outside in — network first, then application.
+
+**Scenario: users report the webstore is not loading**
+
+```bash
+# Step 1 — is nginx running and listening on port 80?
+sudo ss -tlnp | grep :80
+# If nothing appears — nginx is not listening. Check status:
+sudo systemctl status nginx
+journalctl -u nginx -n 20
+
+# Step 2 — can the server respond to HTTP at all?
+curl -I http://localhost
+# 200 OK → nginx is up
+# Connection refused → nginx is not running or not bound to port 80
+
+# Step 3 — can the API be reached from the frontend server?
+nc -zv webstore-api 8080
+# succeeded → port is open, network is fine
+# failed → check if the API service is running, check firewall
+
+# Step 4 — is the API actually responding correctly?
+curl -v http://webstore-api:8080/api/products
+# Check status code and response body
+
+# Step 5 — can the API reach the database?
+nc -zv webstore-db 5432
+# succeeded → database port is reachable
+# failed → database is down or firewall is blocking
+
+# Step 6 — is DNS resolving correctly?
+dig +short webstore-api.example.com
+# Compare to the IP you expect
+
+# Step 7 — if traffic is getting in but responses are wrong, capture it
+sudo tcpdump -A -i eth0 port 8080 -c 20
+# Read the raw HTTP request and response
+```
+
+Work through each step in order. Each command either confirms a layer is working or identifies where the break is.
+
+---
+
+## 12. Quick Reference
+
+| Command | What it does | When you reach for it |
+|---|---|---|
+| `ip addr show` | Show all interfaces and IP addresses | First thing after SSHing into a new server |
+| `ip route show` | Show routing table | Diagnosing routing problems |
+| `ping -c 4 <host>` | Test reachability with 4 packets | Confirming two machines can reach each other |
+| `traceroute -n <host>` | Trace route, show IPs only | Finding which hop is adding latency |
+| `dig +short <host>` | Quick DNS lookup | Confirming a hostname resolves to the right IP |
+| `dig +trace <host>` | Full DNS resolution trace | Debugging DNS propagation after a record change |
+| `curl -I <url>` | Show HTTP response headers only | Checking status code without full body |
+| `curl -v <url>` | Verbose HTTP request and response | Debugging headers, auth, redirects |
+| `sudo ss -tlnp` | Show listening TCP ports with process names | Confirming a service is bound to the right port |
+| `sudo ss -tunp` | Show all TCP and UDP connections | Full socket inventory |
+| `nc -zv <host> <port>` | Test if a port is open | Isolating network vs application problems |
+| `sudo tcpdump -i eth0 port <port>` | Capture traffic on a specific port | Deep packet inspection when nothing else explains it |
+| `sudo tcpdump -A -i eth0 port <port>` | Capture with ASCII payload | Reading raw HTTP request and response content |
+| `nmap -p <ports> <host>` | Scan specific ports | Verifying firewall rules from outside |
+| `sudo iftop -n -i eth0` | Watch bandwidth per connection live | Finding which connection is saturating the link |
+
+---
+
 → Ready to practice? [Go to Lab 05](../linux-labs/05-networking-lab.md)

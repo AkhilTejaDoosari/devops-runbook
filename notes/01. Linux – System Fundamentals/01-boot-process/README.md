@@ -1,201 +1,266 @@
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
 # 🐧 Boot Process
 
+## What This File Is About
+
+When a Linux server fails to boot — kernel panic, GRUB error, blank screen — you need to know exactly which stage broke and why. The boot process is a relay race. Each stage does its specific job and hands off to the next. If any stage fails, the race stops exactly there. This file gives you the mental model to read that failure and know where to look.
+
+---
+
 ## Table of Contents
-- [1. Theory & Notes](#1-theory--notes)
-- [2. Real Examples](#2-real-examples)
-- [3. Practical Use Cases](#3-practical-use-cases)
-- [4. Quick Command Summary](#4-quick-command-summary)
+
+1. [Linux Architecture](#1-linux-architecture)
+2. [The Boot Sequence](#2-the-boot-sequence)
+3. [Firmware — BIOS and UEFI](#3-firmware--bios-and-uefi)
+4. [Disk Partitioning — MBR vs GPT](#4-disk-partitioning--mbr-vs-gpt)
+5. [GRUB2 — The Bootloader](#5-grub2--the-bootloader)
+6. [The Kernel](#6-the-kernel)
+7. [systemd — PID 1](#7-systemd--pid-1)
+8. [Runlevels vs Targets](#8-runlevels-vs-targets)
+9. [Login Stage](#9-login-stage)
+10. [Commands](#10-commands)
 
 ---
 
-<details>
-<summary><strong>1. Theory & Notes</strong></summary>
+## 1. Linux Architecture
 
-### Linux Architecture Layers
+Before the boot process makes sense, you need to understand how Linux is structured. It is built in layers — each one sitting on top of the one below, each one only talking to the layer directly beneath it.
 
-Linux architecture is layered like a stack:
-
-1. **Hardware** – CPU, RAM, disk, NIC, etc.
-2. **Kernel** – The brain that talks to hardware.
-3. **Shell** – CLI interface between user and kernel.
-4. **Applications** – Browsers, servers, databases, tools.
-
-Each layer builds on the one below. Example:
-- Click "Save" in an app → goes to shell → kernel handles → writes to hardware.
-
----
-
-### Power ON & Firmware
-
-- System gets power → firmware starts (BIOS or UEFI).
-- Runs **POST** to check hardware (RAM, CPU, storage).
-- Finds a bootable disk (e.g., SSD) to hand off to bootloader.
-
-> BIOS = Basic Input/Output System  
-> UEFI = Unified Extensible Firmware Interface (modern firmware)
-
----
-
-### Disk Partitioning: MBR vs GPT
-
-- **MBR** = Master Boot Record
-  - Max 4 primary partitions
-  - Max 2 TB
-- **GPT** = GUID Partition Table
-  - Works with UEFI
-  - Supports huge disks + many partitions
-
-Both store where bootloader is.
-
----
-
-### Bootloader – GRUB2
-
-**What is it?**
-- Tiny program that loads the kernel and `initramfs`.
-
-**Tasks:**
-- Show OS selection menu
-- Load Linux kernel into memory
-- Load initramfs (temporary root filesystem)
-
-**Main Files:**
-- `/boot/grub2/`, `/boot/efi/EFI/`
-- `/etc/default/grub`, `/etc/grub.d/`
-- Final config → `/boot/grub2/grub.cfg` or `/boot/efi/EFI/.../grub.cfg`
-
----
-
-### Kernel – The Linux Brain
-
-**Job:**
-- Load drivers
-- Mount the real root filesystem (like `/dev/sda1`)
-- Start `init` (which becomes `systemd`)
-
-**initramfs**:
-- Temporary root with essential drivers
-- Needed before real `/` mount
-
----
-
-### systemd – First User-Space Process
-
-- PID = 1
-- Starts all services (daemons)
-- Manages logs, mounts, targets
-- Replaces old SysV `init`
-
-**Main unit types:**
-- `.service` → start/stop daemons
-- `.target` → boot states
-- `.socket`, `.mount`, `.timer`
-
----
-
-### Runlevels vs Targets
-
-| Runlevel | systemd Target    | Purpose                  |
-|----------|-------------------|--------------------------|
-| 0        | poweroff.target   | Shutdown                 |
-| 1        | rescue.target     | Single-user mode         |
-| 3        | multi-user.target | CLI, no GUI              |
-| 5        | graphical.target  | Multi-user with GUI      |
-| 6        | reboot.target     | Restart the system       |
-
----
-
-### Login Stage
-
-Once systemd finishes, you get:
-- CLI login (for servers)
-- GUI login screen (for desktops)
-
-Then you’re ready to use the system.
-
-</details>
-
----
-
-<details>
-<summary><strong>2. Real Examples</strong></summary>
-
-```bash
-# Kernel version
-uname -r
-````
-
-```output
-6.5.0-25-generic
+```
+┌─────────────────────────────────────┐
+│            Applications             │  browsers, web servers, databases, tools
+├─────────────────────────────────────┤
+│               Shell                 │  bash, zsh — translates your commands
+├─────────────────────────────────────┤
+│               Kernel                │  the core of Linux, talks to hardware
+├─────────────────────────────────────┤
+│              Hardware               │  CPU, RAM, disk, NIC
+└─────────────────────────────────────┘
 ```
 
-```bash
-# Boot-time logs
-dmesg | less
+When you click Save in an application, that request travels down the stack — app → shell → kernel → hardware. The kernel is the only layer that ever touches hardware directly. Everything above it goes through the kernel to get anything done.
+
+The boot process is how this entire stack gets assembled from nothing, every time the machine starts.
+
+---
+
+## 2. The Boot Sequence
+
+When you press the power button, Linux does not just appear. A fixed sequence runs — each stage hands off to the next. Miss a handoff and the system stops exactly there.
+
+```
+Power ON
+   │
+   ▼
+┌─────────────────────────────────────┐
+│         Firmware (BIOS/UEFI)        │
+│  runs POST, finds bootable disk     │
+│  ✗ fails → hardware error,          │
+│            beep codes, blank screen │
+└──────────────────┬──────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────┐
+│           GRUB2 Bootloader          │
+│  loads kernel + initramfs           │
+│  ✗ fails → grub rescue prompt or    │
+│            "no such partition" error│
+└──────────────────┬──────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────┐
+│               Kernel                │
+│  loads drivers, mounts filesystem   │
+│  ✗ fails → kernel panic on screen   │
+└──────────────────┬──────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────┐
+│           systemd (PID 1)           │
+│  starts all services, hits target   │
+│  ✗ fails → emergency shell or       │
+│            failed units on screen   │
+└──────────────────┬──────────────────┘
+                   │
+                   ▼
+            Login Prompt ✅
 ```
 
-```bash
-# Running services
-systemctl list-units --type=service
-```
+Each failure message tells you exactly which stage broke. A grub rescue prompt means GRUB2 failed — you don't look at the kernel. A kernel panic means GRUB2 succeeded — you look at drivers or the filesystem mount.
 
-```bash
-# View kernel + grub files
-ls /boot
-```
+---
 
-```bash
-# GRUB default config
-cat /etc/default/grub
-```
+## 3. Firmware — BIOS and UEFI
 
+The firmware is the first thing that runs when a machine gets power. It lives on a chip on the motherboard — it is not Linux, not an OS, just a tiny program burned into hardware whose only job is to wake up the system and find something bootable.
+
+**What it does:**
+- Runs **POST** (Power-On Self Test) — checks that RAM, CPU, and storage are present and responding
+- Finds a bootable disk
+- Hands control to the bootloader on that disk
+
+There are two firmware types:
+
+| | BIOS | UEFI |
+|---|---|---|
+| Age | Legacy | Modern standard |
+| Disk support | Works with MBR | Works with GPT |
+| Max disk size | 2 TB | No practical limit |
+| Boot speed | Slower | Faster |
+
+UEFI is what every modern server uses. You may still see BIOS on older hardware.
+
+---
+
+## 4. Disk Partitioning — MBR vs GPT
+
+Before the firmware can hand off to the bootloader, it needs to know where on disk the bootloader lives. That information is stored in the partition table.
+
+| | MBR (Master Boot Record) | GPT (GUID Partition Table) |
+|---|---|---|
+| Max partitions | 4 primary | Virtually unlimited |
+| Max disk size | 2 TB | No practical limit |
+| Works with | BIOS | UEFI |
+| Status | Legacy | Modern standard |
+
+GPT is the standard on any server built in the last decade. You will encounter MBR only on old machines or legacy setups.
+
+---
+
+## 5. GRUB2 — The Bootloader
+
+GRUB2 (Grand Unified Bootloader) is the first Linux-aware software that runs. Firmware is generic — it knows nothing about Linux. GRUB2 knows exactly where the kernel is and how to load it.
+
+**What GRUB2 does:**
+- Shows the OS selection menu (useful on dual-boot machines)
+- Loads the Linux kernel into memory
+- Loads **initramfs** — a tiny temporary filesystem the kernel needs to get started
+- Steps aside — its job is done in seconds
+
+**Key files:**
+
+| File | Purpose |
+|---|---|
+| `/boot/grub2/` or `/boot/efi/EFI/` | GRUB2 binary and config location |
+| `/etc/default/grub` | Human-editable GRUB settings |
+| `/etc/grub.d/` | Scripts that generate the final config |
+| `/boot/grub2/grub.cfg` | Final generated config — do not edit directly |
+
+After changing `/etc/default/grub`, regenerate the config:
 ```bash
-# Regenerate GRUB (Debian/Ubuntu)
 sudo update-grub
 ```
 
-</details>
+---
+
+## 6. The Kernel
+
+The kernel is the brain of Linux — the only software that talks directly to hardware. Once GRUB2 hands control to it, the kernel takes over completely.
+
+**What the kernel does at boot:**
+- Loads hardware drivers
+- Uses initramfs to get access to storage
+- Mounts the real root filesystem (e.g. `/dev/sda1`)
+- Starts systemd — the first user-space process
+
+**Why initramfs exists:**
+The kernel needs certain drivers to mount the real root filesystem — but those drivers might live on the real root filesystem. initramfs breaks that chicken-and-egg problem. It is a tiny filesystem loaded into RAM with just enough drivers to get the real mount done. Once the real filesystem is mounted, initramfs is discarded.
 
 ---
 
-<details>
-<summary><strong>3. Practical Use Cases</strong></summary>
+## 7. systemd — PID 1
 
-* Debug boot failures like kernel panics, GRUB issues, and disk mounting errors.
-* Manage dual boot setups between Linux and Windows.
-* Automate server provisioning with cloud-init and systemd targets.
-* Configure secure boot or kernel-level startup for compliance and recovery.
+systemd is the first process the kernel starts after taking control. It always gets **PID 1** — process ID number one, the parent of everything else on the system. Every service, every daemon, every background process on a running Linux machine is a child of systemd.
 
-</details>
+**What systemd manages:**
+- Starting and stopping all services
+- Boot targets — defining what state the system should reach
+- Logging via `journald`
+- Mounts, sockets, timers
+
+**Unit types:**
+
+| Unit | Purpose |
+|---|---|
+| `.service` | Background daemons — nginx, sshd, mysql |
+| `.target` | Groups of units — defines boot states |
+| `.socket` | Socket-based service activation |
+| `.mount` | Filesystem mount points |
+| `.timer` | Scheduled jobs, like cron |
 
 ---
 
-<details>
-<summary><strong>4. Quick Command Summary</strong></summary>
+## 8. Runlevels vs Targets
 
-| Command                               | Description                           |                              |
-| ------------------------------------- | ------------------------------------- | ---------------------------- |
-| `uname -r`                            | Show current kernel version           |                              |
-| \`dmesg                               | less\`                                | View kernel/system boot logs |
-| `systemctl list-units --type=service` | List all active services              |                              |
-| `ls /boot`                            | Kernel + GRUB files                   |                              |
-| `cat /etc/default/grub`               | GRUB user config                      |                              |
-| `sudo update-grub`                    | Regenerate `grub.cfg` (Ubuntu/Debian) |                              |
-| `reboot` / `shutdown -h now`          | Restart or shut down the system       |                              |
+Old SysV init used numbered runlevels. systemd replaced them with named targets that describe what state the system should reach after boot.
 
-</details>
+| Runlevel | systemd Target | Purpose |
+|---|---|---|
+| 0 | `poweroff.target` | Shutdown |
+| 1 | `rescue.target` | Single-user recovery mode |
+| 3 | `multi-user.target` | CLI with networking — standard for servers |
+| 5 | `graphical.target` | Multi-user with GUI — standard for desktops |
+| 6 | `reboot.target` | Restart |
+
+Most Linux servers run at `multi-user.target` — full networking, no GUI. That is the target systemd reaches on a typical server boot.
+
+---
+
+## 9. Login Stage
+
+Once systemd finishes bringing all services up and reaches the target, you get a login prompt:
+
+- **Servers** → CLI login over SSH or directly on the console
+- **Desktops** → graphical login screen (GDM, LightDM, etc.)
+
+The system is fully up. The relay race is complete.
+
+---
+
+## 10. Commands
+
+These are the commands you reach for when working with or debugging the boot process:
+
+```bash
+# Confirm which kernel version is currently running
+uname -r
+
+# View kernel and hardware messages from boot — look here after a crash
+dmesg | less
+
+# List all active services — see what systemd brought up
+systemctl list-units --type=service
+
+# See what lives in the boot partition — kernel, initramfs, GRUB files
+ls /boot
+
+# View the human-editable GRUB config
+cat /etc/default/grub
+
+# Regenerate grub.cfg after editing GRUB settings (Debian/Ubuntu)
+sudo update-grub
+
+# Restart or shut down
+reboot
+shutdown -h now
+```
+
+**When you reach for these:**
+- Server won't boot → `dmesg | less` to find exactly where it failed
+- Kernel updated, confirm the version → `uname -r`
+- Service missing after reboot → `systemctl list-units --type=service`
+- Changed GRUB timeout or default OS → `sudo update-grub` to apply it

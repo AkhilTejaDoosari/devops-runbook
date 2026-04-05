@@ -1,228 +1,278 @@
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 `sed` Stream Editor
+# sed — Stream Editor
 
-- [1. sed Overview](#1-sed-overview)  
-- [2. Basic Substitutions](#2-basic-substitutions)  
-- [3. Targeted Substitutions in a File](#3-targeted-substitutions-in-a-file)  
-- [4. Deletions & Printing Ranges](#4-deletions--printing-ranges)  
-- [5. Insertion & Appending](#5-insertion--appending)  
-- [6. Multiple Commands in One Pass](#6-multiple-commands-in-one-pass)  
-- [7. Quick Command Summary](#7-quick-command-summary)
+`grep` finds lines. `cut` extracts fields. `sed` transforms content — it reads a stream line by line, applies your editing instructions, and outputs the result. No file is opened in an editor. No manual cursor movement. You describe the change once and sed applies it to every matching line in the file.
 
----
-<details>
-<summary><strong>1. sed Overview</strong></summary>
+This is how you update config files in deploy scripts, sanitize log output before piping it elsewhere, or make the same change across hundreds of lines in seconds.
 
-**Notes:**  
-- `s` → substitute  
-- `/` → delimiter separating pattern, replacement, and flags  
-- `g` → global‐flag (replace all matches on a line)  
-- `-n` → suppress automatic printing (used with `p`)  
-- `-i` → edit file in-place (make changes directly to the file)  
-- `$` → represents the last line in address/range expressions  
-- `d` → delete matching lines (when used as `/PATTERN/d` or `$d`)  
-- Address specific lines via `N` (e.g. `3`) or ranges `M,N` (e.g. `3,7`)   
-
-- Following file is used in examples    
-
-**employees.txt**
+The webstore config file used throughout this file:
 
 ```
-
-Alice, January, 55000
-Alice, January, 55000
-Bob, February, 75000
-Bob, February, 75000
-David, March, 60000
-Alice, January, 55000
-David, March, 60000
-Alice, January, 55000
-Eve, April, 65000
-Alice, January, 55000
-
+db_host=webstore-db
+db_port=5432
+api_port=8080
+api_host=webstore-api
+frontend_port=80
+frontend_host=webstore-frontend
+env=production
 ```
 
-</details>
+---
+
+## Table of Contents
+
+- [1. How sed Works](#1-how-sed-works)
+- [2. Substitution — the Core Operation](#2-substitution--the-core-operation)
+- [3. Targeting Specific Lines](#3-targeting-specific-lines)
+- [4. In-Place Editing](#4-in-place-editing)
+- [5. Deleting Lines](#5-deleting-lines)
+- [6. Printing Specific Lines](#6-printing-specific-lines)
+- [7. Inserting and Appending Lines](#7-inserting-and-appending-lines)
+- [8. Running Multiple Commands](#8-running-multiple-commands)
+- [9. Quick Reference](#9-quick-reference)
 
 ---
 
-<details>
-<summary><strong>2 Basic Substitutions</strong></summary>
+## 1. How sed Works
 
-- **TASK:** Turn “Hello World!” to “Hello Linux!”  
-  ```bash
-  echo "Hello World" | sed 's/World/Linux/'
-* `s` → substitute
+sed reads a file or stream one line at a time. For each line it checks whether your pattern matches, applies the instruction if it does, then prints the result. By default it prints every line — changed or not. The original file is untouched unless you use `-i`.
 
-* `/` → delimiter separating pattern, replacement, and flags
+```
+sed 'instruction' file
+     │
+     └── instruction = [address] command
+         address = which lines to act on (optional — default is all lines)
+         command = what to do (substitute, delete, print, insert)
+```
 
-* **If the replacement contains `/`**, choose a non-conflicting delimiter:
+**Key flags:**
 
-  ```bash
-  echo "/home/user/docs" | sed 's#/home/user#/mnt/data/backup#g'
-  ```
-
-  * Here `#` is the delimiter, so you don’t need to escape `/`
-
-* **Replace only first vs. all occurrences**
-
-  * First occurrence only:
-
-    ```bash
-    echo "Hello World World!" | sed 's/World/Linux/'
-    ```
-  * All occurrences (`g` → global):
-
-    ```bash
-    echo "Hello World World!" | sed 's/World/Linux/g'
-    ```
-
-</details>
+| Flag | What it does |
+|---|---|
+| `-n` | Suppress automatic printing — only print lines you explicitly ask for with `p` |
+| `-i` | Edit the file in-place — changes are written back to the original file |
+| `-e` | Chain multiple instructions in one command |
 
 ---
 
-<details>
-<summary><strong>3. Targeted Substitutions in a File</strong></summary>
+## 2. Substitution — the Core Operation
 
-* **Delete all lines containing “Alice”**
+The substitution command is the one you will use 90% of the time:
 
-  ```bash
-  sed '/Alice/d' employees.txt
-  ```
+```
+s/OLD/NEW/
+```
 
-* **Replace 2nd occurrence of “Alice” on line 2**
+- `s` — substitute
+- first `/` — opens the pattern to find
+- `OLD` — what to look for
+- second `/` — separates pattern from replacement
+- `NEW` — what to replace it with
+- third `/` — closes the replacement, flags go here
 
-  ```bash
-  sed '2 s/Alice/Akhil/' employees.txt
-  ```
+**Replace the first match on each line:**
 
-* **Replace on lines 1–2 only**
+```bash
+sed 's/production/staging/' ~/webstore/config/webstore.conf
+```
 
-  ```bash
-  sed '1,2 s/Alice/Akhil/' employees.txt
-  ```
+This replaces only the first occurrence of `production` per line. The file is not changed — output goes to the terminal.
 
-* **Replace throughout entire file (lines 1–\$)**
+**Replace all occurrences on each line with `g` (global):**
 
-  ```bash
-  sed '1,$ s/Alice/Akhil/' employees.txt
-  ```
+```bash
+sed 's/webstore/mystore/g' ~/webstore/config/webstore.conf
+```
 
-* **Print only lines where substitution occurred**
+Without `g`, only the first match per line is replaced. With `g`, every match on every line is replaced.
 
-  ```bash
-  sed -n '1,$ s/Alice/Akhil/p' employees.txt
-  ```
+**When the replacement contains `/`, use a different delimiter:**
 
-  * `-n` → suppress default printing
-  * `p`  → print only substituted lines
+```bash
+# This would break — forward slash conflicts with the delimiter
+sed 's/api_host=webstore-api/api_host=webstore-api/staging/' webstore.conf
 
-</details>
+# Use # as the delimiter instead
+sed 's#webstore-api#webstore-api-staging#g' ~/webstore/config/webstore.conf
+```
 
----
-
-<details>
-<summary><strong>4. Deletions & Printing Ranges</strong></summary>
-
-* **Print only lines 3–7**
-
-  ```bash
-  sed -n '3,7p' employees.txt
-  ```
-
-* **Delete any line containing “Eve”**
-
-  ```bash
-  sed '/Eve/d' employees.txt
-  ```
-
-* **Delete the last line**
-
-  ```bash
-  sed '$d' employees.txt
-  ```
-
-* **Delete lines 5 through end**
-
-  ```bash
-  sed '5,$d' employees.txt
-  ```
-
-</details>
+Any character can be the delimiter as long as it does not appear in your pattern or replacement. `#`, `|`, and `@` are common choices.
 
 ---
 
-<details>
-<summary><strong>5. Insertion & Appending</strong></summary>
+## 3. Targeting Specific Lines
 
-* **Insert before line 10 (no save)**
+By default sed acts on every line. You can restrict it to specific lines using a line number or a pattern.
 
-  ```bash
-  sed '10i\Nikhil, August, 95000' employees.txt
-  ```
+**Act on a specific line number:**
 
-* **Insert before line 10 (in-place)**
+```bash
+# Replace only on line 1
+sed '1 s/production/staging/' ~/webstore/config/webstore.conf
+```
 
-  ```bash
-  sed -i '10i\Nikhil, August, 95000' employees.txt
-  ```
+**Act on a range of lines:**
 
-* **Append after the last line**
+```bash
+# Replace on lines 1 through 3 only
+sed '1,3 s/webstore/mystore/' ~/webstore/config/webstore.conf
+```
 
-  ```bash
-  sed '$a\Navya, October, 100000' employees.txt
-  ```
+**Act on all lines from line 2 to the end (`$` means last line):**
 
-</details>
+```bash
+sed '2,$ s/webstore/mystore/' ~/webstore/config/webstore.conf
+```
+
+**Act only on lines matching a pattern:**
+
+```bash
+# Only replace on lines that contain "port"
+sed '/port/ s/8080/9090/' ~/webstore/config/webstore.conf
+```
+
+**Print only the lines where substitution occurred (`-n` + `p` flag):**
+
+```bash
+sed -n 's/production/staging/p' ~/webstore/config/webstore.conf
+# env=staging
+```
+
+`-n` suppresses all output. `p` prints only the lines that were actually changed. Together they give you a confirmation of what sed touched.
 
 ---
 
+## 4. In-Place Editing
 
-<details>
-<summary><strong>6. Multiple Commands in One Pass</strong></summary>
+Everything above only prints the result — the original file is not modified. To write changes back to the file, use `-i`.
 
-* **Run two edits at once**
+```bash
+# Change production to staging directly in the file
+sed -i 's/production/staging/' ~/webstore/config/webstore.conf
+```
 
-  ```bash
-  sed -e 's/Alice/Akhil/' -e 's/February/Feb/' employees.txt
-  ```
+After this command, `webstore.conf` is permanently changed. There is no undo unless you have a backup.
 
-</details>
+**Best practice — always back up before in-place editing:**
+
+```bash
+# Create a backup first
+cp ~/webstore/config/webstore.conf ~/webstore/backup/webstore.conf.bak
+
+# Then edit in-place
+sed -i 's/production/staging/' ~/webstore/config/webstore.conf
+```
+
+On macOS, `-i` requires an empty string argument: `sed -i '' 's/old/new/' file`. On Linux it does not.
+
+**When you reach for `-i`:**
+Deploy scripts that update config files before a service restart. Instead of opening an editor manually, the script runs `sed -i` to swap the environment value, then restarts the service.
 
 ---
 
-<details>
-<summary><strong>7. Quick Command Summary</strong></summary>
+## 5. Deleting Lines
 
-| Syntax                | Description                                     | Example                                                      |
-| --------------------- | ----------------------------------------------- | ------------------------------------------------------------ |
-| `s/OLD/NEW/`          | Substitute first match on each line             | `sed 's/World/Linux/'`                                       |
-| `s/OLD/NEW/g`         | Substitute all matches on each line             | `sed 's/World/Linux/g'`                                      |
-| `2 s/OLD/NEW/`        | Substitute only the 2nd occurrence on a line    | `sed '2 s/Alice/Akhil/' employees.txt`                       |
-| `1,2 s/OLD/NEW/`      | Substitute on lines 1 through 2                 | `sed '1,2 s/Alice/Akhil/' employees.txt`                     |
-| `1,$ s/OLD/NEW/`      | Substitute throughout entire file               | `sed '1,$ s/Alice/Akhil/' employees.txt`                     |
-| `-n 's/.../.../p'`    | Print only lines where substitution occurred    | `sed -n '1,$ s/Alice/Akhil/p' employees.txt`                 |
-| `/PATTERN/d`          | Delete lines matching a pattern                 | `sed '/Alice/d' employees.txt`                               |
-| `-n 'X,Yp'`           | Print only lines X to Y                         | `sed -n '3,7p' employees.txt`                                |
-| `$d`                  | Delete the last line of the file                | `sed '$d' employees.txt`                                     |
-| `5,$d`                | Delete from line 5 to end                       | `sed '5,$d' employees.txt`                                   |
-| `10i\…`               | Insert text before line 10                      | `sed '10i\Nikhil, August, 95000' employees.txt`              |
-| `-i '10i\…'`          | Insert before line 10 and save in-place         | `sed -i '10i\Nikhil, August, 95000' employees.txt`           |
-| `$a\…`                | Append text after the last line                 | `sed '$a\Navya, October, 100000' employees.txt`              |
-| `-e 'cmd1' -e 'cmd2'` | Run multiple editing commands in one invocation | `sed -e 's/Alice/Akhil/' -e 's/February/Feb/' employees.txt` |
+```bash
+# Delete all lines containing "frontend"
+sed '/frontend/d' ~/webstore/config/webstore.conf
 
-</details>
+# Delete the last line
+sed '$d' ~/webstore/config/webstore.conf
+
+# Delete lines 5 through the end
+sed '5,$d' ~/webstore/config/webstore.conf
+```
+
+**When you reach for delete:**
+Stripping comment lines from a config file before parsing it. Removing header lines from a log file before piping it to another command.
+
+```bash
+# Strip all comment lines (lines starting with #) from a config
+sed '/^#/d' ~/webstore/config/webstore.conf
+```
+
+---
+
+## 6. Printing Specific Lines
+
+Combined with `-n`, you can use sed to extract exactly the lines you need from a large file — like `head` and `tail` but with more control.
+
+```bash
+# Print only lines 2 through 4
+sed -n '2,4p' ~/webstore/config/webstore.conf
+# db_port=5432
+# api_port=8080
+# api_host=webstore-api
+
+# Print only lines containing "api"
+sed -n '/api/p' ~/webstore/config/webstore.conf
+# api_port=8080
+# api_host=webstore-api
+```
+
+---
+
+## 7. Inserting and Appending Lines
+
+```bash
+# Insert a line BEFORE line 1
+sed '1i\# webstore config — do not edit manually' ~/webstore/config/webstore.conf
+
+# Append a line AFTER the last line
+sed '$a\log_level=info' ~/webstore/config/webstore.conf
+
+# Insert in-place — write it back to the file
+sed -i '1i\# webstore config — do not edit manually' ~/webstore/config/webstore.conf
+```
+
+---
+
+## 8. Running Multiple Commands
+
+Use `-e` to chain multiple instructions in a single sed pass. One read of the file, multiple transformations applied.
+
+```bash
+# Swap environment to staging AND update the api port in one command
+sed -e 's/production/staging/' -e 's/api_port=8080/api_port=9090/' ~/webstore/config/webstore.conf
+```
+
+This is cleaner than running sed twice and is faster on large files because the file is only read once.
+
+---
+
+## 9. Quick Reference
+
+| Syntax | What it does | Example |
+|---|---|---|
+| `s/OLD/NEW/` | Replace first match per line | `sed 's/production/staging/' webstore.conf` |
+| `s/OLD/NEW/g` | Replace all matches per line | `sed 's/webstore/mystore/g' webstore.conf` |
+| `s#OLD#NEW#g` | Same but using `#` as delimiter | `sed 's#/api#/v2/api#g' webstore.conf` |
+| `N s/OLD/NEW/` | Replace on line N only | `sed '1 s/production/staging/' webstore.conf` |
+| `N,M s/OLD/NEW/` | Replace on lines N through M | `sed '1,3 s/webstore/mystore/' webstore.conf` |
+| `/PAT/ s/OLD/NEW/` | Replace only on lines matching PAT | `sed '/port/ s/8080/9090/' webstore.conf` |
+| `-n 's/OLD/NEW/p'` | Print only changed lines | `sed -n 's/production/staging/p' webstore.conf` |
+| `-i 's/OLD/NEW/'` | Edit the file in-place | `sed -i 's/production/staging/' webstore.conf` |
+| `/PAT/d` | Delete lines matching pattern | `sed '/^#/d' webstore.conf` |
+| `$d` | Delete the last line | `sed '$d' webstore.conf` |
+| `-n 'N,Mp'` | Print lines N through M only | `sed -n '2,4p' webstore.conf` |
+| `Ni\TEXT` | Insert TEXT before line N | `sed '1i\# header' webstore.conf` |
+| `$a\TEXT` | Append TEXT after last line | `sed '$a\log_level=info' webstore.conf` |
+| `-e 'cmd1' -e 'cmd2'` | Run multiple commands in one pass | `sed -e 's/a/b/' -e 's/c/d/' webstore.conf` |
+
+---
+
+→ Ready to practice? [Go to Lab 02](../linux-labs/02-filters-sed-awk-lab.md)

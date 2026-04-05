@@ -10,9 +10,15 @@
 
 # Lab 01 — Boot, Basics & Files
 
-## What this lab is about
+## The Situation
 
-You will explore what happened during your system's boot process, navigate the Linux filesystem confidently, inspect system information, create and manipulate files and directories, and view file contents in multiple ways. Every command is typed from scratch.
+This is day one. You have a blank Linux server and a project idea — a three-tier webstore application. Before any code is written, before Docker is involved, before Git tracks a single file, you need to build the foundation on disk.
+
+By the end of this lab the webstore project exists as an organized directory structure on the server. Config files are written. Log files are seeded. The project is ready to be handed to every tool that follows. This is what Lab 02 picks up from — a real project with real files to search and transform.
+
+## What this lab covers
+
+You will inspect the boot process to understand the system that just started, navigate the Linux filesystem with confidence, build the webstore directory structure from scratch, write config and log files, and practice every file operation you will use on servers from this point forward. Every command is typed from scratch.
 
 ## Prerequisites
 
@@ -25,7 +31,7 @@ You will explore what happened during your system's boot process, navigate the L
 
 ## Section 1 — Boot Process Inspection
 
-**Goal:** see evidence of the boot process on your running system.
+**Goal:** see evidence of the boot process on your running system before you do anything else.
 
 1. Check your kernel version
 ```bash
@@ -43,28 +49,32 @@ dmesg | less
 ```
 Scroll through — press `q` to exit. Look for lines mentioning hardware detection.
 
+**What to observe:** the kernel detected and initialized hardware in sequence. Every line is the kernel reporting what it found.
+
 4. Check what systemd target you booted into
 ```bash
 systemctl get-default
 ```
+
+**What to observe:** `multi-user.target` — the standard server boot target. No GUI.
 
 5. List all currently active services
 ```bash
 systemctl list-units --type=service --state=running
 ```
 
+**What to observe:** identify at least 3 services systemd started automatically. These were all started by PID 1 before you logged in.
+
 6. View GRUB config
 ```bash
 cat /etc/default/grub
 ```
 
-**What to observe:** the kernel version, active target, and which services systemd started automatically.
-
 ---
 
 ## Section 2 — Navigation and System Info
 
-**Goal:** move around the filesystem and read system state.
+**Goal:** orient yourself on the server before touching anything.
 
 1. Print your current directory
 ```bash
@@ -81,16 +91,20 @@ ls -lh
 ls -la
 ```
 
+**What to observe:** files starting with `.` are hidden — `.bashrc`, `.profile`, `.ssh/`. These are real config files that affect your environment.
+
 4. Show who is logged in
 ```bash
 whoami
 who
 ```
 
-5. Check system uptime
+5. Check system uptime and load
 ```bash
 uptime
 ```
+
+**What to observe:** three load average numbers — 1 minute, 5 minute, 15 minute CPU demand. Numbers below your core count mean the system is healthy.
 
 6. Navigate to the root of the filesystem and explore
 ```bash
@@ -98,11 +112,15 @@ cd /
 ls -lh
 ```
 
+**What to observe:** every directory under `/` serves a specific purpose — `/etc` for config, `/var` for variable data, `/home` for user directories, `/boot` for the kernel.
+
 7. Navigate to /var/log and list what is there
 ```bash
 cd /var/log
 ls -lh
 ```
+
+**What to observe:** this is where system services write their logs. Your webstore will write here too once nginx is running.
 
 8. Go home
 ```bash
@@ -114,9 +132,9 @@ pwd
 
 ## Section 3 — Create the Webstore Directory Structure
 
-**Goal:** build a working directory that all future labs will use.
+**Goal:** build the project's home on disk. Every future lab depends on this structure existing.
 
-1. Create the webstore project structure in one command
+1. Create the full webstore structure in one command
 ```bash
 mkdir -p ~/webstore/{frontend,api,db,logs,config,backup}
 ```
@@ -126,7 +144,7 @@ mkdir -p ~/webstore/{frontend,api,db,logs,config,backup}
 ls -lh ~/webstore/
 ```
 
-3. Navigate into it and check your location
+3. Navigate into it and confirm your location
 ```bash
 cd ~/webstore
 pwd
@@ -142,6 +160,14 @@ touch logs/error.log
 touch config/webstore.conf
 ```
 
+**Why each folder exists:**
+- `frontend/` — static files nginx will serve
+- `api/` — application code
+- `db/` — database schemas
+- `logs/` — access and error logs the running service writes
+- `config/` — the config file the service reads at startup
+- `backup/` — snapshots before deploys
+
 5. List the full structure
 ```bash
 ls -lh ~/webstore/
@@ -152,13 +178,16 @@ ls -lh ~/webstore/logs/
 
 ## Section 4 — Working with Files
 
-**Goal:** copy, move, rename, delete files and inspect them.
+**Goal:** write content into the webstore files, copy, move, rename, and inspect them.
 
-1. Write content into the config file
+1. Write the webstore config — note the difference between `>` and `>>`
 ```bash
 echo "db_host=webstore-db" > ~/webstore/config/webstore.conf
-echo "db_port=27017" >> ~/webstore/config/webstore.conf
+echo "db_port=5432" >> ~/webstore/config/webstore.conf
 echo "api_port=8080" >> ~/webstore/config/webstore.conf
+echo "api_host=webstore-api" >> ~/webstore/config/webstore.conf
+echo "frontend_port=80" >> ~/webstore/config/webstore.conf
+echo "env=production" >> ~/webstore/config/webstore.conf
 ```
 
 2. View the file
@@ -171,51 +200,62 @@ cat ~/webstore/config/webstore.conf
 cat -n ~/webstore/config/webstore.conf
 ```
 
-4. Write some fake log entries
+4. Write realistic log entries
 ```bash
-echo "192.168.1.10 GET /api/products 200" >> ~/webstore/logs/access.log
-echo "192.168.1.11 POST /api/orders 201" >> ~/webstore/logs/access.log
-echo "192.168.1.12 GET /api/products 200" >> ~/webstore/logs/access.log
-echo "192.168.1.13 POST /api/orders 500" >> ~/webstore/logs/error.log
-echo "192.168.1.14 DELETE /api/orders/7 403" >> ~/webstore/logs/error.log
+cat > ~/webstore/logs/access.log << 'EOF'
+192.168.1.10 GET /api/products 200 512
+192.168.1.11 GET /api/products 200 489
+192.168.1.12 POST /api/orders 201 1024
+192.168.1.10 GET /api/products 200 512
+192.168.1.13 GET /api/users 404 128
+192.168.1.14 POST /api/orders 500 256
+192.168.1.11 GET /api/products 200 489
+192.168.1.15 DELETE /api/orders/7 403 64
+192.168.1.10 GET /api/products 200 512
+192.168.1.14 POST /api/orders 500 256
+EOF
 ```
 
-5. Preview the first 2 lines of the access log
+5. Preview the first 3 lines of the access log
 ```bash
-head -n 2 ~/webstore/logs/access.log
+head -n 3 ~/webstore/logs/access.log
 ```
 
-6. Preview the last 2 lines
+6. Preview the last 3 lines
 ```bash
-tail -n 2 ~/webstore/logs/access.log
+tail -n 3 ~/webstore/logs/access.log
 ```
 
-7. Page through the access log
+7. Watch for new log entries in real time
+```bash
+tail -f ~/webstore/logs/access.log
+```
+Press `Ctrl+C` to stop. In a real incident you keep this running while triggering requests.
+
+8. Page through the access log
 ```bash
 less ~/webstore/logs/access.log
 ```
-Press `q` to exit.
+Press `q` to exit. Press `/500` to search for error entries.
 
-8. Copy the config file to backup
-```bash
-cp ~/webstore/config/webstore.conf ~/webstore/backup/webstore.conf.bak
-```
-
-9. Confirm the copy exists
-```bash
-ls -lh ~/webstore/backup/
-```
-
-10. Rename the backup file
-```bash
-mv ~/webstore/backup/webstore.conf.bak ~/webstore/backup/webstore.conf.backup
-ls -lh ~/webstore/backup/
-```
-
-11. Inspect the file type and metadata
+9. Inspect the file metadata
 ```bash
 file ~/webstore/config/webstore.conf
 stat ~/webstore/config/webstore.conf
+```
+
+**What to observe in `stat` output:** three timestamps — Access, Modify, Change. Modify tells you when the content last changed. Change tells you when permissions or ownership last changed. These are different things.
+
+10. Copy the config to backup before any changes
+```bash
+cp ~/webstore/config/webstore.conf ~/webstore/backup/webstore.conf.bak
+ls -lh ~/webstore/backup/
+```
+
+11. Rename the backup to include a date marker
+```bash
+mv ~/webstore/backup/webstore.conf.bak ~/webstore/backup/webstore.conf.backup
+ls -lh ~/webstore/backup/
 ```
 
 ---
@@ -236,7 +276,7 @@ rm -r ~/webstore/backup
 mkdir ~/webstore/backup
 ```
 
-### Break 2 — Navigate to a path that doesn't exist
+### Break 2 — Navigate to a path that does not exist
 
 ```bash
 cd ~/webstore/nonexistent
@@ -244,21 +284,33 @@ cd ~/webstore/nonexistent
 
 **What to observe:** `No such file or directory`
 
-### Break 3 — Overwrite a file accidentally
+### Break 3 — Overwrite a file accidentally with >
 
 ```bash
 echo "overwritten" > ~/webstore/config/webstore.conf
 cat ~/webstore/config/webstore.conf
 ```
 
-**What to observe:** the original content is gone — `>` overwrites, `>>` appends
+**What to observe:** the entire config is gone — replaced with one word. `>` overwrites. `>>` appends. This is one of the most common accidental data losses on Linux servers.
 
-Fix it — recreate the config:
+Fix it — restore from backup:
 ```bash
-echo "db_host=webstore-db" > ~/webstore/config/webstore.conf
-echo "db_port=27017" >> ~/webstore/config/webstore.conf
-echo "api_port=8080" >> ~/webstore/config/webstore.conf
+cp ~/webstore/backup/webstore.conf.backup ~/webstore/config/webstore.conf
+cat ~/webstore/config/webstore.conf
 ```
+
+### Break 4 — tail -f the wrong file
+
+```bash
+tail -f ~/webstore/logs/error.log
+```
+
+Add a line from another terminal while this is running:
+```bash
+echo "ERROR 2025-04-05 DB connection timeout" >> ~/webstore/logs/error.log
+```
+
+**What to observe:** the new line appears in the first terminal immediately — `tail -f` follows the file live. Press `Ctrl+C` to stop.
 
 ---
 
@@ -268,7 +320,7 @@ echo "api_port=8080" >> ~/webstore/config/webstore.conf
 ```bash
 man ls
 ```
-Press `q` to exit.
+Press `/` to search, `n` for next match, `q` to exit.
 
 2. One-line description of a command
 ```bash
@@ -293,9 +345,11 @@ Do not move to Lab 02 until every box is checked.
 - [ ] I ran `uname -r` and `dmesg | less` and saw real kernel boot output
 - [ ] I used `systemctl list-units --type=service --state=running` and identified at least 3 running services
 - [ ] I navigated to `/`, `/var/log`, and back to `~` without using the GUI
-- [ ] I created the full `~/webstore/` directory structure with one `mkdir -p` command
-- [ ] I wrote to a file with `>` and appended with `>>` and understand the difference
+- [ ] I created the full `~/webstore/` directory structure with one `mkdir -p` command and explained why each folder exists
+- [ ] I wrote the webstore config using `>` for the first line and `>>` for every line after — and understand why
 - [ ] I used `head`, `tail`, `cat -n`, and `less` on the same file
+- [ ] I used `tail -f` to watch a file update in real time
+- [ ] I read `stat` output and identified all three timestamps — Access, Modify, Change
+- [ ] I copied the config to backup, then accidentally overwrote the original with `>`, then restored it from backup
 - [ ] I copied, renamed, and deleted a file using `cp`, `mv`, and `rm`
 - [ ] I tried to `rm` a directory without `-r` and read the error
-- [ ] I used `stat` and `file` on a real file and read the output

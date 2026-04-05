@@ -1,201 +1,205 @@
-[Home](../README.md) | 
-[Foundations](../01-foundations/README.md) | 
-[Stash & Tags](../02-stash-tags/README.md) | 
-[History & Branching](../03-history-branching/README.md) | 
-[Contribute](../04-contribute/README.md) | 
+[Home](../README.md) |
+[Foundations](../01-foundations/README.md) |
+[Stash & Tags](../02-stash-tags/README.md) |
+[History & Branching](../03-history-branching/README.md) |
+[Contribute](../04-contribute/README.md) |
 [Undo & Recovery](../05-undo-recovery/README.md)
 
-# Git Stash & Tags  
-> Managing Work in Progress and Marking Milestones
+# Git Stash & Tags
+
+Two tools for two different situations. Stash is for when you are in the middle of something and need to stop without committing half-finished work. Tags are for when you finish something and want to mark that moment permanently — a release, a milestone, a version that CI/CD can reference.
 
 ---
 
-## Table of Contents  
-- [1. Git Stash – Pausing Unfinished Work](#1-git-stash--pausing-unfinished-work)  
-- [2. Git Tags – Marking Versions and Releases](#2-git-tags--marking-versions-and-releases)
+## Table of Contents
+
+- [1. Git Stash — Pausing Without Committing](#1-git-stash--pausing-without-committing)
+- [2. Git Tags — Marking the Webstore's First Release](#2-git-tags--marking-the-webstores-first-release)
+- [3. Quick Reference](#3-quick-reference)
 
 ---
 
-<details>
-<summary><strong>1. Git Stash – Pausing Unfinished Work</strong></summary>
+## 1. Git Stash — Pausing Without Committing
 
-### Why Git Stash Exists  
-Sometimes you need to switch tasks, fix a bug, or test something quickly, but your current work isn't ready to commit.  
-**Git stash** acts like a temporary *shelf* for unfinished changes — letting you save progress, return to a clean state, and restore your work later.
+You are halfway through updating `webstore.conf` to point at a new database host. Your changes are not ready to commit. Then an urgent message arrives — a bug in production, needs a fix right now. You need a clean working directory to switch branches and investigate.
 
----
+This is what stash is for. It saves your in-progress changes to a temporary shelf, gives you back a clean state, and lets you restore everything exactly where you left it when you are done.
 
-### Key Commands for Stashing  
-| Command | Description |
-|---|---|
-| `git stash` | Save tracked changes (staged + unstaged) |
-| `git stash -u` | Include new/untracked files |
-| `git stash push -m "message"` | Stash with a custom message |
-| `git stash list` | Show all saved stashes |
-| `git stash show [-p]` | Show summary (`-p` = full diff) |
-| `git stash apply [stash@{n}]` | Re-apply stash (keeps it in list) |
-| `git stash pop [stash@{n}]` | Apply + delete stash |
-| `git stash drop stash@{n}` | Delete a specific stash |
-| `git stash clear` | Delete all stashes (irreversible) |
-| `git stash branch <branch>` | Create a new branch from a stash |
-
----
-
-### How Stashing Works  
-Each stash you create is added to a **stack**:  
-```
-stash@{0}   ← newest
-stash@{1}
-stash@{2}   ← oldest
-```
-The top of the stack (`stash@{0}`) is the most recent.
-
----
-
-### Example: Save and Restore Work  
-```bash
-git stash push -m "WIP: webstore api changes"
-# switch branch, fix urgent bug, come back
-git stash pop    # apply + remove from list
-```
-
----
-
-### Including Untracked Files
-
-By default, untracked (new) files are not stashed.
-To include them:
-```bash
-git stash -u
-```
-
----
-
-### Viewing and Inspecting Stashes
+**The basic stash workflow:**
 
 ```bash
-git stash list          # list all stashes
-git stash show          # summary of latest stash
-git stash show -p       # full diff of latest stash
+# You are mid-work on webstore.conf
+cat ~/webstore/config/webstore.conf
+# db_host=webstore-db-new   ← work in progress, not ready to commit
+
+# Save it to the stash — your working directory becomes clean
+git stash push -m "WIP: updating db_host to new database server"
+
+# Check status — clean
+git status
+# nothing to commit, working tree clean
+
+# Switch to fix the urgent bug
+git switch main
+# fix the bug, commit it, push it
+
+# Come back and restore your work
+git stash pop
+cat ~/webstore/config/webstore.conf
+# db_host=webstore-db-new   ← your changes are back exactly as you left them
 ```
 
----
+**The stash is a stack.** Each stash is pushed on top. The most recent is `stash@{0}`.
 
-### Create a Branch from a Stash
-
-```bash
-git stash branch feature-branch stash@{0}
+```
+stash@{0}  ← most recent — "WIP: updating db_host"
+stash@{1}  ← older
+stash@{2}  ← oldest
 ```
 
-Creates a new branch, applies the stash, and removes it once done.
+**All stash commands:**
 
----
-
-### Best Practices for Stashing
-
-- Use clear messages: `git stash push -m "WIP: user-auth feature"`
-- Don't treat stashes as long-term storage — commit soon after
-- Review and clean old stashes regularly
-- Remember: stashes are **local only** and expire after ~90 days
-
----
-
-### Troubleshooting
-
-| Problem | Fix |
-|---|---|
-| Lost changes | `git stash list` → `git stash apply` |
-| Conflicts on apply | Resolve manually like merge conflicts |
-| Untracked files missing | Use `git stash -u` next time |
-| Accidentally cleared | `git stash clear` is permanent — cannot recover |
-
-</details>
-
----
-
-<details>
-<summary><strong>2. Git Tags – Marking Versions and Releases</strong></summary>
-
-### Why Git Tags Exist
-
-Commits tell the full story, but tags mark the **key chapters** — the release versions and milestones that CI-CD pipelines and teams rely on.
-
----
-
-### Key Commands for Tagging
-
-| Command | Description |
-|---|---|
-| `git tag <tagname>` | Create a lightweight tag |
-| `git tag -a <tagname> -m "message"` | Create an annotated tag (recommended) |
-| `git tag <tagname> <commit-hash>` | Tag an older commit |
-| `git tag` | List all tags |
-| `git show <tagname>` | Show tag + commit details |
-| `git push origin <tagname>` | Push one tag to remote |
-| `git push --tags` | Push all tags to remote |
-| `git tag -d <tagname>` | Delete local tag |
-| `git push origin --delete tag <tagname>` | Delete remote tag |
-
----
-
-### Lightweight vs Annotated Tags
-
-| Type | Contains | Best For |
+| Command | What it does | When you reach for it |
 |---|---|---|
-| **Lightweight** | Commit pointer only | Quick local bookmarks |
-| **Annotated** | Author, date, message | Releases and shared milestones |
+| `git stash` | Save tracked changes to the stash | Quick save before switching context |
+| `git stash push -m "message"` | Save with a descriptive label | Always — anonymous stashes are hard to identify later |
+| `git stash -u` | Include untracked (new) files | When you have new files not yet staged |
+| `git stash list` | Show all saved stashes | Checking what is on the stack |
+| `git stash show` | Summary of the most recent stash | Quick reminder of what you stashed |
+| `git stash show -p` | Full diff of the most recent stash | Reading exactly what changed |
+| `git stash pop` | Apply most recent stash and remove it from the stack | Normal restore — most common |
+| `git stash apply stash@{1}` | Apply a specific stash but keep it on the stack | When you want to apply without removing |
+| `git stash drop stash@{1}` | Delete a specific stash | Cleaning up old stashes you no longer need |
+| `git stash clear` | Delete all stashes | Nuclear option — permanent, no recovery |
 
-Always use annotated tags for releases:
+**Stash only saves tracked files by default.** If you created a new file and have not run `git add` on it yet, `git stash` leaves it behind. Use `git stash -u` to include untracked files:
+
 ```bash
-git tag -a v1.0 -m "webstore v1.0 — initial release"
+touch ~/webstore/api/new-endpoint.js   # new file, not tracked yet
+git stash -u                           # includes it
 ```
 
----
-
-### Tag a Specific Commit
+**Create a branch from a stash** — when you realize mid-work that what you are building should be its own feature branch:
 
 ```bash
-git tag -a v1.1 1a2b3c4d -m "hotfix release"
+git stash branch feature/new-db-config stash@{0}
+# Creates the branch, checks it out, applies the stash, removes it
 ```
+
+**What stash is not:** stash is local only — it does not push to GitHub. It expires after 90 days. It is a temporary shelf, not long-term storage. If you are working on something for more than a day, commit it to a branch instead.
 
 ---
 
-### Pushing Tags to Remote
+## 2. Git Tags — Marking the Webstore's First Release
 
-Tags are not pushed automatically:
+The webstore has been running, commits have been made, nginx is serving the frontend. At some point the project reaches a stable state — everything works, the foundation is solid, this is a version worth marking.
+
+That mark is a tag. Tags are permanent pointers to specific commits. Unlike branch names which move forward as you commit, a tag never moves. `v1.0` will always point to exactly the commit you tagged.
+
+**Why tags matter in DevOps:**
+CI/CD pipelines are often configured to trigger on tags. When you push `v1.0` to GitHub, GitHub Actions can detect it, build a Docker image, tag the image as `webstore-api:1.0`, and push it to the registry. The tag in Git becomes the version in Docker becomes the version in Kubernetes. It is the chain that connects your code to your deployment.
+
+**Two types of tags:**
+
+| Type | What it contains | When to use |
+|---|---|---|
+| Lightweight | Just a pointer to a commit | Local bookmarks, private notes |
+| Annotated | Pointer + author + date + message | Releases — always use this for anything shared |
+
+Always use annotated tags for releases. They carry a message and your identity, they show up properly in GitHub's releases page, and they are what CI/CD pipelines expect.
+
+**Tagging the webstore v1.0:**
+
 ```bash
-git push origin v1.0    # push one tag
-git push --tags         # push all tags
+# First confirm where you are
+git log --oneline
+# c8d21fa logs: add initial server startup entry
+# b71e3a2 config: add nginx worker process setting
+# a3f92c1 feat: initialize webstore project structure
+
+# Tag the current commit — the stable foundation
+git tag -a v1.0 -m "webstore v1.0 — Linux foundation complete
+
+- directory structure established
+- nginx configured and serving frontend
+- permissions locked down
+- ready for containerization"
+
+# View the tag and its details
+git show v1.0
 ```
 
+**Tags are not pushed automatically** — you have to push them explicitly:
+
+```bash
+# Push a single tag
+git push origin v1.0
+
+# Push all local tags at once
+git push --tags
+```
+
+**Other tag operations:**
+
+```bash
+# List all tags
+git tag
+
+# Tag an older specific commit — when you forgot to tag at the right time
+git tag -a v0.9 a3f92c1 -m "initial structure — pre-nginx"
+
+# Delete a local tag — if you tagged the wrong commit
+git tag -d v1.0
+
+# Delete a remote tag — only after deleting locally
+git push origin --delete tag v1.0
+```
+
+**Semantic versioning — the standard format:**
+
+```
+v1.0.0   ← major.minor.patch
+v1.1.0   ← new feature, backward compatible
+v1.1.1   ← bug fix
+v2.0.0   ← breaking change
+```
+
+For the webstore journey:
+- `v1.0` — Linux foundation complete
+- `v1.1` — first Docker commit
+- `v2.0` — running on Kubernetes
+
 ---
 
-### When to Use Tags
+## 3. Quick Reference
 
-- **Releases:** Mark stable versions (`v1.0`, `v2.0`)
-- **Milestones:** Feature completions
-- **Deployments:** CI-CD pipelines reference tags to decide what to deploy
-- **Hotfixes:** Return to stable versions safely
+**Stash:**
 
----
-
-### Best Practices for Tagging
-
-- Always use annotated tags (`-a -m`) for anything shared
-- Tag only stable commits after tests pass
-- Follow semantic versioning: `v1.0.0`, `v1.1.2`
-- Avoid `--force` unless correcting an unavoidable mistake
-
----
-
-### Troubleshooting
-
-| Problem | Solution |
+| Command | What it does |
 |---|---|
-| Tag already exists | `git tag -d <tag>` → recreate |
-| Wrong tag pushed | Delete local + remote, push correct one |
-| Tag missing on remote | `git push origin <tag>` |
+| `git stash push -m "message"` | Save changes with a label |
+| `git stash -u` | Include untracked files |
+| `git stash list` | Show all stashes |
+| `git stash show -p` | Full diff of most recent stash |
+| `git stash pop` | Restore and remove most recent stash |
+| `git stash apply stash@{n}` | Restore specific stash, keep it on stack |
+| `git stash drop stash@{n}` | Delete a specific stash |
+| `git stash clear` | Delete all stashes permanently |
+| `git stash branch <name>` | Create branch from most recent stash |
 
-</details>
+**Tags:**
+
+| Command | What it does |
+|---|---|
+| `git tag -a v1.0 -m "message"` | Create annotated tag at current commit |
+| `git tag -a v1.0 <hash> -m "message"` | Tag a specific past commit |
+| `git tag` | List all tags |
+| `git show v1.0` | Show tag details and the commit it points to |
+| `git push origin v1.0` | Push a single tag to remote |
+| `git push --tags` | Push all local tags to remote |
+| `git tag -d v1.0` | Delete a local tag |
+| `git push origin --delete tag v1.0` | Delete a remote tag |
+
+---
 
 → Ready to practice? [Go to Lab 02](../git-labs/02-stash-tags-lab.md)

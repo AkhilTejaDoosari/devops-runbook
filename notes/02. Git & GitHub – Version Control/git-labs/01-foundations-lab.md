@@ -10,7 +10,15 @@
 
 # Lab 01 — Git Foundations
 
-## What this lab is about
+## The Situation
+
+The webstore project exists as files on a Linux server — organized directories, a config file, log files, nginx configured and running. But there is no history. If something breaks, there is no rollback. If a second developer joins, there is no way to track who changed what. The project is one bad `rm -rf` away from being gone.
+
+This lab changes that. By the end the webstore is a Git repository with a commit history that tells the story of how it was built — pushed to GitHub, visible to anyone with the link, and ready for the collaboration workflow that comes in the next labs.
+
+This is the moment the webstore becomes trackable.
+
+## What this lab covers
 
 You will initialize a Git repository for the webstore project, configure your identity, track and stage files, make your first commits, build a proper `.gitignore`, and push to GitHub. By the end the full local → remote workflow will be muscle memory. Every command is typed from scratch.
 
@@ -35,7 +43,7 @@ git config --global user.email "your@email.com"
 git config --list
 ```
 
-**What to observe:** your name and email appear in the output
+**What to observe:** your name and email appear in the output — every commit you make will carry this identity
 
 ---
 
@@ -57,7 +65,7 @@ git init
 ls -a
 ```
 
-**What to observe:** `.git` folder exists — this is where all history is stored
+**What to observe:** `.git` folder exists — this is where all history is stored. Delete this folder and the entire version history is gone.
 
 ---
 
@@ -70,6 +78,7 @@ touch src/server.js
 touch config/webstore.conf
 echo "api_port=8080" > config/webstore.conf
 echo "db_host=webstore-db" >> config/webstore.conf
+echo "db_port=5432" >> config/webstore.conf
 ```
 
 2. Check status
@@ -106,6 +115,8 @@ echo ".env" >> .gitignore
 echo "*.log" >> .gitignore
 echo "node_modules/" >> .gitignore
 echo ".DS_Store" >> .gitignore
+echo "*.tfstate" >> .gitignore
+echo ".terraform/" >> .gitignore
 ```
 
 3. Check status now
@@ -113,14 +124,14 @@ echo ".DS_Store" >> .gitignore
 git status
 ```
 
-**What to observe:** `.env` is no longer listed — `.gitignore` is hiding it from Git
+**What to observe:** `.env` is no longer listed — `.gitignore` is hiding it from Git. The database password will never accidentally be committed.
 
 4. Confirm the ignore rule works
 ```bash
 git check-ignore -v .env
 ```
 
-**What to observe:** output shows which rule in `.gitignore` matched
+**What to observe:** output shows exactly which rule in `.gitignore` matched
 
 ---
 
@@ -147,9 +158,14 @@ git status
 git add config/webstore.conf
 ```
 
-4. Make your first commit
+4. Make your first commit — this is the moment the webstore's history begins
 ```bash
-git commit -m "chore: initial webstore project setup"
+git commit -m "feat: initialize webstore project structure
+
+- add src and config directories
+- add server.js entry point
+- add webstore.conf with db and api settings
+- add .gitignore to protect secrets"
 ```
 
 5. View the commit
@@ -157,11 +173,13 @@ git commit -m "chore: initial webstore project setup"
 git log --oneline
 ```
 
-**What to observe:** one commit with your message and a hash
+**What to observe:** one commit with your message and a hash — the first permanent record of the webstore
 
 ---
 
 ## Section 6 — Make More Commits
+
+**Goal:** build a history that tells the story of the webstore's development.
 
 1. Add content to server.js
 ```bash
@@ -169,12 +187,12 @@ echo "const port = process.env.PORT || 8080" > src/server.js
 echo "console.log('webstore-api starting on port ' + port)" >> src/server.js
 ```
 
-2. Check what changed
+2. Check what changed before staging
 ```bash
 git diff
 ```
 
-**What to observe:** the `+` lines show what was added
+**What to observe:** the `+` lines show what was added — always review with `git diff` before committing
 
 3. Stage and commit
 ```bash
@@ -195,13 +213,13 @@ git commit -m "docs: add project README"
 git log --oneline
 ```
 
-**What to observe:** 3 commits building on each other
+**What to observe:** 3 commits building on each other — a readable story of how the project was initialized
 
 ---
 
 ## Section 7 — Push to GitHub
 
-1. Create a new repository on GitHub named `webstore` (empty, no README)
+1. Create a new repository on GitHub named `webstore` — empty, no README
 
 2. Add the remote
 ```bash
@@ -220,6 +238,8 @@ git push -u origin main
 
 5. Open GitHub in your browser and confirm all 3 commits are visible
 
+**What to observe:** the commit history on GitHub matches your local `git log --oneline` exactly
+
 ---
 
 ## Section 8 — Break It on Purpose
@@ -230,9 +250,9 @@ git push -u origin main
 git commit
 ```
 
-**What to observe:** Git opens your default editor waiting for a message — close without saving and the commit is aborted
+**What to observe:** Git opens your default editor waiting for a message — close without saving and the commit is aborted. An empty commit message is not allowed.
 
-### Break 2 — Push without remote set
+### Break 2 — Push without a remote set
 
 ```bash
 mkdir /tmp/test-repo && cd /tmp/test-repo
@@ -242,31 +262,24 @@ git add . && git commit -m "test"
 git push
 ```
 
-**What to observe:** `fatal: No configured push destination` — you must add a remote first
+**What to observe:** `fatal: No configured push destination` — you must add a remote before you can push
 
-### Break 3 — Try to delete a tracked secret
+### Break 3 — Prove .gitignore is the only protection
 
 ```bash
 cd ~/webstore-git
-echo "NEW_SECRET=abc" >> .env
+# Remove .env from .gitignore temporarily
+sed -i '/.env/d' .gitignore
 git status
 ```
 
-**What to observe:** `.env` does not appear — `.gitignore` is working
-
-Now remove `.env` from `.gitignore` temporarily:
-```bash
-sed -i '' '/.env/d' .gitignore
-git status
-```
-
-**What to observe:** `.env` now shows up as untracked — proof that `.gitignore` was the only thing protecting it
+**What to observe:** `.env` now shows up as untracked — the database password is exposed. This is what happens when `.gitignore` is missing or incomplete.
 
 Restore `.gitignore`:
 ```bash
 echo ".env" >> .gitignore
 git add .gitignore
-git commit -m "chore: restore gitignore protection"
+git commit -m "chore: restore .env protection in gitignore"
 ```
 
 ---
@@ -276,10 +289,11 @@ git commit -m "chore: restore gitignore protection"
 Do not move to Lab 02 until every box is checked.
 
 - [ ] I configured git name and email and verified with `git config --list`
-- [ ] I initialized a repo and confirmed `.git` folder exists
-- [ ] I created `.gitignore` before committing and confirmed `.env` was hidden from `git status`
-- [ ] I used `git restore --staged` to unstage a file and understood what it does
+- [ ] I initialized a repo and confirmed `.git` folder exists — I know what deleting it would do
+- [ ] I created `.gitignore` before the first `git add .` and confirmed `.env` was hidden from `git status`
+- [ ] I used `git check-ignore -v .env` and saw which rule matched
+- [ ] I used `git restore --staged` to unstage a file and re-staged it deliberately
 - [ ] I made 3 commits with meaningful messages following the `type: description` format
-- [ ] I used `git diff` to see changes before staging them
+- [ ] I used `git diff` to review changes before staging them
 - [ ] I pushed to GitHub and confirmed all commits appear in the browser
 - [ ] I proved that removing `.env` from `.gitignore` immediately exposes the secret in `git status`

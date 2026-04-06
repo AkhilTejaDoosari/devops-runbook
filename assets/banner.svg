@@ -1,8 +1,77 @@
-<svg width="100%" viewBox="0 0 680 160" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="680" height="160" rx="8" fill="#1a1a1a"/>
-  <text x="40" y="58" font-family="monospace" font-size="11" fill="#666666">$ cat runbook.md</text>
-  <text x="40" y="95" font-family="monospace" font-size="28" fill="#ffffff" font-weight="500">devops-runbook</text>
-  <text x="40" y="124" font-family="monospace" font-size="12" fill="#999999">Linux · Git · Networking · Docker · Kubernetes · AWS · Terraform · Ansible · Bash</text>
-  <rect x="40" y="138" width="60" height="2" rx="1" fill="#666666" opacity="0.4"/>
-  <text x="110" y="147" font-family="monospace" font-size="10" fill="#666666">fundamentals first. production ready.</text>
+<svg width="100%" viewBox="0 0 680 210" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="680" height="210" rx="8" fill="#111111"/>
+
+  <!-- top accent line -->
+  <rect x="0" y="0" width="680" height="3" rx="0" fill="#2a2a2a"/>
+  <rect x="0" y="0" width="160" height="3" fill="#555555"/>
+
+  <!-- prompt line -->
+  <text x="40" y="40" font-family="monospace" font-size="11" fill="#444444">~/devops-runbook</text>
+  <text x="176" y="40" font-family="monospace" font-size="11" fill="#555555">cat README.md</text>
+
+  <!-- main title -->
+  <text x="40" y="88" font-family="monospace" font-size="36" fill="#ffffff" font-weight="500">devops-runbook</text>
+
+  <!-- subtitle -->
+  <text x="40" y="116" font-family="monospace" font-size="11" fill="#666666">fundamentals to production · one consistent app · no gaps · no shortcuts</text>
+
+  <!-- divider -->
+  <rect x="40" y="134" width="600" height="1" fill="#252525"/>
+
+  <!-- row 1 pills -->
+  <!-- 01 linux: x=40 w=52 -->
+  <rect x="40" y="144" width="52" height="22" rx="3" fill="#1c1c1c"/>
+  <text x="44" y="159" font-family="monospace" font-size="9" fill="#505050">01</text>
+  <text x="59" y="159" font-family="monospace" font-size="9" fill="#888888">linux</text>
+
+  <!-- 02 git: x=99 w=41 -->
+  <rect x="99" y="144" width="41" height="22" rx="3" fill="#1c1c1c"/>
+  <text x="103" y="159" font-family="monospace" font-size="9" fill="#505050">02</text>
+  <text x="118" y="159" font-family="monospace" font-size="9" fill="#888888">git</text>
+
+  <!-- 03 networking: x=147 w=80 -->
+  <rect x="147" y="144" width="80" height="22" rx="3" fill="#1c1c1c"/>
+  <text x="151" y="159" font-family="monospace" font-size="9" fill="#505050">03</text>
+  <text x="166" y="159" font-family="monospace" font-size="9" fill="#888888">networking</text>
+
+  <!-- 04 docker: x=234 w=58 -->
+  <rect x="234" y="144" width="58" height="22" rx="3" fill="#1c1c1c"/>
+  <text x="238" y="159" font-family="monospace" font-size="9" fill="#505050">04</text>
+  <text x="253" y="159" font-family="monospace" font-size="9" fill="#888888">docker</text>
+
+  <!-- 05 kubernetes: x=299 w=80 -->
+  <rect x="299" y="144" width="80" height="22" rx="3" fill="#1c1c1c"/>
+  <text x="303" y="159" font-family="monospace" font-size="9" fill="#505050">05</text>
+  <text x="318" y="159" font-family="monospace" font-size="9" fill="#888888">kubernetes</text>
+
+  <!-- 06 ci-cd: x=386 w=52 -->
+  <rect x="386" y="144" width="52" height="22" rx="3" fill="#1c1c1c"/>
+  <text x="390" y="159" font-family="monospace" font-size="9" fill="#505050">06</text>
+  <text x="405" y="159" font-family="monospace" font-size="9" fill="#888888">ci-cd</text>
+
+  <!-- 07 observability: x=445 w=96 -->
+  <rect x="445" y="144" width="96" height="22" rx="3" fill="#1c1c1c"/>
+  <text x="449" y="159" font-family="monospace" font-size="9" fill="#505050">07</text>
+  <text x="464" y="159" font-family="monospace" font-size="9" fill="#888888">observability</text>
+
+  <!-- 08 aws: x=548 w=41 -->
+  <rect x="548" y="144" width="41" height="22" rx="3" fill="#1c1c1c"/>
+  <text x="552" y="159" font-family="monospace" font-size="9" fill="#505050">08</text>
+  <text x="567" y="159" font-family="monospace" font-size="9" fill="#888888">aws</text>
+
+  <!-- row 2 pills -->
+  <!-- 09 terraform: x=40 w=74 -->
+  <rect x="40" y="172" width="74" height="22" rx="3" fill="#1c1c1c"/>
+  <text x="44" y="187" font-family="monospace" font-size="9" fill="#505050">09</text>
+  <text x="59" y="187" font-family="monospace" font-size="9" fill="#888888">terraform</text>
+
+  <!-- 10 ansible: x=121 w=63 -->
+  <rect x="121" y="172" width="63" height="22" rx="3" fill="#1c1c1c"/>
+  <text x="125" y="187" font-family="monospace" font-size="9" fill="#505050">10</text>
+  <text x="140" y="187" font-family="monospace" font-size="9" fill="#888888">ansible</text>
+
+  <!-- 11 bash: x=191 w=47 -->
+  <rect x="191" y="172" width="47" height="22" rx="3" fill="#1c1c1c"/>
+  <text x="195" y="187" font-family="monospace" font-size="9" fill="#505050">11</text>
+  <text x="210" y="187" font-family="monospace" font-size="9" fill="#888888">bash</text>
 </svg>

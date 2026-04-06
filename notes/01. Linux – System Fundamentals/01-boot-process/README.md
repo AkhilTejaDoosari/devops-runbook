@@ -13,7 +13,7 @@
 [Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 Boot Process
+# Boot Process
 
 ## What This File Is About
 

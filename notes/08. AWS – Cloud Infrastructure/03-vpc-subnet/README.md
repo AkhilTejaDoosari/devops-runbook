@@ -1,18 +1,18 @@
 [Home](../README.md) |
-[Intro to AWS](../01-intro-aws/README.md) |
+[Intro](../01-intro-aws/README.md) |
 [IAM](../02-iam/README.md) |
-[VPC & Subnet](../03-vpc-subnet/README.md) |
+[VPC](../03-vpc-subnet/README.md) |
 [EBS](../04-ebs/README.md) |
-[EFS](../05-efs/README.md) |
-[S3](../06-s3/README.md) |
-[EC2](../07-ec2/README.md) |
-[RDS](../08-rds/README.md) |
-[Load Balancing & Auto Scaling](../09-Load-balancing-auto-scaling/README.md) |
-[CloudWatch & SNS](../10-cloudwatch-sns/README.md) |
-[Lambda](../11-lambda/README.md) |
-[Elastic Beanstalk](../12-elastic-beanstalk/README.md) |
-[Route 53](../13-route53/README.md) |
-[CLI + CloudFormation](../14-cli-cloudformation/README.md)
+[S3](../05-s3/README.md) |
+[EC2](../06-ec2/README.md) |
+[RDS](../07-rds/README.md) |
+[Load Balancing](../08-load-balancing-auto-scaling/README.md) |
+[CloudWatch](../09-cloudwatch-sns/README.md) |
+[Route 53](../10-route53/README.md) |
+[CLI](../11-cli-cloudformation/README.md) |
+[EKS](../12-eks/README.md)
+
+---
 
 # AWS VPC & Subnets
 
@@ -20,10 +20,10 @@
 
 IAM decided **who** gets access. VPC decides **where** that access works — your private, isolated network inside AWS. This file covers how to design a VPC from scratch, plan subnets correctly, route traffic between tiers, and secure every layer with Security Groups and NACLs. By the end you will be able to design a production-ready multi-tier AWS network and understand exactly what happens at every hop inside it.
 
-> **Foundation:** The networking concepts behind everything here — IP addressing, CIDR math, NAT, stateful vs stateless firewalls — are covered in depth in the [Networking Fundamentals](../../03.%20Networking%20–%20Foundations/README.md) folder. Specifically:
-> - Subnets and CIDR: [05 — Subnets & CIDR](../../03.%20Networking%20–%20Foundations/05-subnets-cidr/README.md)
-> - NAT concept: [07 — NAT & Translation](../../03.%20Networking%20–%20Foundations/07-nat/README.md)
-> - Stateful vs Stateless firewalls: [09 — Firewalls & Security](../../03.%20Networking%20–%20Foundations/09-firewalls/README.md)
+**Foundation:** The networking concepts behind everything here — IP addressing, CIDR math, NAT (Network Address Translation), stateful vs stateless firewalls — are covered in depth in the [Networking Fundamentals](../../03.%20Networking%20–%20Foundations/README.md) folder. Specifically:
+- Subnets and CIDR: [05 — Subnets & CIDR](../../03.%20Networking%20–%20Foundations/05-subnets-cidr/README.md)
+- NAT concept: [07 — NAT & Translation](../../03.%20Networking%20–%20Foundations/07-nat/README.md)
+- Stateful vs Stateless firewalls: [09 — Firewalls & Security](../../03.%20Networking%20–%20Foundations/09-firewalls/README.md)
 
 ---
 
@@ -42,14 +42,12 @@ IAM decided **who** gets access. VPC decides **where** that access works — you
 
 ---
 
-<details>
-<summary><strong>1. Why VPC Exists</strong></summary>
+## 1. Why VPC Exists
 
 Before the cloud, every company had a physical server room — racks, cables, routers, and switches all wired together manually. Expanding meant buying hardware, finding rack space, and rewiring everything.
 
-AWS virtualizes that entire setup. Instead of physical cables and switches, you define your network in software. That virtual network is your **VPC**.
+AWS virtualizes that entire setup. Instead of physical cables and switches, you define your network in software. That virtual network is your VPC.
 
-**The Building Analogy:**
 Think of AWS as a massive city of skyscrapers — one per account. Your VPC is your private building inside that city. You control everything about it:
 
 - Which floors face the street (public subnets)
@@ -72,12 +70,9 @@ AWS City (many accounts)
         └── NACLs               = Security gates at each floor entrance
 ```
 
-</details>
-
 ---
 
-<details>
-<summary><strong>2. What Is a VPC</strong></summary>
+## 2. What Is a VPC
 
 A **Virtual Private Cloud (VPC)** is an isolated network you own inside AWS. Every resource you launch — EC2, RDS, Lambda — lives inside a VPC.
 
@@ -102,27 +97,24 @@ For any real workload you create a **Custom VPC** — every subnet, route, and f
 ```
 ┌────────────────────────── AWS Region ──────────────────────────────┐
 │                                                                    │
-│  ┌─────────────────────── VPC (10.0.0.0/16) ──────────────────┐   │
-│  │                                                            │   │
-│  │  Public Subnet (10.0.1.0/24)   Private Subnet (10.0.2.0/24)│   │
-│  │  ┌──────────────────────┐      ┌──────────────────────┐    │   │
-│  │  │  EC2 Web Server      │      │  RDS Database        │    │   │
-│  │  │  Route → IGW         │      │  Route → NAT         │    │   │
-│  │  └──────────────────────┘      └──────────────────────┘    │   │
-│  │                                                            │   │
-│  │  IGW ↔ Internet                NAT Gateway (in public)     │   │
-│  └────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────── VPC (10.0.0.0/16) ──────────────────┐    │
+│  │                                                            │    │
+│  │  Public Subnet (10.0.1.0/24)   Private Subnet (10.0.2.0/24)│    │
+│  │  ┌──────────────────────┐      ┌──────────────────────┐    │    │
+│  │  │  EC2 Web Server      │      │  RDS Database        │    │    │
+│  │  │  Route → IGW         │      │  Route → NAT         │    │    │
+│  │  └──────────────────────┘      └──────────────────────┘    │    │
+│  │                                                            │    │
+│  │  IGW ↔ Internet                NAT Gateway (in public)     │    │
+│  └────────────────────────────────────────────────────────────┘    │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-</details>
-
 ---
 
-<details>
-<summary><strong>3. CIDR and IP Address Ranges</strong></summary>
+## 3. CIDR and IP Address Ranges
 
-Before you build subnets, you choose how much IP space your VPC owns. That range is defined using **CIDR notation**.
+Before you build subnets, you choose how much IP space your VPC owns. That range is defined using **CIDR (Classless Inter-Domain Routing)** notation.
 
 A CIDR block like `10.0.0.0/16` means:
 - `10.0.0.0` is the starting address
@@ -164,21 +156,18 @@ Always use private ranges for VPC CIDRs. Public IP ranges in a VPC cause routing
 If you ever connect two VPCs (VPC Peering) or connect to an on-premises network, their CIDR ranges must not overlap. This is why planning matters upfront.
 
 ```
-❌ Bad — overlap:
+Bad — overlap:
 VPC A: 10.0.0.0/16  (10.0.0.0 - 10.0.255.255)
 VPC B: 10.0.1.0/24  (10.0.1.0 - 10.0.1.255)  ← inside VPC A's range
 
-✅ Good — no overlap:
+Good — no overlap:
 VPC A: 10.0.0.0/16  (10.0.0.0 - 10.0.255.255)
 VPC B: 10.1.0.0/16  (10.1.0.0 - 10.1.255.255)
 ```
 
-</details>
-
 ---
 
-<details>
-<summary><strong>4. Subnets and Availability Zones</strong></summary>
+## 4. Subnets and Availability Zones
 
 A **subnet** is a slice of your VPC CIDR assigned to one Availability Zone. Every resource you launch lives in a specific subnet — and therefore in a specific AZ.
 
@@ -218,12 +207,9 @@ DB tier (private):    /24 — consistent sizing keeps things simple
 
 Always size larger than you think you need. You cannot resize a subnet after creation — you would have to create a new one.
 
-</details>
-
 ---
 
-<details>
-<summary><strong>5. Routing, IGW and NAT Gateway</strong></summary>
+## 5. Routing, IGW and NAT Gateway
 
 Every subnet is associated with a **route table** — a set of rules that tell AWS where to send traffic based on destination IP.
 
@@ -273,7 +259,7 @@ Without an IGW attached and routed, no instance in the VPC can reach the interne
 
 ### NAT Gateway
 
-A NAT Gateway lets instances in **private subnets** make outbound internet connections (downloading packages, calling external APIs) while remaining completely unreachable from the internet inbound.
+A NAT (Network Address Translation) Gateway lets instances in **private subnets** make outbound internet connections (downloading packages, calling external APIs) while remaining completely unreachable from the internet inbound.
 
 **How it works:**
 ```
@@ -316,14 +302,11 @@ One NAT Gateway per AZ. If you use a single NAT Gateway and that AZ goes down, a
 | Availability | Highly available within AZ | You manage failover |
 | Bandwidth | Up to 45 Gbps | Limited by instance type |
 | Cost | Higher | Lower (EC2 cost only) |
-| Recommendation | ✅ Always use this | Legacy — avoid |
-
-</details>
+| Recommendation | Always use this | Legacy — avoid |
 
 ---
 
-<details>
-<summary><strong>6. Security Groups vs NACLs</strong></summary>
+## 6. Security Groups vs NACLs
 
 AWS gives you two layers of network security. Understanding the difference between them is one of the most important concepts in AWS networking.
 
@@ -408,9 +391,9 @@ Outbound rules:
 | Feature | Security Group | NACL |
 |---|---|---|
 | Level | Instance | Subnet |
-| Stateful? | ✅ Yes | ❌ No |
-| Allow rules | ✅ Yes | ✅ Yes |
-| Deny rules | ❌ No | ✅ Yes |
+| Stateful? | Yes | No |
+| Allow rules | Yes | Yes |
+| Deny rules | No | Yes |
 | Default inbound | Deny all | Allow all |
 | Rule evaluation | All rules checked | Lowest number first |
 | Return traffic | Auto-allowed | Must be explicitly allowed |
@@ -418,12 +401,9 @@ Outbound rules:
 
 **The Recommendation:** Use Security Groups for all primary access control — they are stateful and easier to manage. Add NACLs only when you need explicit Deny rules or a subnet-level defense layer.
 
-</details>
-
 ---
 
-<details>
-<summary><strong>7. The NACL Trap — The Most Common Beginner Mistake</strong></summary>
+## 7. The NACL Trap — The Most Common Beginner Mistake
 
 This single misconfiguration causes more AWS networking failures than anything else. Read this carefully.
 
@@ -450,7 +430,7 @@ Looks complete. Allows HTTP and HTTPS both ways. But your website does not load.
 User (123.45.67.89:54321) → Your server (:80)
 
 NACL Inbound check:
-  Rule 100: TCP port 80 from anywhere → ALLOW ✅
+  Rule 100: TCP port 80 from anywhere → ALLOW
   Packet enters subnet, reaches EC2
 
 Server processes request
@@ -461,7 +441,7 @@ Server (:80) → User (123.45.67.89:54321)
 NACL Outbound check:
   Rule 100: TCP port 80 → not a match (destination port is 54321)
   Rule 110: TCP port 443 → not a match
-  Rule *: DENY ❌
+  Rule *: DENY
 
 Response is dropped. User sees timeout.
 ```
@@ -489,12 +469,9 @@ Security Groups teach you to only think about inbound rules — return traffic i
 **Best practice:**
 Most teams leave NACLs at the default (allow all) and use Security Groups for all access control. Only add custom NACLs when you specifically need Deny rules — and when you do, always include the ephemeral port range in both directions.
 
-</details>
-
 ---
 
-<details>
-<summary><strong>8. IP Concepts — Private, Public, Elastic, ENI</strong></summary>
+## 8. IP Concepts — Private, Public, Elastic, ENI
 
 Every EC2 instance in your VPC gets network addresses. Understanding which type does what prevents a lot of confusion.
 
@@ -506,11 +483,11 @@ Assigned automatically when an instance launches. Used for all communication wit
 
 ```
 Properties:
-  ✅ Free
-  ✅ Stays the same when instance stops and starts
-  ❌ Released permanently when instance is terminated
-  ❌ Not reachable from the internet
-  ❌ Cannot route on the public internet
+  Free
+  Stays the same when instance stops and starts
+  Released permanently when instance is terminated
+  Not reachable from the internet
+  Cannot route on the public internet
 ```
 
 ---
@@ -521,10 +498,10 @@ Assigned automatically to instances in public subnets (if the subnet is configur
 
 ```
 Properties:
-  ✅ Automatically assigned — no action needed
-  ✅ Included in Free Tier (750 hrs/month)
-  ❌ Changes every time the instance stops and starts
-  ❌ Lost permanently when instance is terminated
+  Automatically assigned — no action needed
+  Included in Free Tier (750 hrs/month)
+  Changes every time the instance stops and starts
+  Lost permanently when instance is terminated
 ```
 
 This is the problem with Public IPs — they change. If your DNS record points to `3.120.55.23` and the instance restarts, it gets a new IP and your DNS breaks.
@@ -537,10 +514,10 @@ A static public IPv4 address that you allocate to your account. It stays the sam
 
 ```
 Properties:
-  ✅ Permanent — survives stop/start/restart
-  ✅ Can be moved between instances (failover)
-  ✅ Free while attached to a running instance
-  ❌ Billed when allocated but not attached (idle charge)
+  Permanent — survives stop/start/restart
+  Can be moved between instances (failover)
+  Free while attached to a running instance
+  Billed when allocated but not attached (idle charge)
 ```
 
 **When to use Elastic IP:**
@@ -564,19 +541,16 @@ You can create additional ENIs and attach them to instances — useful for netwo
 
 | Type | Persists on restart? | Internet reachable? | Cost |
 |---|---|---|---|
-| Private IP | ✅ Yes | ❌ No | Free |
-| Public IP | ❌ Changes | ✅ Yes | Free (750 hrs/mo) |
-| Elastic IP | ✅ Yes | ✅ Yes | Free if attached, billed if idle |
+| Private IP | Yes | No | Free |
+| Public IP | No — changes | Yes | Free (750 hrs/mo) |
+| Elastic IP | Yes | Yes | Free if attached, billed if idle |
 | ENI | N/A | Depends | Free |
-
-</details>
 
 ---
 
-<details>
-<summary><strong>9. VPC Subnet Design — Webstore on AWS</strong></summary>
+## 9. VPC Subnet Design — Webstore on AWS
 
-This is how you translate requirements into a real VPC design. Work through this before touching the console.
+This is how you translate the webstore requirements into a real VPC design. Work through this before touching the console.
 
 **Requirements:**
 ```
@@ -594,9 +568,9 @@ Use `10.0.0.0/16` — 65,536 IPs. Plenty of room for all subnets across multiple
 **Step 2 — Calculate subnet sizes**
 
 ```
-Web tier:      ~20 instances now, ~60 eventually → /24 (251 usable) ✅
-API tier:      ~40 instances now, ~120 eventually → /24 (251 usable) ✅
-Database tier: ~5 instances now, ~15 eventually   → /24 (251 usable) ✅
+Web tier:      ~20 instances now, ~60 eventually → /24 (251 usable)
+API tier:      ~40 instances now, ~120 eventually → /24 (251 usable)
+Database tier: ~5 instances now, ~15 eventually   → /24 (251 usable)
 
 Consistent /24 sizing — simple to manage, no mental math needed
 ```
@@ -644,7 +618,7 @@ webstore-api-sg:
   Outbound: All
 
 webstore-db-sg:
-  Inbound:  27017 from webstore-api-sg  ← only api tier can reach db
+  Inbound:  5432 from webstore-api-sg  ← only api tier can reach db
   Outbound: All
 ```
 
@@ -658,7 +632,7 @@ webstore-db-sg:
 10.0.12.0/24  → 10.0.12.0 - 10.0.12.255
 10.0.13.0/24  → 10.0.13.0 - 10.0.13.255
 
-No overlaps ✅
+No overlaps.
 ```
 
 **Terraform snippet:**
@@ -692,43 +666,40 @@ resource "aws_subnet" "db_1a" {
 }
 ```
 
-</details>
-
 ---
 
-<details>
-<summary><strong>10. Architecture Blueprint</strong></summary>
+## 10. Architecture Blueprint
 
 **Webstore production VPC — full picture:**
 
 ```
 ┌──────────────────────────────── AWS Region (us-east-1) ────────────────────────────────────┐
 │                                                                                            │
-│  ┌─────────────────────────────── VPC: 10.0.0.0/16 ──────────────────────────────────┐    │
-│  │                                                                                    │    │
-│  │  AZ: us-east-1a                          AZ: us-east-1b                           │    │
-│  │                                                                                    │    │
-│  │  ┌─── Public (10.0.1.0/24) ────┐        ┌─── Public (10.0.11.0/24) ───┐           │    │
-│  │  │  ALB (webstore-alb-sg)      │        │  ALB (webstore-alb-sg)      │           │    │
-│  │  │  NAT Gateway                │        │  NAT Gateway                │           │    │
-│  │  │  Route: 0.0.0.0/0 → IGW     │        │  Route: 0.0.0.0/0 → IGW     │           │    │
-│  │  └─────────────────────────────┘        └─────────────────────────────┘           │    │
-│  │                                                                                    │    │
-│  │  ┌─── Private (10.0.2.0/24) ───┐        ┌─── Private (10.0.12.0/24) ──┐           │    │
-│  │  │  webstore-api EC2           │        │  webstore-api EC2            │           │    │
-│  │  │  SG: allow 8080 from ALB SG │        │  SG: allow 8080 from ALB SG  │           │    │
-│  │  │  Route: 0.0.0.0/0 → NAT     │        │  Route: 0.0.0.0/0 → NAT      │           │    │
-│  │  └─────────────────────────────┘        └─────────────────────────────┘           │    │
-│  │                                                                                    │    │
-│  │  ┌─── Private (10.0.3.0/24) ───┐        ┌─── Private (10.0.13.0/24) ──┐           │    │
-│  │  │  webstore-db (MongoDB)      │        │  webstore-db replica         │           │    │
-│  │  │  SG: allow 27017 from       │        │  SG: allow 27017 from        │           │    │
-│  │  │      api SG only            │        │      api SG only             │           │    │
-│  │  │  No public IP               │        │  No public IP                │           │    │
-│  │  └─────────────────────────────┘        └─────────────────────────────┘           │    │
-│  │                                                                                    │    │
-│  │  Internet Gateway                                                                  │    │
-│  └────────────────────────────────────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────── VPC: 10.0.0.0/16 ──────────────────────────────────┐     │
+│  │                                                                                   │     │
+│  │  AZ: us-east-1a                          AZ: us-east-1b                           │     │
+│  │                                                                                   │     │
+│  │  ┌─── Public (10.0.1.0/24) ────┐        ┌─── Public (10.0.11.0/24) ───┐           │     │
+│  │  │  ALB (webstore-alb-sg)      │        │  ALB (webstore-alb-sg)      │           │     │
+│  │  │  NAT Gateway                │        │  NAT Gateway                │           │     │
+│  │  │  Route: 0.0.0.0/0 → IGW     │        │  Route: 0.0.0.0/0 → IGW     │           │     │
+│  │  └─────────────────────────────┘        └─────────────────────────────┘           │     │
+│  │                                                                                   │     │
+│  │  ┌─── Private (10.0.2.0/24) ───┐        ┌─── Private (10.0.12.0/24) ──┐           │     │
+│  │  │  webstore-api EC2           │        │  webstore-api EC2           │           │     │
+│  │  │  SG: allow 8080 from ALB SG │        │  SG: allow 8080 from ALB SG │           │     │
+│  │  │  Route: 0.0.0.0/0 → NAT     │        │  Route: 0.0.0.0/0 → NAT     │           │     │
+│  │  └─────────────────────────────┘        └─────────────────────────────┘           │     │
+│  │                                                                                   │     │
+│  │  ┌─── Private (10.0.3.0/24) ───┐        ┌─── Private (10.0.13.0/24) ──┐           │     │
+│  │  │  webstore-db (RDS postgres) │        │  webstore-db (RDS standby)  │           │     │
+│  │  │  SG: allow 5432 from        │        │  SG: allow 5432 from        │           │     │
+│  │  │      api SG only            │        │      api SG only            │           │     │
+│  │  │  No public IP               │        │  No public IP               │           │     │
+│  │  └─────────────────────────────┘        └─────────────────────────────┘           │     │
+│  │                                                                                   │     │
+│  │  Internet Gateway                                                                 │     │
+│  └───────────────────────────────────────────────────────────────────────────────────┘     │
 │                                                                                            │
 └────────────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -747,4 +718,21 @@ Traffic flow:
 | Instance boundary | Security Groups | Per-resource stateful firewall — primary security control |
 | Database isolation | SG referencing | Only api tier SG can reach db — no IP-based rules needed |
 
-</details>
+---
+
+## What You Can Do After This
+
+- Design a multi-tier VPC from scratch — subnets, routing, security groups, NACLs
+- Calculate CIDR blocks and verify no overlaps between subnets
+- Explain the difference between IGW and NAT Gateway and when each is used
+- Write Security Group rules that reference other Security Groups
+- Explain exactly why the NACL ephemeral port trap breaks connections
+- Design the webstore production VPC with six subnets across two AZs
+
+---
+
+## What Comes Next
+
+→ [04. EBS](../04-ebs/README.md)
+
+The network is designed. Now your EC2 instances need somewhere to store data — EBS (Elastic Block Store) is the persistent block storage that attaches to instances and survives stop/start cycles.

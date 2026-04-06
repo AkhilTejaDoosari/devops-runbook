@@ -6,89 +6,114 @@
 
 ---
 
-A production-focused AWS guide covering the core services every DevOps engineer uses daily — from VPC design to serverless to infrastructure automation.
+Cloud infrastructure — taking the webstore from a local Kubernetes cluster to production on AWS.
+
+---
+
+## Why AWS — and Why Not GCP or Azure
+
+AWS has roughly 32% of the global cloud market. More DevOps job postings reference AWS than any other cloud provider. EKS, RDS, EC2, and IAM appear in job descriptions as assumed knowledge. Learning AWS first is not a preference — it is the highest-return choice for a DevOps career path.
+
+GCP is excellent for data and machine learning workloads and is growing, but its DevOps job market is a fraction of AWS. Azure dominates in Microsoft enterprise environments, but those shops tend to hire Windows and .NET experience alongside the cloud skills. Neither is wrong — but AWS is where the entry-level DevOps interviews happen.
+
+The concepts transfer. VPC is the same mental model as every other cloud network. IAM roles and policies map to GCP service accounts and Azure managed identities. EKS is GKE is AKS. Once you understand how AWS structures its services, reading GCP or Azure documentation is a translation exercise, not a re-education.
 
 ---
 
 ## Prerequisites
 
-**Complete first:** [03. Networking – Foundations](../03.%20Networking%20–%20Foundations/README.md)
+**Complete first:** [07. Observability – Monitoring & Logs](../07.%20Observability%20–%20Monitoring%20%26%20Logs/README.md)
 
-Specifically, before starting AWS you should understand:
-- Subnets and CIDR (file 05) — VPC design is applied subnetting
-- NAT concepts (file 07) — AWS NAT Gateway is managed NAT
-- Stateful vs stateless firewalls (file 09) — Security Groups and NACLs are the cloud implementation
-
-Without these, AWS networking will feel like a configuration wizard instead of a logical system.
+You arrive at AWS knowing how to build, deploy, and observe a containerised application on a local cluster. AWS is where you take that knowledge and apply it to managed, production-grade infrastructure. Without the foundation, the AWS services are just a list of acronyms.
 
 ---
 
 ## The Running Example
 
-Every service is introduced in the context of hosting and running the webstore application:
+Every file and every lab operates on the same webstore app.
 
-| Service | Image | Port |
+| Service | Local (Minikube) | AWS equivalent |
 |---|---|---|
-| webstore-frontend | nginx:1.24 | 80 |
-| webstore-api | nginx:1.24 | 8080 |
-| webstore-db | mongo | 27017 |
+| webstore-frontend | nginx:1.24 pod | EC2 or EKS pod behind ALB |
+| webstore-api | nginx:1.24 pod | EKS pod, image from ECR |
+| webstore-db | postgres:15 pod + PVC | RDS PostgreSQL |
+| Cluster | Minikube | EKS |
+| Container registry | Docker Hub | ECR |
+| Load balancer | NodePort | Application Load Balancer |
+| Monitoring | kube-prometheus-stack | CloudWatch + managed Prometheus |
 
 ---
 
-## Topics
+## Where You Take the Webstore
 
-| # | File | What You Learn |
-|---|---|---|
-| 01 | [Intro to AWS](./01-intro-aws/README.md) | Cloud fundamentals, regions, AZs, the AWS global infrastructure |
-| 02 | [IAM](./02-iam/README.md) | Users, roles, policies, least privilege, MFA |
-| 03 | [VPC & Subnets](./03-vpc-subnet/README.md) | VPC design, subnets, routing, IGW, NAT Gateway, Security Groups, NACLs |
-| 04 | [EBS](./04-ebs/README.md) | Block storage, volume types, snapshots, encryption |
-| 05 | [EFS](./05-efs/README.md) | Elastic File System, shared storage, EBS vs EFS vs S3 |
-| 06 | [S3](./06-s3/README.md) | Object storage, buckets, versioning, lifecycle, static hosting |
-| 07 | [EC2](./07-ec2/README.md) | Virtual machines, AMIs, instance types, security groups, user data |
-| 08 | [RDS](./08-rds/README.md) | Managed databases, Multi-AZ, read replicas, backups |
-| 09 | [Load Balancing & Auto Scaling](./09-Load-balancing-auto-scaling/README.md) | ALB, NLB, target groups, Auto Scaling Groups, health checks |
-| 10 | [CloudWatch & SNS](./10-cloudwatch-sns/README.md) | Metrics, logs, alarms, dashboards, notifications |
-| 11 | [Lambda](./11-lambda/README.md) | Serverless functions, triggers, event-driven architecture |
-| 12 | [Elastic Beanstalk](./12-elastic-beanstalk/README.md) | PaaS deployment, managed environments, rolling updates |
-| 13 | [Route 53](./13-route53/README.md) | DNS, hosted zones, routing policies, health checks, failover |
-| 14 | [CLI & CloudFormation](./14-cli-cloudformation/README.md) | AWS CLI, CloudFormation templates, infrastructure as code on AWS |
+You arrive at AWS with the webstore running on a local cluster, deployed by ArgoCD, monitored by Prometheus and Grafana. Everything works — on your laptop.
+
+You leave with the webstore running on EKS in AWS, with the database on RDS PostgreSQL, a load balancer in front, images stored in ECR, and CloudWatch collecting logs and metrics. The same manifests you wrote for Minikube deploy to EKS. The infrastructure is reproducible, scalable, and production-grade.
+
+---
+
+## Phases
+
+| # | Phase | Topics | Lab |
+|---|---|---|---|
+| 01 | [Intro to AWS](./01-intro-aws/README.md) | Why cloud, AWS global infrastructure, regions and availability zones, free tier | No lab |
+| 02 | [IAM](./02-iam/README.md) | Users, groups, roles, policies, least privilege, MFA, the root account rule | [Lab 01](./aws-labs/01-iam-lab.md) |
+| 03 | [VPC & Subnets](./03-vpc-subnet/README.md) | VPC, public and private subnets, route tables, internet gateway, NAT gateway | [Lab 02](./aws-labs/02-vpc-lab.md) |
+| 04 | [EBS](./04-ebs/README.md) | Block storage, volumes, snapshots, attaching to EC2 | [Lab 03](./aws-labs/03-compute-storage-lab.md) |
+| 05 | [EFS](./05-efs/README.md) | Shared file storage, mount targets, use cases vs EBS | [Lab 03](./aws-labs/03-compute-storage-lab.md) |
+| 06 | [S3](./06-s3/README.md) | Object storage, buckets, policies, versioning, static site hosting | [Lab 03](./aws-labs/03-compute-storage-lab.md) |
+| 07 | [EC2](./07-ec2/README.md) | Instance types, AMIs, key pairs, security groups, user data, lifecycle | [Lab 04](./aws-labs/04-ec2-lab.md) |
+| 08 | [RDS](./08-rds/README.md) | Managed databases, PostgreSQL on RDS, multi-AZ, snapshots, migrating from postgres container | [Lab 05](./aws-labs/05-rds-lab.md) |
+| 09 | [Load Balancing & Auto Scaling](./09-Load-balancing-auto-scaling/README.md) | ALB, target groups, health checks, Auto Scaling Groups, launch templates | [Lab 06](./aws-labs/06-alb-asg-lab.md) |
+| 10 | [CloudWatch & SNS](./10-cloudwatch-sns/README.md) | Metrics, logs, dashboards, alarms, SNS notifications | [Lab 07](./aws-labs/07-cloudwatch-lab.md) |
+| 11 | [Lambda](./11-lambda/README.md) | Serverless functions, triggers, execution role, use cases in DevOps pipelines | [Lab 08](./aws-labs/08-lambda-lab.md) |
+| 12 | [Elastic Beanstalk](./12-elastic-beanstalk/README.md) | Platform as a Service, deploy without managing infrastructure, when to use it | No lab |
+| 13 | [Route 53](./13-route53/README.md) | DNS, hosted zones, record types, routing policies, domain registration | [Lab 09](./aws-labs/09-route53-lab.md) |
+| 14 | [CLI & CloudFormation](./14-cli-cloudformation/README.md) | AWS CLI setup, key commands, CloudFormation basics, why Terraform replaces it | [Lab 10](./aws-labs/10-cli-lab.md) |
 
 ---
 
 ## Labs
 
-| Status | Coverage |
-|---|---|
-| 🚧 In progress | Labs being built alongside notes |
-
----
-
-## How to Use This
-
-Read topics in order — each one builds on the previous.  
-IAM before EC2 (you need to understand permissions before launching instances).  
-VPC before EC2 (you need to understand networking before placing instances in it).  
-EC2 before RDS (you need compute before you need managed databases).
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 01](./aws-labs/01-iam-lab.md) | IAM | Create IAM user, group, and policy — never use root for daily work |
+| [Lab 02](./aws-labs/02-vpc-lab.md) | VPC & Subnets | Build the webstore VPC — public subnet for api, private subnet for database |
+| [Lab 03](./aws-labs/03-compute-storage-lab.md) | EBS, EFS, S3 | Create and attach a volume, mount EFS, create an S3 bucket for webstore assets |
+| [Lab 04](./aws-labs/04-ec2-lab.md) | EC2 | Launch a webstore-api server, SSH in, install nginx, manage lifecycle |
+| [Lab 05](./aws-labs/05-rds-lab.md) | RDS | Create RDS PostgreSQL, connect from EC2, migrate webstore-db data |
+| [Lab 06](./aws-labs/06-alb-asg-lab.md) | ALB & Auto Scaling | Put webstore-frontend behind an ALB, create an ASG for the api tier |
+| [Lab 07](./aws-labs/07-cloudwatch-lab.md) | CloudWatch | Create a dashboard, set an alarm, send an SNS notification on breach |
+| [Lab 08](./aws-labs/08-lambda-lab.md) | Lambda | Write a Lambda function triggered by an S3 upload, test and monitor it |
+| [Lab 09](./aws-labs/09-route53-lab.md) | Route 53 | Register a hosted zone, create an A record pointing to the ALB |
+| [Lab 10](./aws-labs/10-cli-lab.md) | AWS CLI | Configure CLI, run key commands for EC2, S3, and IAM from the terminal |
 
 ---
 
 ## What You Can Do After This
 
-- Design and build a production-ready multi-tier VPC from scratch
-- Set up IAM correctly with least-privilege roles and no root usage
-- Launch and configure EC2 instances with proper security
-- Store and manage data across EBS, EFS, and S3
-- Deploy a load-balanced, auto-scaling application
-- Monitor infrastructure with CloudWatch and alert with SNS
-- Write and deploy serverless functions with Lambda
-- Manage DNS and routing with Route 53
-- Automate infrastructure with the AWS CLI and CloudFormation
+- Navigate the AWS console and CLI confidently
+- Set up IAM with least-privilege access and MFA
+- Design a multi-tier VPC with public and private subnets
+- Launch EC2 instances, attach storage, and manage lifecycle
+- Run a managed PostgreSQL database on RDS
+- Put applications behind an Application Load Balancer
+- Monitor infrastructure with CloudWatch alarms and dashboards
+- Use S3 for static assets and object storage
+- Set up Route 53 DNS for a real domain
+
+---
+
+## How to Use This
+
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
 
 ---
 
 ## What Comes Next
 
-→ [07. Terraform – IaC Foundations](../07.%20Terraform%20–%20IaC%20Foundations/README.md)
+→ [09. Terraform – IaC Foundations](../09.%20Terraform%20–%20IaC%20Foundations/README.md)
 
-CloudFormation is AWS-only. Terraform does everything CloudFormation does — and works across every cloud provider with the same workflow. After learning what AWS resources look like, Terraform lets you define and manage them as reusable, version-controlled code.
+You just built AWS infrastructure manually — clicking in the console and running CLI commands. Terraform lets you define all of that as code. The same VPC, EKS cluster, RDS instance, and IAM roles become a set of `.tf` files that can be version controlled, reviewed in a PR, and applied in one command.

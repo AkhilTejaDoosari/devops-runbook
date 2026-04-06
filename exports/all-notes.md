@@ -17,7 +17,7 @@
 [Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 Boot Process
+# Boot Process
 
 ## What This File Is About
 
@@ -288,7 +288,7 @@ shutdown -h now
 [Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 Basics
+# Linux Basics
 
 Linux organizes everything under one single tree starting at `/`. No C: or D: drives — every file, disk, device, and config lives somewhere beneath that root slash. In Linux a **directory is just a folder** — the two words mean the same thing, Linux documentation just prefers "directory."
 
@@ -309,335 +309,343 @@ The **shell** is the translator between you and the kernel. When you type a comm
 
 ## 1. Directory Navigation
 
-The shell always operates inside some directory — called the **current working directory (CWD)**. You can think of it as "where you are right now" in the filesystem. When you SSH into a server blind, the first thing you do is `pwd` to find out where you landed.
+The shell always operates inside some directory — called the **current working directory (CWD)**. You can think of it as "where you are right now" in the filesystem. When you SSH into a server for the first time, you have no idea where you landed. The first command you run is `pwd` — it tells you exactly where you are before you touch anything.
 
 **Absolute vs relative paths:**
-- Absolute starts from root: `/home/akhil/projects`
-- Relative starts from your CWD: if you're in `/home/akhil`, then `cd linux` takes you to `/home/akhil/linux`
+- Absolute starts from root: `/home/akhil/webstore` — works from anywhere on the system
+- Relative starts from your CWD: if you are in `/home/akhil`, then `cd webstore` takes you to `/home/akhil/webstore`
 - `..` means parent directory — `cd ..` moves you up one level
 
-| Command | Description | Syntax | Example |
-| --- | --- | --- | --- |
-| `pwd` | Print working directory — shows the full path of where you currently are | `pwd` | `pwd` |
-| `cd` | Change directory | `cd <dir>` | `cd linux` |
-| `cd ..` | Go up one directory level | `cd ..` | `cd ..` |
-| `mkdir` | Create a new directory | `mkdir <dir>` | `mkdir devops` |
-| `mkdir -p` | Create nested directories in one shot | `mkdir -p a/b/c` | `mkdir -p akhil/linux/backup` |
-| `rmdir` | Remove empty directory | `rmdir <dir>` | `rmdir devops` |
-| `rm -rf` | Force delete directory and all contents | `rm -rf <dir>` | `rm -rf akhil` |
+| Command | What it does | When you reach for it |
+|---|---|---|
+| `pwd` | Print the full path of where you currently are | First thing after SSHing into any server |
+| `cd <dir>` | Move into a directory | Navigating into the webstore project folder |
+| `cd ..` | Move up one directory level | Going from `~/webstore/logs` back to `~/webstore` |
+| `cd ~` | Jump directly to your home directory | Getting back to a known starting point fast |
+| `mkdir <dir>` | Create a new directory | Creating `~/webstore/logs` for the first time |
+| `mkdir -p <path>` | Create nested directories in one shot — no error if they exist | `mkdir -p ~/webstore/{frontend,api,db,logs,config,backup}` — builds the full webstore structure in one command |
+| `rmdir <dir>` | Remove an empty directory | Cleaning up a folder you created by mistake — only works if empty |
+| `rm -rf <dir>` | Force delete a directory and everything inside it | Wiping a directory with no confirmation and no undo — use with full attention |
 
-> `rm -rf` has no confirmation and no undo. Use with caution.
+> `rm -rf` has no confirmation prompt and no undo. On a server, this means permanent. The habit to build: always run `ls` on the path first to confirm what you are about to delete.
 
 ---
 
 ## 2. Listing Directory Contents
 
-`ls` shows what's in a directory. By default it lists filenames only. The flags let you see permissions, sizes, hidden files, and sort order — all things you need constantly when working on a server.
+`ls` is the command you run more than any other on a Linux server. By default it lists filenames only — clean but minimal. The flags give you everything else you need: who owns the file, how large it is, when it was last modified, and whether it is hidden. Every one of these details matters when you are debugging a live system.
 
-| Command | Description | Example |
-| --- | --- | --- |
-| `ls` | List files and directories | `ls` |
-| `ls -l` | Detailed list — permissions, owner, size, timestamp (alphabetical) | `ls -l` |
-| `ls -lr` | Detailed list in reverse alphabetical order | `ls -lr` |
-| `ls -a` | Include hidden files (those starting with `.`) | `ls -a` |
-| `ls -lh` | Long format with human-readable sizes (KB, MB, GB) | `ls -lh` |
-| `ls -lt` | Sort by modification time, newest first | `ls -lt` |
-| `ls -ltr` | Sort by modification time, oldest first | `ls -ltr` |
-| `ls -ld` | Show info about the directory itself, not its contents | `ls -ld devops/` |
+| Command | What it shows | When you reach for it |
+|---|---|---|
+| `ls` | Filenames only | Quick glance at what is in a directory |
+| `ls -l` | Full details — permissions, owner, size, timestamp | Checking who owns the webstore config file and when it was last changed |
+| `ls -lh` | Same as `-l` but sizes in KB, MB, GB instead of bytes | When you need to know if a log file has grown to 2GB overnight |
+| `ls -la` | Full details including hidden files (`.` prefix) | Finding `.env` files or `.git` directories that are invisible by default |
+| `ls -lt` | Sorted by modification time, newest first | Finding which file in `~/webstore/logs` changed most recently during an incident |
+| `ls -ltr` | Sorted by modification time, oldest first | Seeing the full history of changes in chronological order |
+| `ls -ld <dir>` | Shows info about the directory itself, not its contents | Checking the permissions on `~/webstore/` without listing everything inside |
 
-You can chain flags: `ls -lh` and `ls -ltr` and `ls -lath` all work. Order of flags does not matter.
+You can chain flags freely — `ls -lh`, `ls -ltr`, `ls -lath` all work. Order does not matter.
+
+**What the output of `ls -lh` actually tells you:**
+
+```
+-rw-r--r-- 1 akhil www-data 1.2K Apr 5 09:14 webstore.conf
+```
+
+Reading left to right:  
+file type and permissions (`-rw-r--r--`), number of hard links (`1`), owner (`akhil`), group (`www-data`), size (`1.2K`), last modified (`Apr 5 09:14`), filename (`webstore.conf`).     
+When you see `www-data` as the group on a webstore config file, that tells you nginx has read access to it — which is exactly what you want.
 
 ---
 
 ## 3. Terminal Essentials
 
-The shell keeps a numbered history of every command you've run. This matters on servers where you need to repeat long commands exactly, or track what was run before you arrived.
+The shell keeps a numbered history of every command you have run in the current session. On a server this matters for two reasons: you need to repeat long commands exactly without retyping them, and when something broke you need to know what was run before you arrived.
 
-| Command | Description | Example |
-| --- | --- | --- |
-| `clear` | Clear the terminal screen (history untouched) | `clear` |
-| `history` | Show command history with numbers | `history` |
-| `!<num>` | Re-run command by its history number | `!42` |
-| `!-1` | Re-run the last command | `!-1` |
+| Command | What it does | When you reach for it |
+|---|---|---|
+| `clear` | Clear the terminal screen — history is untouched | Cleaning up visual clutter before a focused task |
+| `history` | Show all commands run this session with line numbers | Auditing what was run on the server before you got there |
+| `!<num>` | Re-run the command at that history number | `!42` — repeat a long docker run command without retyping |
+| `!-1` | Re-run the last command | Running the same command twice in a row |
+
+**The keyboard shortcuts that save the most time:**
+
+- `↑` arrow — scroll back through history one command at a time
+- `Ctrl + R` — reverse search through history by typing part of a command
+- `Ctrl + C` — kill the running command immediately
+- `Ctrl + L` — same as `clear`
+- `Tab` — autocomplete a command, filename, or path
+
+`Ctrl + R` is the one most people do not know but use constantly once they do.   
+Type `Ctrl + R` then start typing `docker run` — the shell finds the last command that matches and shows it.   
+Press Enter to run it or keep typing to narrow the search.   
 
 ---
 
 ## 4. System Information
 
-Quick commands to orient yourself on any machine. On a server you SSH into for the first time, these tell you who you are, what's running, and how long it's been up.
+These are the first commands you run when you SSH into an unfamiliar server. They tell you who you are, what the machine is doing, and whether anything unusual is happening before you touch anything else.
 
-| Command | Description | Example |
-| --- | --- | --- |
-| `whoami` | Show current user | `whoami` |
-| `who` | List all users currently logged into the system | `who` |
-| `uptime` | How long the system has been running + load averages | `uptime` |
-| `date` | Current system date and time | `date` |
+| Command | What it tells you | When you reach for it |
+|---|---|---|
+| `whoami` | Your current username | Confirming you are logged in as the right user — not root when you shouldn't be |
+| `who` | Every user currently logged into this machine | Checking if someone else is on the server during an incident |
+| `uptime` | How long the system has been running + current load averages | A machine that rebooted 3 minutes ago when it should have been up for 30 days tells you something broke |
+| `date` | Current system date and time | Confirming the server clock is correct before reading log timestamps |
+
+**What `uptime` output actually means:**
+
+```
+10:32:11 up 4 days, 2:17, 1 user, load average: 0.45, 0.38, 0.31
+```
+
+The three load average numbers are CPU demand over the last 1 minute, 5 minutes, and 15 minutes.  
+A number below your CPU core count means the system is healthy.  
+A number above it means the system is under more load than it can handle — worth investigating before deploying anything.  
 
 ---
 
 ## 5. Getting Help
 
-Every command ships with documentation. You never need to Google basic flag syntax if you know how to read it locally.
+Every command ships with documentation built in. Before searching the internet for a flag you cannot remember, check it locally — it is faster and works on any server with no internet access.
 
-| Command | Description | Example |
-| --- | --- | --- |
-| `man` | Full manual page for a command | `man ls` |
-| `whatis` | One-line description of a command | `whatis clear` |
-| `whereis` | Find the binary, source, and man page locations | `whereis uname` |
-| `which` | Show the exact path of the executable that would run | `which ls` |
+| Command | What it does | When you reach for it |
+|---|---|---|
+| `man <command>` | Full manual page — everything the command can do | `man ls` — when you need to find an obscure flag |
+| `whatis <command>` | One-line description of what a command does | Quick reminder of what a command is for |
+| `whereis <command>` | Finds the binary, source code, and man page locations | Confirming which version of a tool is installed and where |
+| `which <command>` | Shows the exact path of the executable that would run | `which python3` — confirming which Python is active when you have multiple versions |
+
+Inside `man` pages: use `/` to search, `n` to jump to the next match, `q` to exit. Most man pages are long — searching is faster than scrolling.
 
 ---
 
 ## 6. System Info via uname
 
-`uname` reports information about the kernel and hardware. Useful for scripting, troubleshooting, or confirming what OS version you're on.
+`uname` reports information about the running kernel and hardware. You reach for it when you need to confirm the kernel version after an update, when a tool requires a specific architecture, or when a script needs to detect the OS it is running on.
 
-| Option | Description | Example |
-| --- | --- | --- |
-| `-s` | Kernel name | `uname -s` |
-| `-r` | Kernel release version | `uname -r` |
-| `-n` | Hostname | `uname -n` |
-| `-m` | Machine hardware type | `uname -m` |
-| `-a` | All of the above in one line | `uname -a` |
+| Option | What it shows | Example output |
+|---|---|---|
+| `uname -s` | Kernel name | `Linux` |
+| `uname -r` | Kernel release version | `5.15.0-91-generic` |
+| `uname -n` | Hostname of the machine | `webstore-prod-01` |
+| `uname -m` | Machine hardware architecture | `x86_64` |
+| `uname -a` | All of the above in one line | Full system summary |
+
+**When you reach for this:**
+- After a kernel update — `uname -r` confirms the new kernel is actually running
+- When installing a tool that has different binaries for `x86_64` vs `arm64` — `uname -m` tells you which to download
+- In a shell script that needs to behave differently on different systems — `uname -s` lets you detect the OS
+
+---
+
+→ Ready to practice? [Go to Lab 01](../linux-labs/01-boot-basics-files-lab.md)
 
 ---
 # TOOL: 01. Linux – System Fundamentals | FILE: 03-working-with-files
 ---
 
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 Working with Files & File Content
+# Working with Files
+
+On a Linux server, everything is a file. Config files, log files, scripts, sockets, devices — all of them live in the filesystem and all of them are operated on with the same small set of commands. This file covers creating files, copying and moving them, deleting them, and reading their contents. These are not beginner exercises — these are the operations you perform every single time you work on a server.
+
+---
 
 ## Table of Contents
-- [1. Create & Inspect Files](#1-create--inspect-files)  
-- [2. Copying / Moving / Renaming Files](#2-copying--moving--renaming-files)  
-- [3. Deleting Files](#3-deleting-files)  
-- [4. Viewing File Contents](#4-viewing-file-contents)  
-- [5. Previewing File Sections](#5-previewing-file-sections)  
-- [6. Filesystem Types in Linux](#6-filesystem-types-in-linux)  
-- [7. Quick Command Summary](#7-quick-command-summary)  
----
 
-<details>
-<summary><strong>1. Create & Inspect Files</strong></summary>
-
-## Theory & Notes
-
-- **Creating Files**  
-  - `touch <filename>` will create an empty file if it doesn’t exist, or update its timestamps if it does.
-
-- **Identifying File Types**  
-  - `file <filename>` examines contents and reports type (text, executable, image, etc.).
-
-- **Inspecting File Metadata**  
-  - `stat <filename>` shows detailed metadata: size, permissions, and timestamps.
+- [1. Create and Inspect Files](#1-create-and-inspect-files)
+- [2. Writing Content into Files](#2-writing-content-into-files)
+- [3. Copying and Moving Files](#3-copying-and-moving-files)
+- [4. Deleting Files](#4-deleting-files)
+- [5. Viewing File Contents](#5-viewing-file-contents)
+- [6. Previewing File Sections](#6-previewing-file-sections)
+- [7. File Types in Linux](#7-file-types-in-linux)
 
 ---
 
-| Command | Description                              | Syntax             | Example           |
-| ------- | ---------------------------------------- | ------------------ | ----------------- |
-| `touch` | Create file or update timestamps         | `touch <filename>` | `touch file1.txt` |
-| `file`  | Identify the type of a file              | `file <filename>`  | `file file1.txt`  |
-| `stat`  | Display file metadata (size, timestamps) | `stat <filename>`  | `stat file1.txt`  |
+## 1. Create and Inspect Files
 
-</details>
+`touch` creates an empty file if it does not exist, or updates the last-modified timestamp if it does. On a server you use it to create placeholder files, initialize log files before a service starts, or bump a file's timestamp to trigger a watching process.
 
----
+`file` examines the actual contents of a file and reports what type it is — not based on the extension, but based on the bytes inside. Linux does not care about extensions. A file called `server.conf` could contain anything — `file` tells you what it actually is.
 
-<details>
-<summary><strong>2. Copying / Moving / Renaming Files</strong></summary>
+`stat` shows the full metadata of a file: exact size in bytes, all three timestamps (accessed, modified, changed), permissions in both numeric and symbolic form, and the inode number. When a deployment goes wrong and you need to know exactly when a config file was last changed, `stat` gives you the answer down to the second.
 
-## Theory & Notes
+| Command | What it does | When you reach for it |
+|---|---|---|
+| `touch <file>` | Create empty file or update its timestamp | Creating `~/webstore/logs/access.log` before nginx starts writing to it |
+| `file <file>` | Report what type of content the file actually contains | Confirming `webstore-api` binary is an ELF executable, not a corrupted download |
+| `stat <file>` | Show full metadata — size, all timestamps, permissions, inode | Finding the exact second `webstore.conf` was last modified during an incident |
 
-- **Copy (`cp`)**  
-  - Basic: `cp <source> <destination>` duplicates files or directories.  
-  - **Interactive** (`-i`): prompts before overwrite.  
-  - **Verbose** (`-v`): prints each copy action, e.g.  
-    ```bash
-    ‘file1.txt’ -> ‘backup/file1.txt’
-    ```  
-    Useful for confirmation or logging.  
-  - **Recursive** (`-r`): copies directories and all contents.  
-  - **Combined** (`-rv` or `-vr`): recursive with live log of every file/subdirectory.
+**What `stat` output tells you:**
 
-- **Move/Rename (`mv`)**  
-  - `mv <source> <dest>` moves or renames while preserving metadata.  
-  - Supports `-i` and `-v` as well.
-  - Use `mv` instead of `cp` + `rm` to preserve file metadata.
+```
+File: webstore.conf
+Size: 128        Blocks: 8    IO Block: 4096   regular file
+Inode: 524291    Links: 1
+Access: (0644/-rw-r--r--)  Uid: (1000/akhil)  Gid: (33/www-data)
+Access: 2025-04-05 09:12:01
+Modify: 2025-04-05 08:47:33
+Change: 2025-04-05 08:47:33
+```
 
-- **Tip**
-  - `cp -iv <source> <destination>`
----
-
-| Command  | Description                                | Syntax                          | Example                          |
-| -------- | ------------------------------------------ | ------------------------------- | -------------------------------- |
-| `cp`     | Copy files or directories                  | `cp <source> <dest>`            | `cp file1.txt file2.txt`         |
-| `cp -i`  | Prompt before overwrite                    | `cp -i <src> <dest>`            | `cp -i file1.txt file2.txt`      |
-| `cp -v`  | Show each copy action                      | `cp -v <src> <dest>`            | `cp -v file1.txt backup/`        |
-| `cp -r`  | Copy directories recursively               | `cp -r <src_dir> <dest_dir>`    | `cp -r src/ backup/`             |
-| `cp -rv` | Recursive copy with verbose output         | `cp -rv <src_dir> <dest_dir>`   | `cp -rv src/ backup/`            |
-| `mv`     | Move or rename files or directories        | `mv <source> <dest>`            | `mv file2.txt file3.txt`         |
-
-</details>
+Three timestamps — Access (last read), Modify (last content change), Change (last metadata change including permissions). If `Modify` and `Change` differ, someone changed permissions without touching the content. That is worth knowing.
 
 ---
 
-<details>
-<summary><strong>3. Deleting Files</strong></summary>
+## 2. Writing Content into Files
 
-## Theory & Notes
+Before you can work with file contents you need to know how to write them from the terminal. Two operators handle this — `>` and `>>`. Getting them mixed up is one of the most common ways to accidentally destroy a config file.
 
-- **Remove (`rm`)**  
-  - Basic: `rm <filename>` deletes a file (no trash).  
-  - **Interactive** (`-i`): prompt before each deletion.  
-  - **Recursive** (`-r`): remove directory trees and contents.  
-  - **Force** (`-f`): ignore nonexistent files and suppress prompts.  
-  - **Combine** (`-rf`): force-delete a directory tree without confirmation.
+`>` redirects output into a file and **overwrites** everything already there. If the file does not exist it creates it. If it does exist, everything in it is gone.
 
----
+`>>` appends output to the end of a file. Existing content is untouched.
 
-| Command   | Description                            | Syntax                 | Example           |
-| --------- | -------------------------------------- | ---------------------- | ----------------- |
-| `rm`      | Remove a file                          | `rm <filename>`        | `rm file3.txt`    |
-| `rm -i`   | Prompt before deletion                 | `rm -i <filename>`     | `rm -i file3.txt` |
-| `rm -r`   | Remove directories and contents        | `rm -r <directory>`    | `rm -r devops/`   |
-| `rm -f`   | Force delete without prompt            | `rm -f <filename>`     | `rm -f file3.txt` |
+```bash
+# Create webstore.conf from scratch — safe because the file is new
+echo "db_host=webstore-db" > ~/webstore/config/webstore.conf
+echo "db_port=5432" >> ~/webstore/config/webstore.conf
+echo "api_port=8080" >> ~/webstore/config/webstore.conf
+```
 
-</details>
+The first line uses `>` to create the file and write the first entry. Every line after uses `>>` to append. If you accidentally used `>` on the second line, the first entry would be gone.
 
----
+To write multiple lines at once without running echo repeatedly, use a heredoc:
 
-<details>
-<summary><strong>4. Viewing File Contents</strong></summary>
+```bash
+cat > ~/webstore/config/webstore.conf << 'EOF'
+db_host=webstore-db
+db_port=5432
+api_port=8080
+api_host=webstore-api
+frontend_port=80
+EOF
+```
 
-## Theory & Notes
-
-- **Concatenate (`cat`)**  
-  - `cat <file>` prints entire file.  
-  - `cat -n <file>` numbers all output lines.  
-  - `tac <file>` prints in reverse order. (tac does not support -n option) 
-  - `nl <file>` numbers lines (alternative style cannot be commbined with cat or tac).
+Everything between `<< 'EOF'` and `EOF` goes into the file as-is. This is how you write config files from scripts without opening an editor.
 
 ---
 
-| Command  | Description                         | Syntax            | Example            |
-| -------- | ----------------------------------- | ----------------- | ------------------ |
-| `cat`    | Print file content                  | `cat <file>`      | `cat file1.txt`    |
-| `cat -n` | Print content with line numbers     | `cat -n <file>`   | `cat -n file1.txt` |
-| `tac`    | Print file content in reverse order | `tac <file>`      | `tac file1.txt`    |
-| `nl`     | Number lines                        | `nl <file>`       | `nl file1.txt`     |
+## 3. Copying and Moving Files
 
-</details>
+`cp` copies a file or directory. `mv` moves or renames one. They look similar but behave differently in one important way — `cp` leaves the original in place, `mv` does not.
 
----
+**Copying files:**
 
+| Command | What it does | When you reach for it |
+|---|---|---|
+| `cp <src> <dest>` | Copy a file | `cp webstore.conf webstore.conf.bak` — backup before editing |
+| `cp -i <src> <dest>` | Prompt before overwriting an existing file | When you are not sure if the destination already exists |
+| `cp -v <src> <dest>` | Show each file as it copies | Confirming the copy happened, especially useful in scripts |
+| `cp -r <src> <dest>` | Copy a directory and all its contents recursively | `cp -r ~/webstore ~/webstore-backup` — full project backup |
+| `cp -rv <src> <dest>` | Recursive copy with a live log of every file copied | Watching a large directory copy complete in real time |
 
-<details>
-<summary><strong>5. Previewing File Sections</strong></summary>
+**Moving and renaming:**
 
-## Theory & Notes
+`mv` is used for both moving a file to a new location and renaming it — they are the same operation. Moving `webstore.conf` to `/etc/webstore/webstore.conf` and renaming `webstore.conf` to `webstore.conf.old` both use `mv`.
 
-- **Head/Tail**  
-  - `head <file>` By default it shows the first 10 lines.  
-  - `head -n N <file>` shows the first **N** lines.  
-  - `tail <file>` By default it shows the last 10 lines.  
-  - `tail -n N <file>` shows the last **N** lines.
+| Command | What it does | When you reach for it |
+|---|---|---|
+| `mv <src> <dest>` | Move or rename a file or directory | `mv webstore.conf.bak webstore.conf.backup` — rename a backup file |
+| `mv -i <src> <dest>` | Prompt before overwriting | Safe default when moving config files in production |
+| `mv -v <src> <dest>` | Show what was moved | Confirming the move in scripts or long sessions |
 
-- **Page by page**  
-  - `more <file>` paginates forward only.  
-  - `less <file>` allows forward/backward navigation (preferred use `q` to exit).
-
----
-
-| Command    | Description                           | Syntax               | Example               |
-| ---------- | ------------------------------------- | -------------------- | --------------------- |
-| `head`     | Show first 10 lines                   | `head <file>`        | `head file2.txt`      |
-| `head -n`  | Show first N lines                    | `head -n 5 <file>`   | `head -n 5 file2.txt` |
-| `tail`     | Show last 10 lines                    | `tail <file>`        | `tail file2.txt`      |
-| `tail -n`  | Show last N lines                     | `tail -n 7 <file>`   | `tail -n 7 file2.txt` |
-| `more`     | Paginate forward only                 | `more <file>`        | `more long.txt`       |
-| `less`     | Paginate with navigation (forward/back)| `less <file>`       | `less journal.txt`    |
-
-</details>
+Use `mv` instead of `cp` followed by `rm` when you want to relocate a file. `mv` preserves all metadata including timestamps. `cp` + `rm` does not.
 
 ---
 
-<details>
-<summary><strong>6. Filesystem Types in Linux</strong></summary>
+## 4. Deleting Files
 
-## Theory & Notes
+`rm` deletes files permanently. There is no trash, no recycle bin, no undo. On a production server, a wrong `rm` command deletes things that may take hours to recover. The habit to build is: always run `ls` on the path first to confirm exactly what you are about to delete.
 
-- **File type indicator** (first character in `ls -l`):  
-  - `d` = directory  
-  - `-` = regular file  
-  - `l` = symbolic link  
+| Command | What it does | When you reach for it |
+|---|---|---|
+| `rm <file>` | Delete a file permanently | Removing a stale lock file blocking a service restart |
+| `rm -i <file>` | Prompt before each deletion | When deleting multiple files and you want to confirm each one |
+| `rm -r <dir>` | Delete a directory and all its contents | Removing a build output directory before a fresh deploy |
+| `rm -f <file>` | Force delete — no prompt, no error if file does not exist | Deleting temp files in scripts where the file may or may not exist |
+| `rm -rf <dir>` | Force delete a directory tree with no confirmation | Wiping a temp directory in a deploy script — use with full attention |
 
-Use `ls -l` to view these indicators.
-
----
-
-| Type      | Description          | Indicator |
-| --------- | -------------------- | --------- |
-| Directory | A folder             | `d`       |
-| File      | Text or binary file  | `-`       |
-| Symlink   | Link to another file | `l`       |
-
-</details>
+**The rule with `rm -rf`:** always verify the path with `ls` or `pwd` before running it. `rm -rf /webstore` and `rm -rf ~/webstore` are completely different operations — one deletes a system path, one deletes your project. On a server, confirm before you execute.
 
 ---
 
-<details>
-<summary><strong>7. Quick Command Summary</strong></summary>
+## 5. Viewing File Contents
 
-### Commands Quick Recap
+Reading file contents from the terminal is something you do constantly — checking config values, reading logs, verifying a script did what you expected.
 
-| Command    | Description                                | Syntax                          | Example                          |
-| ---------- | ------------------------------------------ | ------------------------------- | -------------------------------- |
-| `touch`    | Create file or update timestamps           | `touch <filename>`              | `touch file1.txt`                |
-| `file`     | Identify the type of a file                | `file <filename>`               | `file file1.txt`                 |
-| `stat`     | Display file metadata (size, timestamps)   | `stat <filename>`               | `stat file1.txt`                 |
-| `cp`       | Copy files or directories                  | `cp <source> <dest>`            | `cp file1.txt file2.txt`         |
-| `cp -i`    | Prompt before overwrite                    | `cp -i <src> <dest>`            | `cp -i file1.txt file2.txt`      |
-| `cp -v`    | Show each copy action                      | `cp -v <src> <dest>`            | `cp -v file1.txt backup/`        |
-| `cp -r`    | Copy directories recursively               | `cp -r <src_dir> <dest_dir>`    | `cp -r src/ backup/`             |
-| `cp -rv`   | Recursive copy with verbose output         | `cp -rv <src_dir> <dest_dir>`   | `cp -rv src/ backup/`            |
-| `mv`       | Move or rename files or directories        | `mv <source> <dest>`            | `mv file2.txt file3.txt`         |
-| `rm`       | Remove a file                              | `rm <filename>`                 | `rm file3.txt`                   |
-| `rm -i`    | Prompt before deletion                     | `rm -i <filename>`              | `rm -i file3.txt`                |
-| `rm -r`    | Remove directories and contents            | `rm -r <directory>`             | `rm -r devops/`                  |
-| `rm -f`    | Force delete without prompt                | `rm -f <filename>`              | `rm -f file3.txt`                |
-| `cat`      | Print file content                         | `cat <file>`                    | `cat file1.txt`                  |
-| `cat -n`   | Print content with line numbers            | `cat -n <file>`                 | `cat -n file1.txt`               |
-| `tac`      | Print file content in reverse order        | `tac <file>`                    | `tac file1.txt`                  |
-| `nl`       | Number lines                               | `nl <file>`                     | `nl file1.txt`                   |
-| `head`     | Show first 10 lines                        | `head <file>`                   | `head file2.txt`                 |
-| `head -n`  | Show first N lines                         | `head -n 5 <file>`              | `head -n 5 file2.txt`            |
-| `tail`     | Show last 10 lines                         | `tail <file>`                   | `tail file2.txt`                 |
-| `tail -n`  | Show last N lines                          | `tail -n 7 <file>`              | `tail -n 7 file2.txt`            |
-| `more`     | Paginate forward only                      | `more <file>`                   | `more long.txt`                  |
-| `less`     | Paginate with navigation (forward/backward)| `less <file>`                   | `less journal.txt`               |
+`cat` prints the entire file to the terminal at once. It is fast and simple for short files. For anything longer than a screen, use `less`.
 
-### Filesystem Types in Linux
+| Command | What it does | When you reach for it |
+|---|---|---|
+| `cat <file>` | Print entire file contents | Reading `webstore.conf` to check the current db_host value |
+| `cat -n <file>` | Print with line numbers | When an error message references a specific line number in a config file |
+| `tac <file>` | Print file in reverse line order | Reading a log file from bottom to top when the newest entries matter most |
+| `nl <file>` | Number lines with more formatting control than `cat -n` | Rarely needed — `cat -n` covers most cases |
 
-| Type      | Description          | Indicator |
-| --------- | -------------------- | --------- |
-| Directory | A folder             | `d`       |
-| File      | Text or binary file  | `-`       |
-| Symlink   | Link to another file | `l`       |
+`less` is what you use for files too long to read in one screen. It lets you scroll forward and backward, search for patterns, and navigate without loading the entire file into memory. On a server with a 2GB log file, `cat` would flood your terminal — `less` handles it instantly.
 
+```bash
+less ~/webstore/logs/access.log
+```
+
+Inside `less`: `Space` to scroll down one page, `b` to scroll back up, `/pattern` to search, `n` to jump to the next match, `q` to exit.
+
+---
+
+## 6. Previewing File Sections
+
+When you are debugging a live service, you rarely need to read an entire log file. You need the last 50 lines where the error happened, or the first 10 lines of a config to confirm the format. `head` and `tail` give you exactly the section you need without loading everything.
+
+| Command | What it does | When you reach for it |
+|---|---|---|
+| `head <file>` | Show first 10 lines | Checking the header of a log file to confirm its format |
+| `head -n <N> <file>` | Show first N lines | `head -n 3 webstore.conf` — reading just the first three config entries |
+| `tail <file>` | Show last 10 lines | Checking the most recent entries in `access.log` after a request |
+| `tail -n <N> <file>` | Show last N lines | `tail -n 50 error.log` — reading the last 50 lines during an incident |
+| `tail -f <file>` | Follow the file live — print new lines as they are written | Watching `access.log` in real time while testing a webstore endpoint |
+
+`tail -f` is the command you reach for when a service is running and you want to watch what it is doing right now. Open a second terminal, run `tail -f ~/webstore/logs/access.log`, then make a request — you see the log entry appear the moment it is written.
+
+---
+
+## 7. File Types in Linux
+
+Linux does not use file extensions to determine what a file is. The type is determined by the content. The first character in the output of `ls -l` tells you the type of every file at a glance.
+
+| First character | Type | Example |
+|---|---|---|
+| `-` | Regular file — text, binary, script, image | `webstore.conf`, `server.js`, `nginx` |
+| `d` | Directory | `~/webstore/logs/` |
+| `l` | Symbolic link — a pointer to another file or directory | `/etc/nginx/sites-enabled/webstore -> ../sites-available/webstore` |
+
+**Symbolic links** are worth understanding because nginx and many other services use them. When you enable an nginx site, you are creating a symlink from `sites-enabled/` pointing to the actual config in `sites-available/`. The file exists in one place, the link makes it appear in another. Deleting the link does not delete the file — it just removes the pointer.
+
+```bash
+# What a symlink looks like in ls -l output
+lrwxrwxrwx 1 root root 34 Apr 5 09:00 webstore -> ../sites-available/webstore
+```
+
+The `l` at the start and the `->` at the end both tell you this is a symlink, not a real file.
+
+---
 
 → Ready to practice? [Go to Lab 01](../linux-labs/01-boot-basics-files-lab.md)
 
@@ -645,249 +653,27 @@ Use `ls -l` to view these indicators.
 # TOOL: 01. Linux – System Fundamentals | FILE: 04-filter-commands
 ---
 
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
 # Filter Commands
 
-## Table of Contents
-- [1. Find](#1-find)
-- [2. Locate](#2-locate)
-- [3. Pattern Searching with grep](#3-pattern-searching-with-grep)
-- [4. Most-Used grep Flags](#4-most-used-grep-flags)  
-- [5. Comparing & Counting](#5-comparing--counting)  
-- [6. Piping & Filtering](#6-piping--filtering)   
-- [7. Quick Command Summary](#7-quick-command-summary)   
+A production server generates thousands of log lines every hour. You will never open them in a text editor. You will never scroll through them manually. Instead you use filter commands — tools that let you search, slice, count, sort, and chain operations against any file or stream from the terminal. This is how a DevOps engineer reads a system without a GUI.
 
----
+The webstore access log used throughout this file:
 
-<details>
-<summary><strong>1. Find</strong></summary>
-
-**Theory & Notes**
-
-- **What it does**  
-  Walks the filesystem tree in real time, filtering by name, type, size, time, ownership, permissions—and can even run commands on each match.  
-- **Why use it**  
-  When you need the absolute latest results or complex queries (e.g. "all `.log` files older than 7 days in the webstore logs folder").  
-- **Trade-off**  
-  Slower on very large trees, but infinitely flexible.
-
----
-
-| Option               | Description                                      | Syntax                                          | Example                                                          |
-| -------------------- | ------------------------------------------------ | ----------------------------------------------- | ---------------------------------------------------------------- |
-| `-name <pattern>`    | Match filename using shell wildcards (`*`)       | `find <path> -name "*.txt"`                     | `find . -name "*.log"`                                           |
-| `-type f`            | Filter for **regular files**                     | `find <path> -type f`                           | `find /var/log/webstore -type f`                                 |
-| `-type d`            | Filter for **directories**                       | `find <path> -type d`                           | `find /var/log/webstore -type d`                                 |
-| `-mtime N`           | Modified **exactly** N days ago                  | `find <path> -mtime 1`                          | `find /var/log/webstore -mtime 1`                                |
-| `-mtime +N`          | Modified **more than** N days ago                | `find <path> -mtime +7`                         | `find /var/log/webstore -mtime +30`                              |
-| `-mtime -N`          | Modified **less than** N days ago                | `find <path> -mtime -2`                         | `find /var/log/webstore -mtime -7`                               |
-| `-size Nc`           | Size **exactly** N bytes                         | `find <path> -size 441c`                        | `find /var/log/webstore -size 269c`                              |
-| `-size +Nk`          | Size **greater than** N KiB                      | `find <path> -size +1k`                         | `find /var/log/webstore -size +1k`                               |
-| `-size -Nc`          | Size **less than** N bytes                       | `find <path> -size -500c`                       | `find /var/log/webstore -size -500c`                             |
-| `-exec … {} \;`      | Execute a command on each match                  | `find <path> -name "*.tmp" -exec rm {} \;`      | `find /var/log/webstore -type f -name "*.tmp" -exec rm {} \;`    |
-</details>
-
----
-
-<details>
-<summary><strong>2. Locate</strong></summary>
-
-**Theory & Notes**
-
-- **What it does**  
-  Instantly searches a prebuilt database (`mlocate.db`) of all filenames on disk.  
-- **Why use it**  
-  For lightning-fast lookups by name when you don't need the absolute newest filesystem changes.  
-- **Trade-off**  
-  Results are only as fresh as the last `updatedb` run (often daily).
-
----
-
-| Option                      | Description                                    | Syntax                                        | Example                                              |
-| --------------------------- | ---------------------------------------------- | --------------------------------------------- | ---------------------------------------------------- |
-| `<pattern>`                 | Substring or glob match on full path           | `locate access.log`                           | `locate access.log`                                  |
-| `-i`, `--ignore-case`       | Case-insensitive matching                      | `locate -i ACCESS.LOG`                        |                                                      |
-| `-l N`, `--limit=N`         | Show only the first N results                  | `locate -l 5 access.log`                      |                                                      |
-| `-c`, `--count`             | Print the number of matches only               | `locate -c "/var/log/webstore/.*\.log"`        |                                                      |
-
-
----
-
-## Comparison
-
-| Aspect           | find                                               | locate                                     |
-| ---------------- | -------------------------------------------------- | ------------------------------------------ |
-| **Speed**        | Slower (walks directory structure)                 | Instant (database lookup)                  |
-| **Freshness**    | Always current                                     | Depends on last `updatedb`                 |
-| **Flexibility**  | Match by name, type, size, time, ownership, etc.   | Match by path/name only                    |
-| **Actions**      | Can run commands on each result (`-exec`)          | Returns list only                          |
-| **Use case**     | Complex, precise searches                          | Quick "where is…" queries                  |
-
----
-
-## Real-World Examples (using `/var/log/webstore`)
-
-1. **Find small log files (< 500 B):**  
-   ```bash
-   find /var/log/webstore -type f -size -500c
-   ```
-
-2. **Find medium files (500 B – 2 KiB):**
-   ```bash
-   find /var/log/webstore -type f -size +500c -size -2k
-   ```
-
-3. **Find large log files (> 1 KiB):**
-   ```bash
-   find /var/log/webstore -type f -size +1k
-   ```
-
-4. **Delete all `.tmp` files:**
-   ```bash
-   find /var/log/webstore -type f -name "*.tmp" -exec rm {} \;
-   ```
-
-5. **Locate the access log instantly:**
-   ```bash
-   sudo updatedb
-   locate -i access.log
-   ```
-
-6. **Count all `.log` files in webstore logs:**
-   ```bash
-   sudo updatedb
-   locate -c "/var/log/webstore/.*\.log"
-   ```
-
-</details>
-
----
-
-<details>
-<summary><strong>3. Pattern Searching with grep</strong></summary>
-
-**Theory & Notes**
-
-- **Command structure**  
-  `grep [OPTIONS] <pattern> <file(s)>`  
-- **Pattern**  
-  A regular expression (or literal string) that `grep` will search for.  
-- **Files**  
-  One or more filenames, wildcards, or directories (with `-r`).  
-- **Output**  
-  By default, prints matching lines; options adjust colorization, context, counts, etc.
-
----
-
-```
-grep [OPTIONS] <pattern> <file(s)>
-```
-
-| Action                       | Command & Description                                                        |
-| ---------------------------- | ---------------------------------------------------------------------------- |
-| Basic, case-sensitive search | `grep 'ERROR' access.log` – finds "ERROR" exactly as typed                   |
-| Ignore case-sensitive search | `grep -i 'error' access.log` – matches "Error", "ERROR", etc.                |
-| Show line numbers            | `grep -n 'ERROR' access.log` – prefixes lines with their line number         |
-| Invert match                 | `grep -v 'INFO' access.log` – shows lines **without** "INFO"                 |
-| Search in all files of cwd   | `grep -i 'error' *` – searches every file in current directory               |
-
-</details>
-
----
-
-<details>
-<summary><strong>4. Most-Used grep Flags</strong></summary>
-
-**Theory & Notes**
-
-* Flags modify how `grep` interprets input and outputs results.
-* Common flags often combined for powerful searches.
-
----
-
-| Flag / Pattern     | Description                             | Syntax                     | Example Usage                      |
-| ------------------ | --------------------------------------- | -------------------------- | ---------------------------------- |
-| **`-i`**           | Case-insensitive search                 | `grep -i <pattern> <file>` | `grep -i "error" access.log`       |
-| **`-w`**           | Match whole words only                  | `grep -w <pattern> <file>` | `grep -w "ERROR" access.log`       |
-| **`-n`**           | Prefix matches with line numbers        | `grep -n <pattern> <file>` | `grep -n "ERROR" access.log`       |
-| **`-c`**           | Count matching lines                    | `grep -c <pattern> <file>` | `grep -c "ERROR" access.log`       |
-| **`-v`**           | Invert match (show non-matching lines)  | `grep -v <pattern> <file>` | `grep -v "INFO" access.log`        |
-| **Search all**     | All files in current directory          | `grep <pattern> ./*`       | `grep -i "error" *`                |
-| **Search `*.log`** | All `.log` files in current directory   | `grep <pattern> *.log`     | `grep -i "error" *.log`            |
-| **`-r`**           | Recursive search through subdirectories | `grep -r "<pattern>" .`    | `grep -r "ERROR" /var/log/webstore`|
-
-</details>
-
----
-
-<details>
-<summary><strong>5. Comparing & Counting</strong></summary>
-
-**Theory & Notes**
-
-* **`wc` ("word count")** reports counts for lines, words, and bytes.
-* By default, `wc <file>` prints all three counts.
-* Combine flags to focus on one metric.
-
----
-
-| Task                  | Command               |
-| --------------------- | --------------------- |
-| Line/word/char count  | `wc access.log`       |
-| Count only lines      | `wc -l access.log`    |
-| Count only words      | `wc -w access.log`    |
-| Count only characters | `wc -c access.log`    |
-
-</details>
-
----
-
-<details>
-<summary><strong>6. Piping & Filtering</strong></summary>
-
-**Theory & Notes**
-
-- **Pipe (`|`)**  
-  Connects the stdout of one command directly into the stdin of the next. Enables building complex, modular one-liners without temporary files.
-
-- **cut**  
-  Extracts specific fields (columns) from structured text files. Fast and ideal for quick slicing of log files, CSVs, or tabular data.  
-  Use `-d` to define the delimiter (like a comma), and `-f` to pick field positions.
-
-- **sort**  
-  Organizes lines of text from input or a file in ascending or descending order. By default follows ASCII ordering; use `-f` to ignore case, `-r` to reverse, `-n` for numeric sort, `-M` for month-name sort, and `-k`/`-t` to sort by a specific field.
-
-- **uniq**  
-  Removes consecutive duplicate lines from sorted input. With `-c` prefixes each line with its occurrence count; `-d` shows one instance of each duplicate; `-D` prints all duplicate lines.
-
-- **column**  
-  Arranges input into neatly aligned columns, making data more readable. With `-t` auto-determines column widths; `-s` lets you specify a custom delimiter.
-
-- **tr**  
-  Translates or deletes characters in the input stream. Specify two sets: characters in the first set are replaced by corresponding ones in the second; use `-d` to delete characters.
-
-- **tee**  
-  Reads from stdin and writes to both stdout and one or more files. Use `-a` to append rather than overwrite. Ideal for logging or capturing intermediate pipeline output.
-
----
-
-Here are the files used in the following examples:
-
-**access.log** (webstore nginx access log)
 ```
 192.168.1.10 GET /api/products 200
 192.168.1.11 GET /api/products 200
@@ -901,188 +687,315 @@ Here are the files used in the following examples:
 192.168.1.14 POST /api/orders 500
 ```
 
-**employees.txt**
+---
+
+## Table of Contents
+
+- [1. find — Search the Filesystem](#1-find--search-the-filesystem)
+- [2. locate — Fast Name Lookup](#2-locate--fast-name-lookup)
+- [3. grep — Search File Contents](#3-grep--search-file-contents)
+- [4. wc — Count Lines, Words, Characters](#4-wc--count-lines-words-characters)
+- [5. The Pipe — Chaining Commands](#5-the-pipe--chaining-commands)
+- [6. cut — Extract Fields](#6-cut--extract-fields)
+- [7. sort — Order Lines](#7-sort--order-lines)
+- [8. uniq — Deduplicate Lines](#8-uniq--deduplicate-lines)
+- [9. tr — Translate Characters](#9-tr--translate-characters)
+- [10. tee — Split a Stream](#10-tee--split-a-stream)
+- [11. Real Incident Pipelines](#11-real-incident-pipelines)
+
+---
+
+## 1. find — Search the Filesystem
+
+`find` walks the directory tree in real time and returns every file that matches your criteria. Unlike `locate`, its results are always current because it reads the actual filesystem rather than a cached database. It is slower on very large trees but infinitely more flexible — you can filter by name, type, size, age, owner, permissions, and then execute a command on every match.
+
+| Option | What it does | Example |
+|---|---|---|
+| `-name "*.log"` | Match files by name using wildcards | `find ~/webstore/logs -name "*.log"` |
+| `-type f` | Regular files only | `find ~/webstore -type f` |
+| `-type d` | Directories only | `find ~/webstore -type d` |
+| `-mtime +7` | Modified more than 7 days ago | `find ~/webstore/logs -mtime +7` |
+| `-mtime -1` | Modified in the last 24 hours | `find ~/webstore/logs -mtime -1` |
+| `-size +1k` | Larger than 1 KB | `find ~/webstore/logs -size +1k` |
+| `-size -500c` | Smaller than 500 bytes | `find ~/webstore/logs -size -500c` |
+| `-exec <cmd> {} \;` | Run a command on every match | `find ~/webstore/logs -name "*.tmp" -exec rm {} \;` |
+
+**When you reach for `find`:**
+- Cleaning up old log files before a deploy: `find ~/webstore/logs -mtime +30 -exec rm {} \;`
+- Confirming a config file exists somewhere in the project: `find ~/webstore -name "webstore.conf"`
+- Deleting all `.tmp` files left behind by a crashed process: `find ~/webstore -name "*.tmp" -exec rm {} \;`
+
+---
+
+## 2. locate — Fast Name Lookup
+
+`locate` searches a prebuilt database of filenames instead of walking the live filesystem. It returns results instantly but the database is only as fresh as the last time `updatedb` ran — usually once a day. Use it when you need to find a file quickly by name and do not need guaranteed freshness.
+
+| Option | What it does | Example |
+|---|---|---|
+| `locate <name>` | Find all paths containing this name | `locate webstore.conf` |
+| `-i` | Case-insensitive match | `locate -i ACCESS.LOG` |
+| `-l 5` | Limit results to 5 | `locate -l 5 access.log` |
+| `-c` | Count matches only | `locate -c "*.log"` |
+
+**find vs locate — when to use which:**
+
+| | find | locate |
+|---|---|---|
+| Results | Always current | Only as fresh as last `updatedb` |
+| Speed | Slower on large trees | Instant |
+| Filters | Name, type, size, age, owner | Name only |
+| Actions | Can run `-exec` on matches | Returns list only |
+| Use when | You need exact, current results | You just need to know where a file is |
+
+If a file was created in the last few hours and `locate` cannot find it, run `sudo updatedb` first to refresh the database.
+
+---
+
+## 3. grep — Search File Contents
+
+`grep` searches inside files for lines matching a pattern. It is the single most-used command for reading logs and config files on a server. Every incident investigation starts with `grep`.
+
 ```
-Alice, January, 55000
-Alice, January, 55000
-Bob, February, 75000
-Bob, February, 75000
-David, March, 60000
-Alice, January, 55000
-David, March, 60000
-Alice, January, 55000
-Eve, April, 65000
-Alice, January, 55000
+grep [OPTIONS] <pattern> <file>
 ```
 
-### `|` (Pipe)
+| Flag | What it does | Example |
+|---|---|---|
+| `grep <pattern> <file>` | Find lines matching pattern — case sensitive | `grep '500' ~/webstore/logs/access.log` |
+| `-i` | Case-insensitive match | `grep -i 'error' access.log` |
+| `-n` | Show line numbers alongside matches | `grep -n '500' access.log` |
+| `-c` | Count matching lines instead of showing them | `grep -c '500' access.log` |
+| `-v` | Invert — show lines that do NOT match | `grep -v '200' access.log` |
+| `-w` | Match whole words only | `grep -w 'GET' access.log` |
+| `-r` | Search recursively through all files in a directory | `grep -r 'db_host' ~/webstore/config/` |
 
-| Option | Description                                          | Syntax             | Example                             |
-|--------|------------------------------------------------------|--------------------|-------------------------------------|
-| N/A    | Connect stdout of one command to stdin of the next   | `<cmd1> \| <cmd2>` | `cat access.log \| grep 500`        |
+**What these look like against the webstore log:**
 
----
+```bash
+# Find all 500 errors
+grep '500' ~/webstore/logs/access.log
+# 192.168.1.14 POST /api/orders 500
+# 192.168.1.14 POST /api/orders 500
 
-### `cut`
+# Count how many 500 errors occurred
+grep -c '500' ~/webstore/logs/access.log
+# 2
 
-| Option         | Description                             | Syntax                       | Example                                  |
-|----------------|-----------------------------------------|------------------------------|------------------------------------------|
-| `-d <delim>`   | Set delimiter (default is TAB)          | `cut -d' ' -f1 file.log`     | `cut -d' ' -f1 access.log`               |
-| `-f <fields>`  | Choose specific fields (columns)        | `cut -d' ' -f1,3 file.log`   | `cut -d' ' -f1,3 access.log`             |
+# Find everything that is NOT a 200 OK — surface all problems at once
+grep -v '200' ~/webstore/logs/access.log
+# 192.168.1.12 POST /api/orders 201
+# 192.168.1.13 GET /api/users 404
+# 192.168.1.14 POST /api/orders 500
+# 192.168.1.15 DELETE /api/orders/7 403
+# 192.168.1.14 POST /api/orders 500
 
-> `cut` is a fast and simple way to extract columns from structured text like logs, CSVs, or `/etc/passwd` files.
+# Find all errors across every log file in the logs directory
+grep -r '500' ~/webstore/logs/
+```
 
----
-
-### `sort`
-
-| Option           | Description                                                      | Syntax                       | Example                                    |
-|------------------|------------------------------------------------------------------|------------------------------|--------------------------------------------|
-| `-t <delim>`     | Use `<delim>` as the field separator instead of whitespace       | `sort -t' ' -k3 file.log`    | `sort -t',' -k3 employees.txt`             |
-| `-k start[,end]` | Sort by a specific field (start to end positions)                | `sort -t',' -k2,2 file`      | `sort -t',' -k2,2 employees.txt`           |
-| `-n`             | Interpret and sort by numeric value                              | `sort -n [file]`             | `sort -t',' -k3 -n employees.txt`          |
-| `-M`             | Compare by month name                                            | `sort -M [file]`             | `sort -M employees.txt`                    |
-| `-r`             | Reverse the sort order                                           | `sort -r [file]`             | `sort -r employees.txt`                    |
-| `-f`             | Fold lower-case to upper-case (ignore case)                      | `sort -f [file]`             | `sort -f employees.txt`                    |
-
----
-
-### `uniq`
-
-| Option | Description                                                  | Syntax               | Example                                     |
-|--------|--------------------------------------------------------------|----------------------|---------------------------------------------|
-| `-c`   | Prefix each line with the count of occurrences               | `uniq -c [file]`     | `sort employees.txt \| uniq -c`             |
-| `-d`   | Only print one instance of each group of duplicate lines     | `uniq -d [file]`     | `sort employees.txt \| uniq -d`             |
-| `-D`   | Print all duplicate lines (every repeated occurrence)        | `uniq -D [file]`     | `sort employees.txt \| uniq -D`             |
-| `-u`   | Only print lines that are not repeated (unique only)         | `uniq -u [file]`     | `sort employees.txt \| uniq -u`             |
+**When you reach for `grep`:**
+During an incident, `grep -v '200'` on the access log immediately surfaces every non-successful request. You do not scroll — you filter.
 
 ---
 
-### `column`
+## 4. wc — Count Lines, Words, Characters
 
-| Option              | Description                                      | Syntax                               | Example                                            |
-|---------------------|--------------------------------------------------|--------------------------------------|----------------------------------------------------|
-| `-t`                | Determine column widths and create a table       | `column -t [file]`                   | `cat access.log \| column -t`                      |
-| `-s <delim>`        | Specify input delimiter                          | `column -s ',' -t [file]`            | `column -s ',' -t employees.txt`                   |
-| `-n`                | Do not reflow long lines                         | `column -n [file]`                   | `column -n access.log`                             |
+`wc` counts lines, words, and characters in a file or stream. On its own it tells you the size of a file in human terms. In a pipeline it tells you how many results a previous command produced.
 
----
+| Command | What it counts | When you reach for it |
+|---|---|---|
+| `wc <file>` | Lines, words, and characters together | Quick file size check |
+| `wc -l <file>` | Lines only | How many entries are in the access log |
+| `wc -w <file>` | Words only | Rarely needed on log files |
+| `wc -c <file>` | Characters (bytes) only | Checking exact file size |
 
-### `tr`
+**Most useful pattern — count grep results:**
 
-| Option | Description                                       | Syntax                    | Example                                          |
-|--------|---------------------------------------------------|---------------------------|--------------------------------------------------|
-| N/A    | Replace characters                                | `tr <set1> <set2> < file` | `tr 'a-z' 'A-Z' < access.log`                   |
-| `-d`   | Delete characters in set1                         | `tr -d <set> < file`      | `tr -d '0-9' < access.log`                       |
-| `-s`   | Squeeze repeated characters in set1 to one        | `tr -s <set> < file`      | `tr -s ' ' < access.log`                         |
+```bash
+grep '500' ~/webstore/logs/access.log | wc -l
+# 2
+```
 
----
-
-### `tee`
-
-| Option | Description                                       | Syntax                  | Example                                           |
-|--------|---------------------------------------------------|-------------------------|---------------------------------------------------|
-| `-a`   | Append to the given file instead of overwriting   | `… \| tee -a file.log`  | `grep 500 access.log \| tee -a errors.log`        |
-| `-i`   | Ignore SIGINT (Ctrl-C) while writing to files     | `… \| tee -i file.txt`  | `cat access.log \| tee -i access_backup.log`      |
-
-</details>
+This tells you exactly how many 500 errors occurred without printing every matching line. Combine with `-i` and a date pattern and you have a quick incident count.
 
 ---
 
-<details>
-<summary><strong>7. Quick Command Summary</strong></summary>
+## 5. The Pipe — Chaining Commands
 
-### 1. Find
+The pipe `|` takes the output of one command and feeds it directly into the next as input. No temporary files. No intermediate steps. It is what turns single commands into powerful analysis chains.
 
-| Option               | Description                                      | Syntax                                          | Example                                                          |
-| -------------------- | ------------------------------------------------ | ----------------------------------------------- | ---------------------------------------------------------------- |
-| `-name <pattern>`    | Match filename using shell wildcards (`*`)       | `find <path> -name "*.log"`                     | `find . -name "*.log"`                                           |
-| `-type f`            | Filter for **regular files**                     | `find <path> -type f`                           | `find /var/log/webstore -type f`                                 |
-| `-type d`            | Filter for **directories**                       | `find <path> -type d`                           | `find /var/log/webstore -type d`                                 |
-| `-mtime N`           | Modified **exactly** N days ago                  | `find <path> -mtime 1`                          | `find /var/log/webstore -mtime 1`                                |
-| `-mtime +N`          | Modified **more than** N days ago                | `find <path> -mtime +7`                         | `find /var/log/webstore -mtime +30`                              |
-| `-mtime -N`          | Modified **less than** N days ago                | `find <path> -mtime -2`                         | `find /var/log/webstore -mtime -7`                               |
-| `-size Nc`           | Size **exactly** N bytes                         | `find <path> -size 441c`                        | `find /var/log/webstore -size 269c`                              |
-| `-size +Nk`          | Size **greater than** N KiB                      | `find <path> -size +1k`                         | `find /var/log/webstore -size +1k`                               |
-| `-size -Nc`          | Size **less than** N bytes                       | `find <path> -size -500c`                       | `find /var/log/webstore -size -500c`                             |
-| `-exec … {} \;`      | Execute a command on each match                  | `find <path> -name "*.tmp" -exec rm {} \;`      | `find /var/log/webstore -type f -name "*.tmp" -exec rm {} \;`    |
+```
+command1 | command2 | command3
+```
 
----
+Think of it as an assembly line. Each command does one job. The pipe connects them. The final output is the result of the entire chain.
 
-### 2. Locate
+```bash
+# Read the log, find 500 errors, count them
+cat ~/webstore/logs/access.log | grep '500' | wc -l
+# 2
 
-| Option                      | Description                                    | Syntax                                        | Example                          |
-| --------------------------- | ---------------------------------------------- | --------------------------------------------- | -------------------------------- |
-| `<pattern>`                 | Substring or glob match on full path           | `locate access.log`                           | `locate access.log`              |
-| `-i, --ignore-case`         | Case-insensitive matching                      | `locate -i ACCESS.LOG`                        |                                  |
-| `-l N, --limit=N`           | Show only the first N results                  | `locate -l 5 access.log`                      |                                  |
-| `-c, --count`               | Print the number of matches only               | `locate -c "/var/log/webstore/.*\.log"`        |                                  |
+# Extract just the IP addresses from every 500 error
+grep '500' ~/webstore/logs/access.log | cut -d' ' -f1
+# 192.168.1.14
+# 192.168.1.14
+```
+
+Every section below builds on the pipe.
 
 ---
 
-### Comparison: find vs. locate
+## 6. cut — Extract Fields
 
-| Aspect           | find                                               | locate                                     |
-| ---------------- | -------------------------------------------------- | ------------------------------------------ |
-| **Speed**        | Slower (walks directory structure)                 | Instant (database lookup)                  |
-| **Freshness**    | Always current                                     | Depends on last `updatedb`                 |
-| **Flexibility**  | Match by name, type, size, time, ownership, etc.   | Match by path/name only                    |
-| **Actions**      | Can run commands on each result (`-exec`)          | Returns list only                          |
-| **Use case**     | Complex, precise searches                          | Quick "where is…" queries                  |
+`cut` extracts specific columns from structured text. Log files, CSVs, `/etc/passwd` — any file where fields are separated by a consistent delimiter. You tell it the delimiter with `-d` and which field(s) to keep with `-f`.
 
----
+| Option | What it does | Example |
+|---|---|---|
+| `-d' ' -f1` | Split on space, take field 1 | `cut -d' ' -f1 access.log` — extracts IP addresses |
+| `-d' ' -f3` | Split on space, take field 3 | `cut -d' ' -f3 access.log` — extracts URL paths |
+| `-d' ' -f1,4` | Take fields 1 and 4 | `cut -d' ' -f1,4 access.log` — IP and status code |
+| `-d',' -f2` | Split on comma, take field 2 | `cut -d',' -f2 data.csv` |
 
-### 3. Pattern Searching with grep
+**Against the webstore log:**
 
-| Action                       | Command & Description                                                        |
-| ---------------------------- | ---------------------------------------------------------------------------- |
-| Basic, case-sensitive search | `grep 'ERROR' access.log` – finds "ERROR" exactly as typed                   |
-| Ignore case-sensitive search | `grep -i 'error' access.log` – matches "Error", "ERROR", etc.                |
-| Show line numbers            | `grep -n 'ERROR' access.log` – prefixes lines with their line number         |
-| Invert match                 | `grep -v 'INFO' access.log` – shows lines **without** "INFO"                 |
-| Search in all files of cwd   | `grep -i 'error' *` – searches every file in current directory               |
+```bash
+# Extract all IP addresses (field 1)
+cut -d' ' -f1 ~/webstore/logs/access.log
+# 192.168.1.10
+# 192.168.1.11
+# ...
 
----
-
-### 4. Most-Used grep Flags
-
-| Flag / Pattern     | Description                             | Syntax                     | Example Usage                       |
-| ------------------ | --------------------------------------- | -------------------------- | ----------------------------------- |
-| **`-i`**           | Case-insensitive search                 | `grep -i <pattern> <file>` | `grep -i "error" access.log`        |
-| **`-w`**           | Match whole words only                  | `grep -w <pattern> <file>` | `grep -w "ERROR" access.log`        |
-| **`-n`**           | Prefix matches with line numbers        | `grep -n <pattern> <file>` | `grep -n "ERROR" access.log`        |
-| **`-c`**           | Count matching lines                    | `grep -c <pattern> <file>` | `grep -c "ERROR" access.log`        |
-| **`-v`**           | Invert match (show non-matching lines)  | `grep -v <pattern> <file>` | `grep -v "INFO" access.log`         |
-| **Search all**     | All files in current directory          | `grep <pattern> ./*`       | `grep -i "error" *`                 |
-| **Search `*.log`** | All `.log` files in current directory   | `grep <pattern> *.log`     | `grep -i "error" *.log`             |
-| **`-r`**           | Recursive search through subdirectories | `grep -r "<pattern>" .`    | `grep -r "ERROR" /var/log/webstore` |
+# Extract status codes only (field 4)
+cut -d' ' -f4 ~/webstore/logs/access.log
+# 200
+# 200
+# 201
+# ...
+```
 
 ---
 
-### 5. Comparing & Counting (wc)
+## 7. sort — Order Lines
 
-| Task                  | Command               |
-| --------------------- | --------------------- |
-| Line/word/char count  | `wc access.log`       |
-| Count only lines      | `wc -l access.log`    |
-| Count only words      | `wc -w access.log`    |
-| Count only characters | `wc -c access.log`    |
+`sort` orders lines of text. By default it sorts alphabetically. Flags let you sort numerically, in reverse, by a specific field, or by month name. `sort` almost always appears before `uniq` in a pipeline — `uniq` only deduplicates consecutive identical lines, so you must sort first.
+
+| Flag | What it does | Example |
+|---|---|---|
+| `sort <file>` | Alphabetical ascending | `sort access.log` |
+| `-r` | Reverse order | `sort -r access.log` |
+| `-n` | Numeric sort | `sort -n sizes.txt` |
+| `-k <N>` | Sort by field N | `sort -k4 access.log` — sort by status code |
+| `-t <delim>` | Use this delimiter to identify fields | `sort -t',' -k3 -n data.csv` |
+
+```bash
+# Sort the access log by status code (field 4)
+sort -k4 ~/webstore/logs/access.log
+# 192.168.1.12 POST /api/orders 201
+# 192.168.1.15 DELETE /api/orders/7 403
+# 192.168.1.13 GET /api/users 404
+# 192.168.1.14 POST /api/orders 500
+# 192.168.1.14 POST /api/orders 500
+# 192.168.1.10 GET /api/products 200
+# ...
+```
 
 ---
 
-### 6. Piping & Filtering
+## 8. uniq — Deduplicate Lines
 
-| Command    | Description                                                        | Syntax                              | Key Options                              |
-|------------|--------------------------------------------------------------------|-------------------------------------|------------------------------------------|
-| **\|**     | Chain commands by piping one's output into another's input         | `<cmd1> \| <cmd2>`                  | N/A                                      |
-| **cut**    | Extract specific fields from structured text                       | `cut -d' ' -f1 file.log`            | `-d <delim>`, `-f <fields>`              |
-| **sort**   | Order lines by ASCII, numeric, month, case, or field               | `sort [options] [file]`             | `-n`, `-r`, `-f`, `-M`, `-k`, `-t`       |
-| **uniq**   | Filter or count adjacent duplicate lines                           | `uniq [options] [file]`             | `-c`, `-d`, `-D`, `-u`                   |
-| **column** | Align fields into readable columns                                 | `column [options] [file]`           | `-t`, `-s <delim>`                       |
-| **tr**     | Translate or delete characters                                     | `tr [options] <set1> <set2> < file` | `-d`, `-s`, `-c`                         |
-| **tee**    | Write stream to stdout and file simultaneously                     | `… \| tee [options] <file>`         | `-a`, `-i`                               |
+`uniq` removes or counts duplicate consecutive lines. Because it only works on adjacent duplicates, you almost always run `sort` first to bring identical lines together.
 
-</details>
+| Flag | What it does | Example |
+|---|---|---|
+| `uniq` | Remove consecutive duplicate lines | `sort access.log \| uniq` |
+| `-c` | Prefix each line with how many times it appeared | `sort access.log \| uniq -c` |
+| `-d` | Show only lines that appeared more than once | `sort access.log \| uniq -d` |
+| `-u` | Show only lines that appeared exactly once | `sort access.log \| uniq -u` |
+
+**The classic combination — find the most active IPs:**
+
+```bash
+cut -d' ' -f1 ~/webstore/logs/access.log | sort | uniq -c | sort -rn
+#   5 192.168.1.10
+#   2 192.168.1.11
+#   2 192.168.1.14
+#   1 192.168.1.12
+#   1 192.168.1.13
+#   1 192.168.1.15
+```
+
+Read this pipeline left to right: extract IP addresses → sort them so identical ones are adjacent → count and deduplicate → sort by count descending. Result: a ranked list of who is hitting the webstore API most.
+
+---
+
+## 9. tr — Translate Characters
+
+`tr` replaces or deletes characters in a stream. It reads from stdin — you feed it content with a pipe or redirect.
+
+| Option | What it does | Example |
+|---|---|---|
+| `tr 'a-z' 'A-Z'` | Uppercase everything | `cat access.log \| tr 'a-z' 'A-Z'` |
+| `-d '0-9'` | Delete all digits | `tr -d '0-9' < access.log` |
+| `-s ' '` | Squeeze repeated spaces into one | `tr -s ' ' < access.log` |
+
+`tr` is most useful in pipelines when you need to normalize text before passing it to another command — removing characters that break field splitting, or standardizing case before comparison.
+
+---
+
+## 10. tee — Split a Stream
+
+`tee` reads from stdin and writes to both stdout and a file simultaneously. It lets you see pipeline output on the terminal and save it to a file at the same time — without running the command twice.
+
+| Flag | What it does | Example |
+|---|---|---|
+| `tee <file>` | Write to stdout and file | `grep '500' access.log \| tee errors.log` |
+| `-a` | Append to file instead of overwrite | `grep '500' access.log \| tee -a errors.log` |
+
+```bash
+# Save all 500 errors to a file AND still see them on screen
+grep '500' ~/webstore/logs/access.log | tee ~/webstore/logs/errors.log
+# 192.168.1.14 POST /api/orders 500   ← printed to terminal
+# 192.168.1.14 POST /api/orders 500   ← also written to errors.log
+```
+
+---
+
+## 11. Real Incident Pipelines
+
+These are the chains you actually build during an incident. Each one is a question you need answered fast.
+
+**How many 500 errors hit the API in this log?**
+```bash
+grep '500' ~/webstore/logs/access.log | wc -l
+```
+
+**Which IP address is generating all the 500 errors?**
+```bash
+grep '500' ~/webstore/logs/access.log | cut -d' ' -f1 | sort | uniq -c | sort -rn
+```
+
+**Which endpoints are being hit most often?**
+```bash
+cut -d' ' -f3 ~/webstore/logs/access.log | sort | uniq -c | sort -rn
+```
+
+**Show me every request that is not a 200 OK, with line numbers:**
+```bash
+grep -vn '200' ~/webstore/logs/access.log
+```
+
+**Find all log files modified in the last 24 hours and search them all for errors:**
+```bash
+find ~/webstore/logs -mtime -1 -name "*.log" -exec grep -l '500' {} \;
+```
+
+**Save all non-200 requests to a separate file for further analysis:**
+```bash
+grep -v '200' ~/webstore/logs/access.log | tee ~/webstore/logs/non-200.log
+```
+
+---
 
 → Ready to practice? [Go to Lab 02](../linux-labs/02-filters-sed-awk-lab.md)
 
@@ -1090,1099 +1003,1527 @@ Alice, January, 55000
 # TOOL: 01. Linux – System Fundamentals | FILE: 05-sed-stream-editor
 ---
 
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 `sed` Stream Editor
+# sed — Stream Editor
 
-- [1. sed Overview](#1-sed-overview)  
-- [2. Basic Substitutions](#2-basic-substitutions)  
-- [3. Targeted Substitutions in a File](#3-targeted-substitutions-in-a-file)  
-- [4. Deletions & Printing Ranges](#4-deletions--printing-ranges)  
-- [5. Insertion & Appending](#5-insertion--appending)  
-- [6. Multiple Commands in One Pass](#6-multiple-commands-in-one-pass)  
-- [7. Quick Command Summary](#7-quick-command-summary)
+`grep` finds lines. `cut` extracts fields. `sed` transforms content — it reads a stream line by line, applies your editing instructions, and outputs the result. No file is opened in an editor. No manual cursor movement. You describe the change once and sed applies it to every matching line in the file.
 
----
-<details>
-<summary><strong>1. sed Overview</strong></summary>
+This is how you update config files in deploy scripts, sanitize log output before piping it elsewhere, or make the same change across hundreds of lines in seconds.
 
-**Notes:**  
-- `s` → substitute  
-- `/` → delimiter separating pattern, replacement, and flags  
-- `g` → global‐flag (replace all matches on a line)  
-- `-n` → suppress automatic printing (used with `p`)  
-- `-i` → edit file in-place (make changes directly to the file)  
-- `$` → represents the last line in address/range expressions  
-- `d` → delete matching lines (when used as `/PATTERN/d` or `$d`)  
-- Address specific lines via `N` (e.g. `3`) or ranges `M,N` (e.g. `3,7`)   
-
-- Following file is used in examples    
-
-**employees.txt**
+The webstore config file used throughout this file:
 
 ```
-
-Alice, January, 55000
-Alice, January, 55000
-Bob, February, 75000
-Bob, February, 75000
-David, March, 60000
-Alice, January, 55000
-David, March, 60000
-Alice, January, 55000
-Eve, April, 65000
-Alice, January, 55000
-
+db_host=webstore-db
+db_port=5432
+api_port=8080
+api_host=webstore-api
+frontend_port=80
+frontend_host=webstore-frontend
+env=production
 ```
 
-</details>
+---
+
+## Table of Contents
+
+- [1. How sed Works](#1-how-sed-works)
+- [2. Substitution — the Core Operation](#2-substitution--the-core-operation)
+- [3. Targeting Specific Lines](#3-targeting-specific-lines)
+- [4. In-Place Editing](#4-in-place-editing)
+- [5. Deleting Lines](#5-deleting-lines)
+- [6. Printing Specific Lines](#6-printing-specific-lines)
+- [7. Inserting and Appending Lines](#7-inserting-and-appending-lines)
+- [8. Running Multiple Commands](#8-running-multiple-commands)
+- [9. Quick Reference](#9-quick-reference)
 
 ---
 
-<details>
-<summary><strong>2 Basic Substitutions</strong></summary>
+## 1. How sed Works
 
-- **TASK:** Turn “Hello World!” to “Hello Linux!”  
-  ```bash
-  echo "Hello World" | sed 's/World/Linux/'
-* `s` → substitute
+sed reads a file or stream one line at a time. For each line it checks whether your pattern matches, applies the instruction if it does, then prints the result. By default it prints every line — changed or not. The original file is untouched unless you use `-i`.
 
-* `/` → delimiter separating pattern, replacement, and flags
+```
+sed 'instruction' file
+     │
+     └── instruction = [address] command
+         address = which lines to act on (optional — default is all lines)
+         command = what to do (substitute, delete, print, insert)
+```
 
-* **If the replacement contains `/`**, choose a non-conflicting delimiter:
+**Key flags:**
 
-  ```bash
-  echo "/home/user/docs" | sed 's#/home/user#/mnt/data/backup#g'
-  ```
-
-  * Here `#` is the delimiter, so you don’t need to escape `/`
-
-* **Replace only first vs. all occurrences**
-
-  * First occurrence only:
-
-    ```bash
-    echo "Hello World World!" | sed 's/World/Linux/'
-    ```
-  * All occurrences (`g` → global):
-
-    ```bash
-    echo "Hello World World!" | sed 's/World/Linux/g'
-    ```
-
-</details>
+| Flag | What it does |
+|---|---|
+| `-n` | Suppress automatic printing — only print lines you explicitly ask for with `p` |
+| `-i` | Edit the file in-place — changes are written back to the original file |
+| `-e` | Chain multiple instructions in one command |
 
 ---
 
-<details>
-<summary><strong>3. Targeted Substitutions in a File</strong></summary>
+## 2. Substitution — the Core Operation
 
-* **Delete all lines containing “Alice”**
+The substitution command is the one you will use 90% of the time:
 
-  ```bash
-  sed '/Alice/d' employees.txt
-  ```
+```
+s/OLD/NEW/
+```
 
-* **Replace 2nd occurrence of “Alice” on line 2**
+- `s` — substitute
+- first `/` — opens the pattern to find
+- `OLD` — what to look for
+- second `/` — separates pattern from replacement
+- `NEW` — what to replace it with
+- third `/` — closes the replacement, flags go here
 
-  ```bash
-  sed '2 s/Alice/Akhil/' employees.txt
-  ```
+**Replace the first match on each line:**
 
-* **Replace on lines 1–2 only**
+```bash
+sed 's/production/staging/' ~/webstore/config/webstore.conf
+```
 
-  ```bash
-  sed '1,2 s/Alice/Akhil/' employees.txt
-  ```
+This replaces only the first occurrence of `production` per line. The file is not changed — output goes to the terminal.
 
-* **Replace throughout entire file (lines 1–\$)**
+**Replace all occurrences on each line with `g` (global):**
 
-  ```bash
-  sed '1,$ s/Alice/Akhil/' employees.txt
-  ```
+```bash
+sed 's/webstore/mystore/g' ~/webstore/config/webstore.conf
+```
 
-* **Print only lines where substitution occurred**
+Without `g`, only the first match per line is replaced. With `g`, every match on every line is replaced.
 
-  ```bash
-  sed -n '1,$ s/Alice/Akhil/p' employees.txt
-  ```
+**When the replacement contains `/`, use a different delimiter:**
 
-  * `-n` → suppress default printing
-  * `p`  → print only substituted lines
+```bash
+# This would break — forward slash conflicts with the delimiter
+sed 's/api_host=webstore-api/api_host=webstore-api/staging/' webstore.conf
 
-</details>
+# Use # as the delimiter instead
+sed 's#webstore-api#webstore-api-staging#g' ~/webstore/config/webstore.conf
+```
 
----
-
-<details>
-<summary><strong>4. Deletions & Printing Ranges</strong></summary>
-
-* **Print only lines 3–7**
-
-  ```bash
-  sed -n '3,7p' employees.txt
-  ```
-
-* **Delete any line containing “Eve”**
-
-  ```bash
-  sed '/Eve/d' employees.txt
-  ```
-
-* **Delete the last line**
-
-  ```bash
-  sed '$d' employees.txt
-  ```
-
-* **Delete lines 5 through end**
-
-  ```bash
-  sed '5,$d' employees.txt
-  ```
-
-</details>
+Any character can be the delimiter as long as it does not appear in your pattern or replacement. `#`, `|`, and `@` are common choices.
 
 ---
 
-<details>
-<summary><strong>5. Insertion & Appending</strong></summary>
+## 3. Targeting Specific Lines
 
-* **Insert before line 10 (no save)**
+By default sed acts on every line. You can restrict it to specific lines using a line number or a pattern.
 
-  ```bash
-  sed '10i\Nikhil, August, 95000' employees.txt
-  ```
+**Act on a specific line number:**
 
-* **Insert before line 10 (in-place)**
+```bash
+# Replace only on line 1
+sed '1 s/production/staging/' ~/webstore/config/webstore.conf
+```
 
-  ```bash
-  sed -i '10i\Nikhil, August, 95000' employees.txt
-  ```
+**Act on a range of lines:**
 
-* **Append after the last line**
+```bash
+# Replace on lines 1 through 3 only
+sed '1,3 s/webstore/mystore/' ~/webstore/config/webstore.conf
+```
 
-  ```bash
-  sed '$a\Navya, October, 100000' employees.txt
-  ```
+**Act on all lines from line 2 to the end (`$` means last line):**
 
-</details>
+```bash
+sed '2,$ s/webstore/mystore/' ~/webstore/config/webstore.conf
+```
+
+**Act only on lines matching a pattern:**
+
+```bash
+# Only replace on lines that contain "port"
+sed '/port/ s/8080/9090/' ~/webstore/config/webstore.conf
+```
+
+**Print only the lines where substitution occurred (`-n` + `p` flag):**
+
+```bash
+sed -n 's/production/staging/p' ~/webstore/config/webstore.conf
+# env=staging
+```
+
+`-n` suppresses all output. `p` prints only the lines that were actually changed. Together they give you a confirmation of what sed touched.
 
 ---
 
+## 4. In-Place Editing
 
-<details>
-<summary><strong>6. Multiple Commands in One Pass</strong></summary>
+Everything above only prints the result — the original file is not modified. To write changes back to the file, use `-i`.
 
-* **Run two edits at once**
+```bash
+# Change production to staging directly in the file
+sed -i 's/production/staging/' ~/webstore/config/webstore.conf
+```
 
-  ```bash
-  sed -e 's/Alice/Akhil/' -e 's/February/Feb/' employees.txt
-  ```
+After this command, `webstore.conf` is permanently changed. There is no undo unless you have a backup.
 
-</details>
+**Best practice — always back up before in-place editing:**
+
+```bash
+# Create a backup first
+cp ~/webstore/config/webstore.conf ~/webstore/backup/webstore.conf.bak
+
+# Then edit in-place
+sed -i 's/production/staging/' ~/webstore/config/webstore.conf
+```
+
+On macOS, `-i` requires an empty string argument: `sed -i '' 's/old/new/' file`. On Linux it does not.
+
+**When you reach for `-i`:**
+Deploy scripts that update config files before a service restart. Instead of opening an editor manually, the script runs `sed -i` to swap the environment value, then restarts the service.
 
 ---
 
-<details>
-<summary><strong>7. Quick Command Summary</strong></summary>
+## 5. Deleting Lines
 
-| Syntax                | Description                                     | Example                                                      |
-| --------------------- | ----------------------------------------------- | ------------------------------------------------------------ |
-| `s/OLD/NEW/`          | Substitute first match on each line             | `sed 's/World/Linux/'`                                       |
-| `s/OLD/NEW/g`         | Substitute all matches on each line             | `sed 's/World/Linux/g'`                                      |
-| `2 s/OLD/NEW/`        | Substitute only the 2nd occurrence on a line    | `sed '2 s/Alice/Akhil/' employees.txt`                       |
-| `1,2 s/OLD/NEW/`      | Substitute on lines 1 through 2                 | `sed '1,2 s/Alice/Akhil/' employees.txt`                     |
-| `1,$ s/OLD/NEW/`      | Substitute throughout entire file               | `sed '1,$ s/Alice/Akhil/' employees.txt`                     |
-| `-n 's/.../.../p'`    | Print only lines where substitution occurred    | `sed -n '1,$ s/Alice/Akhil/p' employees.txt`                 |
-| `/PATTERN/d`          | Delete lines matching a pattern                 | `sed '/Alice/d' employees.txt`                               |
-| `-n 'X,Yp'`           | Print only lines X to Y                         | `sed -n '3,7p' employees.txt`                                |
-| `$d`                  | Delete the last line of the file                | `sed '$d' employees.txt`                                     |
-| `5,$d`                | Delete from line 5 to end                       | `sed '5,$d' employees.txt`                                   |
-| `10i\…`               | Insert text before line 10                      | `sed '10i\Nikhil, August, 95000' employees.txt`              |
-| `-i '10i\…'`          | Insert before line 10 and save in-place         | `sed -i '10i\Nikhil, August, 95000' employees.txt`           |
-| `$a\…`                | Append text after the last line                 | `sed '$a\Navya, October, 100000' employees.txt`              |
-| `-e 'cmd1' -e 'cmd2'` | Run multiple editing commands in one invocation | `sed -e 's/Alice/Akhil/' -e 's/February/Feb/' employees.txt` |
+```bash
+# Delete all lines containing "frontend"
+sed '/frontend/d' ~/webstore/config/webstore.conf
 
-</details>
+# Delete the last line
+sed '$d' ~/webstore/config/webstore.conf
+
+# Delete lines 5 through the end
+sed '5,$d' ~/webstore/config/webstore.conf
+```
+
+**When you reach for delete:**
+Stripping comment lines from a config file before parsing it. Removing header lines from a log file before piping it to another command.
+
+```bash
+# Strip all comment lines (lines starting with #) from a config
+sed '/^#/d' ~/webstore/config/webstore.conf
+```
+
+---
+
+## 6. Printing Specific Lines
+
+Combined with `-n`, you can use sed to extract exactly the lines you need from a large file — like `head` and `tail` but with more control.
+
+```bash
+# Print only lines 2 through 4
+sed -n '2,4p' ~/webstore/config/webstore.conf
+# db_port=5432
+# api_port=8080
+# api_host=webstore-api
+
+# Print only lines containing "api"
+sed -n '/api/p' ~/webstore/config/webstore.conf
+# api_port=8080
+# api_host=webstore-api
+```
+
+---
+
+## 7. Inserting and Appending Lines
+
+```bash
+# Insert a line BEFORE line 1
+sed '1i\# webstore config — do not edit manually' ~/webstore/config/webstore.conf
+
+# Append a line AFTER the last line
+sed '$a\log_level=info' ~/webstore/config/webstore.conf
+
+# Insert in-place — write it back to the file
+sed -i '1i\# webstore config — do not edit manually' ~/webstore/config/webstore.conf
+```
+
+---
+
+## 8. Running Multiple Commands
+
+Use `-e` to chain multiple instructions in a single sed pass. One read of the file, multiple transformations applied.
+
+```bash
+# Swap environment to staging AND update the api port in one command
+sed -e 's/production/staging/' -e 's/api_port=8080/api_port=9090/' ~/webstore/config/webstore.conf
+```
+
+This is cleaner than running sed twice and is faster on large files because the file is only read once.
+
+---
+
+## 9. Quick Reference
+
+| Syntax | What it does | Example |
+|---|---|---|
+| `s/OLD/NEW/` | Replace first match per line | `sed 's/production/staging/' webstore.conf` |
+| `s/OLD/NEW/g` | Replace all matches per line | `sed 's/webstore/mystore/g' webstore.conf` |
+| `s#OLD#NEW#g` | Same but using `#` as delimiter | `sed 's#/api#/v2/api#g' webstore.conf` |
+| `N s/OLD/NEW/` | Replace on line N only | `sed '1 s/production/staging/' webstore.conf` |
+| `N,M s/OLD/NEW/` | Replace on lines N through M | `sed '1,3 s/webstore/mystore/' webstore.conf` |
+| `/PAT/ s/OLD/NEW/` | Replace only on lines matching PAT | `sed '/port/ s/8080/9090/' webstore.conf` |
+| `-n 's/OLD/NEW/p'` | Print only changed lines | `sed -n 's/production/staging/p' webstore.conf` |
+| `-i 's/OLD/NEW/'` | Edit the file in-place | `sed -i 's/production/staging/' webstore.conf` |
+| `/PAT/d` | Delete lines matching pattern | `sed '/^#/d' webstore.conf` |
+| `$d` | Delete the last line | `sed '$d' webstore.conf` |
+| `-n 'N,Mp'` | Print lines N through M only | `sed -n '2,4p' webstore.conf` |
+| `Ni\TEXT` | Insert TEXT before line N | `sed '1i\# header' webstore.conf` |
+| `$a\TEXT` | Append TEXT after last line | `sed '$a\log_level=info' webstore.conf` |
+| `-e 'cmd1' -e 'cmd2'` | Run multiple commands in one pass | `sed -e 's/a/b/' -e 's/c/d/' webstore.conf` |
+
+---
+
+→ Ready to practice? [Go to Lab 02](../linux-labs/02-filters-sed-awk-lab.md)
+
 ---
 # TOOL: 01. Linux – System Fundamentals | FILE: 06-awk
 ---
 
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 `awk` Text Processing
+# awk — Text Processing
 
-- [1. awk Overview](#1-awk-overview)  
-- [2. Basic Printing](#2-basic-printing)  
-- [3. Field Extraction](#3-field-extraction)  
-- [4. Pattern Matching](#4-pattern-matching)  
-- [5. Line Numbers & Field Counts](#5-line-numbers--field-counts)  
-- [6. Custom Field Separator](#6-custom-field-separator)  
-- [7. Conditionals](#7-conditionals)  
-- [8. Length Filtering](#8-length-filtering)  
-- [9. Quick Command Summary](#9-quick-command-summary)
+`cut` extracts columns. `grep` finds lines. `sed` transforms content. `awk` does all three at once — and adds arithmetic. It reads a file line by line, splits each line into fields, and lets you filter, extract, compute, and format the output in a single command.
 
----
+The reason awk exists separately from the other filter tools is its ability to calculate. When you need to know the total number of bytes transferred across all 200 responses in an access log, or the average response time across a thousand requests, awk does it in one line. No spreadsheet. No Python script.
 
-<details>
-<summary><strong>1. awk Overview</strong></summary>
+The webstore access log used throughout this file:
 
-**Note:**  
-- In `awk`, the default field delimiter is whitespace.    
-- `$0` → entire record (line)   
-- `$1` → first field   
-- `$2` → second field, etc     
-- `NR` → current record number (line number)   
-- `NF` → number of fields in the current record.   
+```
+192.168.1.10 GET /api/products 200 512
+192.168.1.11 GET /api/products 200 489
+192.168.1.12 POST /api/orders 201 1024
+192.168.1.10 GET /api/products 200 512
+192.168.1.13 GET /api/users 404 128
+192.168.1.14 POST /api/orders 500 256
+192.168.1.11 GET /api/products 200 489
+192.168.1.15 DELETE /api/orders/7 403 64
+192.168.1.10 GET /api/products 200 512
+192.168.1.14 POST /api/orders 500 256
+```
 
-- Following file is used in examples      
-**samplelog.txt**
-
-03/22 08:53:38 TRACE router_forward_getOI: source address 9.67.116.98     
-03/22 08:53:38 TRACE router_forward_getOI:out inf 9.67.116.98      
-03/22 08:53:38 INFO rsvp_flow_stateMachine: state RESVED, event T10UT      
-03/22 08:53:38 TRACE rsvp_action_nHop:constructing a PATH    
-03/22 08:53:38 TRACE flow_timer_start:started T1   
-03/22 08:53:38 TRACE rsvp_flow_stateMachine: reentering state RESVED   
-03/22 08:53:38 TRACE mailslot_send: sending to (9.67.116.99:0)    
-03/22 08:53:52 TRACE rsvp_event: received event from RAW-IP on interface 9.67.116.98    
-03/22 08:53:52 TRACE rsvp_explode_packet: v=1, flg=0, type=2, cksm=54875, ttl=255, rsv=0 len=84   
-03/22 08:53:52 INFO rsvp_parse_objects: obj RSVP_HOP hop=9.67.116.99, lih=0    
-03/22 08:53:52 TRACE rsvp_event_mapSession: Session=9.67.116.99:1047:6 exists    
-03/22 08:53:52 INFO rsvp_flow_stateMachine: state RESVED, event RESV    
-03/22 08:53:52 TRACE flow_timer_stop: Stop T4    
-03/22 08:53:52 TRACE flow_timer_start: Start T4    
-03/22 08:53:52 TRACE rsvp_flow_stateMachine: reentering state RESVED    
-03/22 08:53:52 ERROR rsvp_flow_stateMachine: Error occurred while processing state transition  
-
-</details>
+Fields: `$1`=IP, `$2`=method, `$3`=path, `$4`=status, `$5`=bytes
 
 ---
 
-<details>
-<summary><strong>2. Basic Printing</strong></summary>
+## Table of Contents
 
-- **Print entire file** (like `cat`)  
-  ```bash
-  awk '{ print }' samplelog.txt
-
-
-* `{ }` → action block
-* `print` → prints `$0` by default
-
-</details>
-
----
-
-<details>
-<summary><strong>3. Field Extraction</strong></summary>
-
-* **Print only the date (field 1)**
-
-  ```bash
-  awk '{ print $1 }' samplelog.txt
-  ```
-* **Print date, time & log level (fields 1–3)**
-
-  ```bash
-  awk '{ print $1, $2, $3 }' samplelog.txt
-  ```
-
-  * `,` → output field separator (default is space)
-
-</details>
+- [1. How awk Works](#1-how-awk-works)
+- [2. Built-in Variables](#2-built-in-variables)
+- [3. Printing Fields](#3-printing-fields)
+- [4. Pattern Matching](#4-pattern-matching)
+- [5. Custom Field Separator](#5-custom-field-separator)
+- [6. Conditionals](#6-conditionals)
+- [7. Arithmetic and Aggregation](#7-arithmetic-and-aggregation)
+- [8. BEGIN and END Blocks](#8-begin-and-end-blocks)
+- [9. Real Incident One-Liners](#9-real-incident-one-liners)
+- [10. awk vs cut — When to Use Which](#10-awk-vs-cut--when-to-use-which)
+- [11. Quick Reference](#11-quick-reference)
 
 ---
 
-<details>
-<summary><strong>4. Pattern Matching</strong></summary>
+## 1. How awk Works
 
-* **Print only lines containing “ERROR”**
+awk reads a file one line at a time. Each line is called a **record**. Each record is automatically split into **fields** — by whitespace by default. You write rules that say: if this condition is true for a record, run this action.
 
-  ```bash
-  awk '/ERROR/ { print }' samplelog.txt
-  ```
+```
+awk 'PATTERN { ACTION }' file
+```
 
-  * `/…/` → pattern match
-* **Print date & time for “ERROR” lines**
+- **PATTERN** — a condition to test against each line. If it matches, the action runs. If omitted, the action runs on every line.
+- **ACTION** — what to do: print fields, calculate, format output.
 
-  ```bash
-  awk '/ERROR/ { print $1, $2 }' samplelog.txt
-  ```
+The simplest awk command — print every line:
 
-</details>
+```bash
+awk '{ print }' ~/webstore/logs/access.log
+```
 
----
-
-<details>
-<summary><strong>5. Line Numbers & Field Counts</strong></summary>
-
-* **Print each line with its line number**
-
-  ```bash
-  awk '{ print NR, $0 }' samplelog.txt
-  ```
-* **Print number of fields in each line**
-
-  ```bash
-  awk '{ print NF }' samplelog.txt
-  ```
-
-</details>
+This is identical to `cat`. Not useful on its own, but it shows the structure: no pattern means "match everything," `print` with no arguments prints the whole line (`$0`).
 
 ---
 
-<details>
-<summary><strong>6. Custom Field Separator</strong></summary>
+## 2. Built-in Variables
 
-* **Use `:` as delimiter, then print field count**
+These variables are available in every awk program without being defined:
 
-  ```bash
-  awk -F ':' '{ print NF }' samplelog.txt
-  ```
-
-  * `-F ':'` → set field separator to `:`
-
-</details>
-
----
-
-<details>
-<summary><strong>7. Conditionals</strong></summary>
-
-* **Print only “ERROR” lines via `if`**
-
-  ```bash
-  awk '{ if ($3 == "ERROR") print $0 }' samplelog.txt
-  ```
-
-  * `if (condition) action`
-
-</details>
+| Variable | What it contains | Example value for line `192.168.1.10 GET /api/products 200 512` |
+|---|---|---|
+| `$0` | The entire current line | `192.168.1.10 GET /api/products 200 512` |
+| `$1` | Field 1 | `192.168.1.10` |
+| `$2` | Field 2 | `GET` |
+| `$3` | Field 3 | `/api/products` |
+| `$4` | Field 4 | `200` |
+| `$5` | Field 5 | `512` |
+| `NR` | Current line number (record number) | `1` on first line, `2` on second, etc. |
+| `NF` | Number of fields in the current line | `5` for this log format |
+| `FS` | Field separator (default: whitespace) | Set with `-F` flag |
 
 ---
 
-<details>
-<summary><strong>8. Length Filtering</strong></summary>
+## 3. Printing Fields
 
-* **Print only lines longer than 70 characters**
+```bash
+# Print only the IP address (field 1)
+awk '{ print $1 }' ~/webstore/logs/access.log
+# 192.168.1.10
+# 192.168.1.11
+# ...
 
-  ```bash
-  awk 'length($0) > 70' samplelog.txt
-  ```
+# Print IP and status code together
+awk '{ print $1, $4 }' ~/webstore/logs/access.log
+# 192.168.1.10 200
+# 192.168.1.11 200
+# 192.168.1.12 201
+# ...
 
-  * `length($0)` → length of entire line
+# Print with a custom separator between fields
+awk '{ print $1 " → " $4 }' ~/webstore/logs/access.log
+# 192.168.1.10 → 200
+# 192.168.1.11 → 200
+# ...
 
-</details>
+# Print line number alongside each line
+awk '{ print NR, $0 }' ~/webstore/logs/access.log
+# 1 192.168.1.10 GET /api/products 200 512
+# 2 192.168.1.11 GET /api/products 200 489
+# ...
+```
+
+**awk vs cut for field extraction:**
+Both extract fields. Use `cut` for simple, fast extraction with a consistent single-character delimiter. Use `awk` when you need to combine fields, add custom formatting, or do anything beyond raw extraction.
 
 ---
 
-<details>
-<summary><strong>9. Quick Command Summary</strong></summary>
+## 4. Pattern Matching
 
-| Command                               | Description                              |
-| ------------------------------------- | ---------------------------------------- |
-| `awk '{print}' file`                  | Print every line                         |
-| `awk '{print $n}' file`               | Print only field *n*                     |
-| `awk '/PAT/ {print}' file`            | Print lines matching pattern             |
-| `awk '{print NR, $0}' file`           | Print line numbers with each line        |
-| `awk '{print NF}' file`               | Print default field count                |
-| `awk -F ':' '{print NF}' file`        | Print field count using `:` as separator |
-| `awk '{if($n=="VAL") print $0}' file` | Conditional print based on field value   |
-| `awk 'length($0)>N' file`             | Print lines longer than *N* characters   |
+A pattern before the action block filters which lines the action runs on. Only lines where the pattern matches trigger the action.
 
-</details>
+```bash
+# Print all lines containing "500"
+awk '/500/ { print }' ~/webstore/logs/access.log
+# 192.168.1.14 POST /api/orders 500 256
+# 192.168.1.14 POST /api/orders 500 256
+
+# Print only the IP and path for 500 errors
+awk '/500/ { print $1, $3 }' ~/webstore/logs/access.log
+# 192.168.1.14 /api/orders
+# 192.168.1.14 /api/orders
+
+# Match on a specific field — only lines where field 4 is exactly "500"
+awk '$4 == "500" { print }' ~/webstore/logs/access.log
+```
+
+The difference between `/500/` and `$4 == "500"` matters when `500` could appear elsewhere in the line — for example, if a URL path contained `500`. Matching on `$4` is more precise.
+
+---
+
+## 5. Custom Field Separator
+
+When your file uses a delimiter other than whitespace — commas, colons, equals signs — tell awk with `-F`.
+
+```bash
+# webstore.conf uses = as separator
+# db_host=webstore-db
+# db_port=5432
+
+# Print only the values (field 2 after splitting on =)
+awk -F '=' '{ print $2 }' ~/webstore/config/webstore.conf
+# webstore-db
+# 5432
+# 8080
+# ...
+
+# Print key=value pairs with formatting
+awk -F '=' '{ print "KEY: " $1 "  VALUE: " $2 }' ~/webstore/config/webstore.conf
+# KEY: db_host  VALUE: webstore-db
+# KEY: db_port  VALUE: 5432
+# ...
+
+# /etc/passwd uses : as separator — print username (field 1) and shell (field 7)
+awk -F ':' '{ print $1, $7 }' /etc/passwd
+```
+
+---
+
+## 6. Conditionals
+
+Use `if` inside the action block to apply logic beyond simple pattern matching.
+
+```bash
+# Print lines where the status code is 500
+awk '{ if ($4 == "500") print $0 }' ~/webstore/logs/access.log
+
+# Print lines where bytes transferred is greater than 500
+awk '{ if ($5 > 500) print $1, $3, $5 }' ~/webstore/logs/access.log
+# 192.168.1.12 /api/orders 1024
+# 192.168.1.10 /api/products 512
+# 192.168.1.10 /api/products 512
+# 192.168.1.10 /api/products 512
+
+# Print lines where status is NOT 200
+awk '{ if ($4 != "200") print $0 }' ~/webstore/logs/access.log
+```
+
+You can also write the condition as a pattern directly without `if`:
+
+```bash
+# These two are equivalent
+awk '{ if ($4 == "500") print $0 }' access.log
+awk '$4 == "500" { print }' access.log
+```
+
+The second form is more idiomatic awk. Use whichever reads more clearly to you.
+
+---
+
+## 7. Arithmetic and Aggregation
+
+This is where awk separates itself from every other filter tool. Variables persist across lines — you can accumulate values as awk reads through a file.
+
+```bash
+# Sum the total bytes transferred across all requests
+awk '{ total += $5 } END { print "Total bytes:", total }' ~/webstore/logs/access.log
+# Total bytes: 4242
+
+# Count how many 500 errors occurred
+awk '$4 == "500" { count++ } END { print "500 errors:", count }' ~/webstore/logs/access.log
+# 500 errors: 2
+
+# Sum bytes for successful requests only (status 200)
+awk '$4 == "200" { total += $5 } END { print "Bytes from 200s:", total }' ~/webstore/logs/access.log
+# Bytes from 200s: 2514
+
+# Calculate average bytes per request
+awk '{ total += $5 } END { print "Average bytes:", total/NR }' ~/webstore/logs/access.log
+# Average bytes: 424.2
+```
+
+**How accumulation works:**
+`total += $5` adds field 5 of the current line to the variable `total`. Since `total` starts at zero and this runs on every line, by the time `END` runs, `total` contains the sum of every value in field 5 across the entire file.
+
+---
+
+## 8. BEGIN and END Blocks
+
+`BEGIN` runs once before awk reads any lines. `END` runs once after all lines are processed. Both are optional.
+
+```bash
+# Print a header before the output, and a summary after
+awk '
+  BEGIN { print "--- Webstore Access Report ---" }
+  { print $1, $4, $5 }
+  END { print "--- Total lines:", NR, "---" }
+' ~/webstore/logs/access.log
+
+# Output:
+# --- Webstore Access Report ---
+# 192.168.1.10 200 512
+# 192.168.1.11 200 489
+# ...
+# --- Total lines: 10 ---
+```
+
+`BEGIN` is also where you set the field separator as an alternative to `-F`:
+
+```bash
+awk 'BEGIN { FS="=" } { print $1, $2 }' ~/webstore/config/webstore.conf
+```
+
+---
+
+## 9. Real Incident One-Liners
+
+**How many requests came from each IP address?**
+```bash
+awk '{ count[$1]++ } END { for (ip in count) print count[ip], ip }' ~/webstore/logs/access.log | sort -rn
+# 3 192.168.1.10
+# 2 192.168.1.11
+# 2 192.168.1.14
+# ...
+```
+
+**What is the total bytes transferred per status code?**
+```bash
+awk '{ bytes[$4] += $5 } END { for (status in bytes) print status, bytes[status] }' ~/webstore/logs/access.log
+# 200 2514
+# 201 1024
+# 500 512
+# ...
+```
+
+**Print only lines where the request path starts with /api/orders:**
+```bash
+awk '$3 ~ /^\/api\/orders/ { print }' ~/webstore/logs/access.log
+```
+
+**Print a formatted report of all non-200 requests:**
+```bash
+awk '$4 != "200" { printf "%-18s %-8s %-25s %s\n", $1, $2, $3, $4 }' ~/webstore/logs/access.log
+```
+
+---
+
+## 10. awk vs cut — When to Use Which
+
+| Situation | Use |
+|---|---|
+| Extract one or two fields, simple delimiter | `cut` — faster, simpler syntax |
+| Extract fields with custom formatting between them | `awk` |
+| Filter rows by field value | `awk` |
+| Calculate totals, averages, counts | `awk` — `cut` cannot do this |
+| Multiple conditions across different fields | `awk` |
+| Quick IP extraction from access log | Either — `cut -d' ' -f1` or `awk '{print $1}'` |
+
+---
+
+## 11. Quick Reference
+
+| Command | What it does |
+|---|---|
+| `awk '{ print }' file` | Print every line |
+| `awk '{ print $1 }' file` | Print field 1 only |
+| `awk '{ print $1, $4 }' file` | Print fields 1 and 4 with space between |
+| `awk '{ print NR, $0 }' file` | Print line number with each line |
+| `awk '/PATTERN/ { print }' file` | Print lines matching pattern |
+| `awk '$4 == "500" { print }' file` | Print lines where field 4 equals 500 |
+| `awk '$5 > 1000 { print }' file` | Print lines where field 5 is greater than 1000 |
+| `awk -F ':' '{ print $1 }' file` | Use `:` as field separator |
+| `awk -F '=' '{ print $2 }' file` | Use `=` as field separator — useful for config files |
+| `awk '{ total += $5 } END { print total }' file` | Sum all values in field 5 |
+| `awk '$4=="500"{ c++ } END{ print c }' file` | Count lines where field 4 is 500 |
+| `awk '{ total += $5 } END { print total/NR }' file` | Average of field 5 across all lines |
+| `awk 'BEGIN{print "start"} { print } END{print "end"}' file` | Header + content + footer |
+
+---
+
 → Ready to practice? [Go to Lab 02](../linux-labs/02-filters-sed-awk-lab.md)
 
 ---
 # TOOL: 01. Linux – System Fundamentals | FILE: 07-text-editor
 ---
 
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 Text Editor
+# vim — Terminal Text Editor
+
+On a remote Linux server there is no GUI. No VS Code, no Sublime, no Notepad. When you need to edit a config file, fix a broken nginx config, or write a quick script, you use a terminal editor. `vim` is the one you will find on every Linux server without exception — it ships with the OS or is one package install away.
+
+The reason vim feels hard at first is that it is **modal** — it has separate modes for navigating and for typing. Most editors have one mode: you open a file and start typing. vim separates these deliberately, because navigating and editing are different tasks that deserve different keystrokes. Once that mental model clicks, vim becomes fast.
+
+---
 
 ## Table of Contents
-- [1. Understanding vi/vim](#1-understanding-vivim)
-- [2. Widely Used Workflows](#2-widely-used-workflows)
-- [3. File Manipulation Shortcuts](#3-file-manipulation-shortcuts)
-- [4. Quick Command Summary](#4-quick-command-summary)
 
-<details>
-<summary><strong>1. Understanding vi/vim</strong></summary>
-
-### Editor Overview
-- **vi** = original UNIX editor (always available)
-- **vim** = “vi IMproved” (extra features, backward compatible)
-- **Modal Editing:** separate modes for navigation vs insertion
-
-#### Core Modes
-| Mode               | Activation            | Purpose                         |
-| ------------------ | --------------------- | ------------------------------- |
-| Normal (Command)   | default               | navigate, delete, yank, etc.    |
-| Insert             | `i`, `a`, `o`         | insert text                     |
-| Command-line       | `:`                   | save, quit, search & replace    |
-
-#### Navigation Keys
-| Keys | Action                    |
-| ---- | ------------------------- |
-| `h`  | move left                 |
-| `j`  | move down                 |
-| `k`  | move up                   |
-| `l`  | move right                |
-| `w`  | jump to next word         |
-| `b`  | jump to previous word     |
-| `0`  | go to beginning of line   |
-| `$`  | go to end of line         |
-> Repeat count: prepend a number (e.g., 5j moves down 5 lines)
-#### Editing Commands
-| Command  | Description                        |
-| -------- | ---------------------------------- |
-| `x`      | delete character under cursor      |
-| `dd`     | delete (cut) current line          |
-| `cw`     | change word (enters insert mode)   |
-| `u`      | undo last change                   |
-| `Ctrl+R` | redo                               |
-
-### Save & Exit
-- :w → save   
-- :q → quit (fails if unsaved changes)   
-- :wq or :x → save + quit (:x skips if no edits)   
-- :q! → quit without saving   
-
-### Searching & Replacing   
-| Command           | Description                                           |   
-|-------------------|-------------------------------------------------------|   
-| `/pattern`        | Search forward for pattern                            |   
-| `?pattern`        | Search backward for pattern                           |   
-| `n` / `N`         | Repeat search forward / backward                      |   
-| `:%s/old/new/g`   | Replace all occurrences of old with new in file       |   
-| `:%s/old/new/gc`  | Replace with confirmation for each change             |   
-
-</details>
+- [1. The Three Modes](#1-the-three-modes)
+- [2. Opening and Exiting](#2-opening-and-exiting)
+- [3. Navigation](#3-navigation)
+- [4. Editing](#4-editing)
+- [5. Search and Replace](#5-search-and-replace)
+- [6. The Webstore Workflow — Real Editing Scenarios](#6-the-webstore-workflow--real-editing-scenarios)
+- [7. Quick Reference](#7-quick-reference)
 
 ---
 
-<details>
-<summary><strong>2. Widely Used Workflows</strong></summary>
+## 1. The Three Modes
 
-- **Quick Edit & Save:**  
-  ```bash
-  vim file.txt      # open file
-  20G                # jump to line 20
-  iYour text<Esc>    # insert text and exit insert mode
-  :wq                # save and quit
+vim starts in **Normal mode** every time you open it. This is the source of most beginner confusion — you open a file, start typing, and nothing appears where you expect it to.
 
+```
+Normal mode  ←──────────── Esc ─────────────┐
+     │                                       │
+     │  i / a / o                            │
+     ▼                                       │
+Insert mode  ── type your content ───────────┘
 
-* **Global Replace:**
+Normal mode
+     │
+     │  :
+     ▼
+Command-line mode  ── :w  :q  :wq  :%s/old/new/g
+```
 
-  ```vim
-  vim file.txt
-  :%s/is/will be/gc     # replace all 'is' → 'will be' with confirmation
-  ```
+| Mode | How to enter | What you do here |
+|---|---|---|
+| Normal | Default on open, or press `Esc` from any other mode | Navigate, delete, copy, paste — keyboard is commands not text |
+| Insert | Press `i`, `a`, or `o` from Normal mode | Type text — keyboard behaves like a normal editor |
+| Command-line | Press `:` from Normal mode | Save, quit, search and replace, open other files |
 
-* **Copy & Paste Between Files:**
-
-  ```bash
-  vim file1.txt
-  y10y               # yank 10 lines
-  :e file2.txt       # open target file
-  p                  # paste
-  :w                 # save
-  ```
-
-* **Undo & Redo:**
-
-  ```vim
-  u                  # undo
-  Ctrl+R             # redo
-  ```
-
-</details>
+**The rule that prevents most frustration:** whenever vim is not behaving as expected, press `Esc` first. `Esc` always returns you to Normal mode from anywhere.
 
 ---
 
-<details>
-<summary><strong>3. File Manipulation Shortcuts</strong></summary>
+## 2. Opening and Exiting
 
 ```bash
-# Append a line to file
-echo "New line" >> notes.txt
-tail -n1 notes.txt
+# Open a file
+vim ~/webstore/config/webstore.conf
+
+# Open and jump directly to line 5
+vim +5 ~/webstore/config/webstore.conf
+
+# Open a new file (creates it on save)
+vim ~/webstore/config/nginx.conf
 ```
 
-```bash
-# Append multiple lines via here-doc
-cat <<EOF >> pets.txt
-Akhil Teja, Cat, Persian
-Navya, Cat, British Shorthair
-EOF
-```
+**Exiting — the commands everyone needs to know first:**
 
-```bash
-# Insert header row with sed
-sed -i '1i Name,Category,Value' data.csv
-head -n3 data.csv
-```
+| Command | What it does |
+|---|---|
+| `:w` | Save (write) the file — stay in vim |
+| `:q` | Quit — only works if no unsaved changes |
+| `:wq` | Save and quit |
+| `:q!` | Quit without saving — discard all changes |
+| `:x` | Save and quit — same as `:wq` but skips write if nothing changed |
 
-</details>
+`:q!` is the one you reach for when you opened the wrong file or made changes you want to throw away. It forces quit with no questions asked.
 
 ---
 
-<details>
-<summary><strong>4. Quick Command Summary</strong></summary>
+## 3. Navigation
 
-| Command          | Syntax           | Example            | Description                                   |
-| ---------------- | ---------------- | ------------------ | --------------------------------------------- |
-| `h`              | `h`              | `h`                | Move cursor left                              |
-| `j`              | `j`              | `j`                | Move cursor down                              |
-| `k`              | `k`              | `k`                | Move cursor up                                |
-| `l`              | `l`              | `l`                | Move cursor right                             |
-| `w`              | `w`              | `w`                | Jump to next word                             |
-| `b`              | `b`              | `b`                | Jump to previous word                         |
-| `0`              | `0`              | `0`                | Go to beginning of line                       |
-| `$`              | `$`              | `$`                | Go to end of line                             |
-| `i`              | `i`              | `iNew text<Esc>`   | Enter Insert mode before cursor               |
-| `a`              | `a`              | `aMore text<Esc>`  | Enter Insert mode after cursor                |
-| `o`              | `o`              | `oLine below<Esc>` | Open new line below and enter Insert          |
-| `x`              | `x`              | `x`                | Delete character under cursor                 |
-| `dd`             | `dd`             | `dd`               | Delete (cut) current line                     |
-| `yy`             | `yy`             | `yy`               | Yank (copy) current line                      |
-| `p`              | `p`              | `p`                | Put (paste) after cursor or below line        |
-| `u`              | `u`              | `u`                | Undo last change                              |
-| `Ctrl+R`         | `Ctrl+R`         | *press*            | Redo change                                   |
-| `:w`             | `:w`             | `:w`               | Write (save) file                             |
-| `:q`             | `:q`             | `:q`               | Quit editor (fails if unsaved changes)        |
-| `:wq` / `:x`     | `:wq` / `:x`     | `:wq`              | Write file and quit                           |
-| `:%s/old/new/g`  | `:%s/old/new/g`  | `:%s/is/are/g`     | Replace all occurrences                       |
-| `:%s/old/new/gc` | `:%s/old/new/gc` | `:%s/is/are/gc`    | Replace with confirmation for each occurrence |
+In Normal mode the keyboard is for movement, not typing. These are the keys you use to move around a file without touching the mouse.
 
-</details>
+**Basic movement:**
+
+| Key | Movement |
+|---|---|
+| `h` | Left one character |
+| `l` | Right one character |
+| `j` | Down one line |
+| `k` | Up one line |
+| `w` | Forward one word |
+| `b` | Backward one word |
+| `0` | Beginning of current line |
+| `$` | End of current line |
+| `gg` | First line of the file |
+| `G` | Last line of the file |
+| `NG` | Jump to line N — e.g. `5G` jumps to line 5 |
+
+**Prepend a number to repeat any movement:**
+`5j` moves down 5 lines. `3w` jumps forward 3 words. `10G` jumps to line 10. This is how you navigate a large config file without scrolling.
+
+**When you reach for `NG`:**
+An error message says "syntax error on line 47 of webstore.conf" — type `47G` in Normal mode and you land exactly there.
+
+---
+
+## 4. Editing
+
+All editing commands run from Normal mode. You do not need to enter Insert mode to delete, copy, or paste.
+
+**Entering Insert mode — where to start typing:**
+
+| Key | Where insertion begins |
+|---|---|
+| `i` | Before the cursor |
+| `a` | After the cursor |
+| `o` | New line below the current line |
+| `O` | New line above the current line |
+
+After typing your content, press `Esc` to return to Normal mode.
+
+**Editing without Insert mode:**
+
+| Command | What it does |
+|---|---|
+| `x` | Delete the character under the cursor |
+| `dd` | Delete (cut) the entire current line |
+| `D` | Delete from cursor to end of line |
+| `cw` | Delete the current word and enter Insert mode to replace it |
+| `yy` | Yank (copy) the current line |
+| `Nyy` | Yank N lines — `3yy` copies 3 lines |
+| `p` | Paste after the cursor / below the current line |
+| `u` | Undo the last change |
+| `Ctrl+R` | Redo — reverse an undo |
+
+**The most useful editing sequence in practice:**
+`dd` to cut a line, navigate to where you want it, `p` to paste it. This is how you reorder lines in a config file without retyping them.
+
+---
+
+## 5. Search and Replace
+
+**Search:**
+
+```
+/pattern      search forward — press n for next match, N for previous
+?pattern      search backward
+```
+
+```bash
+# Inside vim — find every occurrence of "webstore-db" in the config
+/webstore-db
+# Press n to jump to the next match
+# Press N to jump backwards
+```
+
+**Replace — the command-line mode substitute:**
+
+```
+:%s/old/new/g
+```
+
+- `%` — apply to the entire file (without `%` it only applies to the current line)
+- `s` — substitute
+- `old` — pattern to find
+- `new` — replacement
+- `g` — replace all occurrences on each line (without `g` only the first per line)
+
+```bash
+# Replace every occurrence of "production" with "staging" in the entire file
+:%s/production/staging/g
+
+# Replace with confirmation for each change — vim shows each match and asks y/n
+:%s/production/staging/gc
+
+# Replace only on the current line
+:s/production/staging/g
+
+# Replace only on lines 2 through 5
+:2,5s/8080/9090/g
+```
+
+**When you reach for `:%s`:**
+Updating a config file to point at a new database host, changing a port number that appears multiple times, or sanitizing a file before committing it. Faster than finding every occurrence manually.
+
+---
+
+## 6. The Webstore Workflow — Real Editing Scenarios
+
+**Scenario 1 — Edit the webstore config to change the API port:**
+
+```
+vim ~/webstore/config/webstore.conf   # open the file
+/api_port                             # search for the line
+cw                                    # delete "api_port" and enter insert mode
+api_port=9090                         # type the new value
+Esc                                   # back to Normal mode
+:wq                                   # save and quit
+```
+
+**Scenario 2 — nginx config has a syntax error on line 12:**
+
+```
+vim ~/webstore/config/nginx.conf      # open the file
+12G                                   # jump directly to line 12
+```
+Read the line, find the error, press `i` to enter Insert mode, fix it, press `Esc`, then `:wq`.
+
+**Scenario 3 — Add a new config entry at the end of webstore.conf:**
+
+```
+vim ~/webstore/config/webstore.conf   # open the file
+G                                     # jump to last line
+o                                     # open new line below and enter Insert mode
+log_level=info                        # type the new entry
+Esc                                   # back to Normal mode
+:wq                                   # save and quit
+```
+
+**Scenario 4 — Replace all occurrences of the old database hostname:**
+
+```
+vim ~/webstore/config/webstore.conf
+:%s/webstore-db-old/webstore-db/g
+:wq
+```
+
+---
+
+## 7. Quick Reference
+
+**Modes:**
+
+| Key | Action |
+|---|---|
+| `Esc` | Return to Normal mode from anywhere |
+| `i` | Enter Insert mode before cursor |
+| `a` | Enter Insert mode after cursor |
+| `o` | New line below, enter Insert mode |
+| `:` | Enter Command-line mode |
+
+**Navigation (Normal mode):**
+
+| Key | Action |
+|---|---|
+| `h j k l` | Left, down, up, right |
+| `w` / `b` | Next / previous word |
+| `0` / `$` | Start / end of line |
+| `gg` / `G` | First / last line |
+| `NG` | Jump to line N |
+
+**Editing (Normal mode):**
+
+| Key | Action |
+|---|---|
+| `x` | Delete character under cursor |
+| `dd` | Delete current line |
+| `yy` | Copy current line |
+| `p` | Paste after cursor |
+| `u` | Undo |
+| `Ctrl+R` | Redo |
+| `cw` | Change word |
+
+**Save and exit (Command-line mode):**
+
+| Command | Action |
+|---|---|
+| `:w` | Save |
+| `:q` | Quit (no unsaved changes) |
+| `:wq` | Save and quit |
+| `:q!` | Quit without saving |
+
+**Search and replace (Command-line mode):**
+
+| Command | Action |
+|---|---|
+| `/pattern` | Search forward |
+| `n` / `N` | Next / previous match |
+| `:%s/old/new/g` | Replace all in file |
+| `:%s/old/new/gc` | Replace all with confirmation |
+
+---
+
+→ Ready to practice? [Go to Lab 03](../linux-labs/03-vim-users-permissions-lab.md)
+
 ---
 # TOOL: 01. Linux – System Fundamentals | FILE: 08-user-&-group-management
 ---
 
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 User & Group Management
+# User & Group Management
+
+Every process on a Linux server runs as a user. Every file is owned by a user and a group. This is not bureaucracy — it is the access control model that prevents a compromised web server from reading your database credentials, and prevents a developer's script from accidentally deleting system files.
+
+When nginx serves the webstore frontend, it does not run as root. It runs as `www-data` — a system user with no shell, no home directory, and read-only access to the files it needs. When your API process writes to the logs directory, it writes as the user the service was started under. Understanding users and groups is understanding who is allowed to do what on the machine.
+
+---
 
 ## Table of Contents
-- [1. User Management](#1-user-management)  
-- [2. Group Management](#2-group-management)  
-- [3. Quick Command Summary](#3-quick-command-summary)  
 
-<details>
-<summary><strong>1. User Management</strong></summary>
-
-#### Theory & Notes
-- **UID** = Unique User ID  
-- **GECOS** = User metadata field (e.g., full name, contact)  
-- **Home Directory** = default `/home/<username>`  
-- Adding a user with `useradd -m` creates home directory and primary group  
-- Passwords & aging stored in `/etc/shadow`; account info in `/etc/passwd`
-
-##### Key Files
-| File            | Description                                      | Permissions    |
-| --------------- | ------------------------------------------------ | -------------- |
-| `/etc/passwd`   | User account info: username, UID, GID, home, shell | world-readable |
-| `/etc/shadow`   | Hashed passwords & aging settings                | root-only      |
-| `/etc/group`    | Group definitions and member lists               | world-readable |
-| `/etc/gshadow`  | Encrypted group passwords & group admins         | root-only      |
-| `/etc/sudoers`  | Sudo permissions (edit with `visudo`)            | root-only      |
-
-##### UID Ranges
-| Range      | Purpose                             |
-| ---------- | ----------------------------------- |
-| `0`        | Root (super-user)                   |
-| `1–200`    | System accounts & services          |
-| `201–999`  | Unprivileged system processes       |
-| `1000+`    | Regular user accounts               |
-
-##### Commands, Options & Examples
-| Command   | Option         | Description                   | Example                                      |
-| --------- | -------------- | ----------------------------- | -------------------------------------------- |
-| `useradd` | `-m`           | create home directory         | `sudo useradd -m navya`                     |
-|           | `-s <shell>`   | set default shell             | `sudo useradd -s /bin/bash navya`           |
-|           | `-u <UID>`     | set user ID                   | `sudo useradd -u 1500 navya`                |
-| `usermod` | `-s <shell>`   | change login shell            | `sudo usermod -s /bin/zsh navya`            |
-|           | `-u <UID>`     | change user ID                | `sudo usermod -u 2001 navya`                |
-|           | `-aG <group>`  | add to supplementary group    | `sudo usermod -aG engineers navya`          |
-| `passwd`  | (none)         | set or change password        | `sudo passwd navya`                         |
-| `userdel` | `--remove`     | delete user & remove home     | `sudo userdel --remove navya`               |
-|           | (none)         | delete user but keep home     | `sudo userdel navya`                        |
-
-##### Syntax & Examples
-```bash
-# Syntax: add user
-sudo useradd <username>
-# Example:
-sudo useradd navya
-
-# Syntax: set password
-sudo passwd <username>
-# Example:
-sudo passwd navya
-
-# Syntax: list users
-cat /etc/passwd
-
-# Syntax: change login name
-sudo usermod -l <newname> <oldname>
-# Example:
-sudo usermod -l atd akhil-teja-doosari
-
-# Syntax: change UID
-sudo usermod -u <UID> <username>
-# Example:
-sudo usermod -u 2000 navya
-
-# Syntax: change shell
-sudo usermod -s <shell_path> <username>
-# Example:
-sudo usermod -s /bin/zsh navya
-
-# Syntax: delete user (keep home)
-sudo userdel <username>
-# Example:
-sudo userdel navya
-
-# Syntax: delete user + home
-sudo userdel <username> --remove
-# Example:
-sudo userdel navya --remove
-````
-
-</details>
+- [1. How Linux Identifies Users](#1-how-linux-identifies-users)
+- [2. Key System Files](#2-key-system-files)
+- [3. UID Ranges — Who Is Who](#3-uid-ranges--who-is-who)
+- [4. User Management](#4-user-management)
+- [5. Group Management](#5-group-management)
+- [6. The Webstore User Setup](#6-the-webstore-user-setup)
+- [7. Quick Reference](#7-quick-reference)
 
 ---
 
-<details>
-<summary><strong>2. Group Management</strong></summary>
+## 1. How Linux Identifies Users
 
-#### Theory & Notes
+Linux does not track users by name — it tracks them by **UID** (User ID), a number. When you run `ls -l` and see `akhil` as the owner, Linux is actually storing the UID `1000` and your terminal is resolving it to a name for readability. The same is true for groups — every group has a **GID** (Group ID).
 
-* **GID** = Group ID
-* **Primary Group** = each user’s default group, same name as user
-* **Supplementary Groups** = additional groups for access control
-* Group membership listed in `/etc/group`; secure info in `/etc/gshadow`
+Every process running on the system has a UID attached to it. That UID determines what files the process can read, write, or execute. This is why running services as root is dangerous — a process running as root (UID 0) can read and modify any file on the system. A compromised root process means full system compromise.
 
-##### Key Files
+---
 
-| File           | Description                        | Permissions    |
-| -------------- | ---------------------------------- | -------------- |
-| `/etc/group`   | Group definitions & member lists   | world-readable |
-| `/etc/gshadow` | Encrypted group passwords & admins | root-only      |
+## 2. Key System Files
 
-##### Commands, Options & Examples
+These four files define every user and group on the system. You will read them often — never edit them directly with a text editor. Use the commands in this file instead.
 
-| Command    | Option      | Description            | Example                           |
-| ---------- | ----------- | ---------------------- | --------------------------------- |
-| `groupadd` | `-g <GID>`  | set group ID           | `sudo groupadd -g 3000 devs`      |
-| `groupmod` | `-n <new>`  | rename group           | `sudo groupmod -n engineers devs` |
-|            | `-g <GID>`  | change group ID        | `sudo groupmod -g 2001 engineers` |
-| `gpasswd`  | `-a <user>` | add user to group      | `sudo gpasswd -a navya engineers` |
-|            | `-d <user>` | remove user from group | `sudo gpasswd -d navya engineers` |
-| `groupdel` | (none)      | delete a group         | `sudo groupdel devs`              |
+| File | What it contains | Who can read it |
+|---|---|---|
+| `/etc/passwd` | One line per user: username, UID, GID, home directory, shell | Everyone |
+| `/etc/shadow` | Hashed passwords and password aging settings | Root only |
+| `/etc/group` | One line per group: group name, GID, member list | Everyone |
+| `/etc/gshadow` | Encrypted group passwords and group admins | Root only |
 
-##### Syntax & Examples
+**Reading `/etc/passwd`:**
 
 ```bash
-# Syntax: add group
-sudo groupadd <groupname>
-# Example:
-sudo groupadd devs
-
-# Syntax: add group with specific GID
-sudo groupadd -g <GID> <groupname>
-# Example:
-sudo groupadd -g 3000 devs
-
-# Syntax: rename group
-sudo groupmod -n <newname> <oldname>
-# Example:
-sudo groupmod -n engineers devs
-
-# Syntax: change group GID
-sudo groupmod -g <GID> <groupname>
-# Example:
-sudo groupmod -g 2001 engineers
-
-# Syntax: add user to group
-sudo gpasswd -a <user> <group>
-# Example:
-sudo gpasswd -a navya engineers
-
-# Syntax: remove user from group
-sudo gpasswd -d <user> <group>
-# Example:
-sudo gpasswd -d navya engineers
-
-# Syntax: delete group
-sudo groupdel <groupname>
-# Example:
-sudo groupdel devs
+cat /etc/passwd | grep www-data
+# www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
 ```
 
-</details>
+Fields separated by `:` — username, password placeholder (`x` means it's in shadow), UID, GID, description, home directory, shell. The shell `/usr/sbin/nologin` means this user cannot log in interactively. That is intentional for service accounts.
+
+**Reading `/etc/group`:**
+
+```bash
+cat /etc/group | grep www-data
+# www-data:x:33:
+```
+
+Fields: group name, password placeholder, GID, comma-separated member list.
 
 ---
 
-<details>
-<summary><strong>3. Quick Command Summary</strong></summary>
+## 3. UID Ranges — Who Is Who
 
-| Command      | Purpose                                     | Example                              |
-| ------------ | ------------------------------------------- | ------------------------------------ |
-| `useradd`    | Create user (with `-m` for home directory)  | `sudo useradd -m -s /bin/bash navya` |
-| `usermod`    | Modify user account properties              | `sudo usermod -aG engineers navya`   |
-| `passwd`     | Set or change user password                 | `sudo passwd navya`                  |
-| `userdel`    | Delete user (use `--remove` to delete home) | `sudo userdel --remove navya`        |
-| `groupadd`   | Create a new group                          | `sudo groupadd -g 3000 devs`         |
-| `groupmod`   | Rename or change GID of a group             | `sudo groupmod -n engineers devs`    |
-| `groupdel`   | Delete a group                              | `sudo groupdel devs`                 |
-| `gpasswd -a` | Add user to supplementary group             | `sudo gpasswd -a navya engineers`    |
-| `gpasswd -d` | Remove user from supplementary group        | `sudo gpasswd -d navya engineers`    |
+| Range | Purpose | Examples |
+|---|---|---|
+| `0` | Root — full system access | `root` |
+| `1–999` | System accounts — services, daemons, no login shell | `www-data` (33), `postgres` (999) |
+| `1000+` | Regular human users — login shell, home directory | `akhil` (1000) |
 
-</details>
+When you install nginx, it creates a `www-data` system user automatically with a UID in the system range. When you create your own user account, it gets UID 1000 or higher. This separation is intentional — system services and human operators should never share the same identity.
+
+---
+
+## 4. User Management
+
+**Creating a user:**
+
+```bash
+# Create a user with home directory and bash shell
+sudo useradd -m -s /bin/bash akhil
+
+# Set the password
+sudo passwd akhil
+```
+
+`-m` creates the home directory at `/home/akhil`. Without `-m`, the user exists but has no home directory. `-s /bin/bash` gives them a usable shell. Without `-s`, the default shell may be `/bin/sh`.
+
+**Modifying a user:**
+
+```bash
+# Add user to a supplementary group — -a means append, never omit it
+sudo usermod -aG webstore-team akhil
+
+# Change the user's shell
+sudo usermod -s /bin/zsh akhil
+
+# Change the username
+sudo usermod -l new-name old-name
+```
+
+The `-aG` flag is critical. If you run `usermod -G groupname user` without `-a`, it **replaces** all existing group memberships with just the one you specified. The user loses access to everything else. Always use `-aG` to add a group.
+
+**Deleting a user:**
+
+```bash
+# Delete user but keep their home directory — useful when preserving files
+sudo userdel akhil
+
+# Delete user and remove their home directory and mail spool
+sudo userdel --remove akhil
+```
+
+**Checking who you are and what groups you belong to:**
+
+```bash
+whoami          # your username
+id              # your UID, GID, and all group memberships
+id akhil        # same info for another user
+groups akhil    # list groups a user belongs to
+```
+
+---
+
+## 5. Group Management
+
+Groups are how you give multiple users the same access to a resource without duplicating permissions. Instead of giving three developers individual write access to the webstore config directory, you create a `webstore-team` group, give the directory group write access, and add the developers to the group.
+
+**Creating and managing groups:**
+
+```bash
+# Create a group
+sudo groupadd webstore-team
+
+# Create a group with a specific GID
+sudo groupadd -g 3000 webstore-team
+
+# Rename a group
+sudo groupmod -n webstore-devs webstore-team
+
+# Add a user to a group
+sudo gpasswd -a akhil webstore-devs
+
+# Remove a user from a group
+sudo gpasswd -d akhil webstore-devs
+
+# Delete a group
+sudo groupdel webstore-devs
+```
+
+**Verify group membership took effect:**
+
+```bash
+# The change takes effect on next login — to apply immediately in current session:
+newgrp webstore-devs
+```
+
+---
+
+## 6. The Webstore User Setup
+
+This is the pattern you apply when setting up the webstore on a Linux server. It reflects how real services are configured — minimum access, dedicated service account, no unnecessary privileges.
+
+**The setup:**
+
+```bash
+# nginx is already running as www-data (created during package install)
+# Confirm:
+ps aux | grep nginx
+# www-data  1234  ...  nginx: worker process
+
+# Create a webstore-team group for developers who need access to the project
+sudo groupadd webstore-team
+
+# Add nginx's user (www-data) to the webstore-team group
+# so nginx can read webstore files owned by that group
+sudo usermod -aG webstore-team www-data
+
+# Add your developer account to the group
+sudo usermod -aG webstore-team akhil
+
+# Confirm the group membership
+getent group webstore-team
+# webstore-team:x:3000:www-data,akhil
+```
+
+**Why this matters:**
+The webstore config file contains the database password. If nginx runs as root, any vulnerability in nginx gives an attacker full system access. If nginx runs as `www-data` with access only to the files it needs, the blast radius of a compromise is contained. This is the principle of least privilege — give each process exactly the access it needs, nothing more.
+
+---
+
+## 7. Quick Reference
+
+**Users:**
+
+| Command | What it does | Example |
+|---|---|---|
+| `useradd -m -s /bin/bash <user>` | Create user with home dir and bash shell | `sudo useradd -m -s /bin/bash akhil` |
+| `passwd <user>` | Set or change password | `sudo passwd akhil` |
+| `usermod -aG <group> <user>` | Add user to group (always use `-a`) | `sudo usermod -aG webstore-team akhil` |
+| `usermod -s <shell> <user>` | Change login shell | `sudo usermod -s /bin/zsh akhil` |
+| `usermod -l <new> <old>` | Rename a user | `sudo usermod -l atd akhil` |
+| `userdel <user>` | Delete user, keep home directory | `sudo userdel akhil` |
+| `userdel --remove <user>` | Delete user and home directory | `sudo userdel --remove akhil` |
+| `id <user>` | Show UID, GID, all group memberships | `id akhil` |
+
+**Groups:**
+
+| Command | What it does | Example |
+|---|---|---|
+| `groupadd <group>` | Create a group | `sudo groupadd webstore-team` |
+| `groupmod -n <new> <old>` | Rename a group | `sudo groupmod -n webstore-devs webstore-team` |
+| `gpasswd -a <user> <group>` | Add user to group | `sudo gpasswd -a akhil webstore-team` |
+| `gpasswd -d <user> <group>` | Remove user from group | `sudo gpasswd -d akhil webstore-team` |
+| `groupdel <group>` | Delete a group | `sudo groupdel webstore-team` |
+| `groups <user>` | List all groups a user belongs to | `groups akhil` |
+| `getent group <group>` | Show group details and members | `getent group webstore-team` |
+
+---
+
+→ Ready to practice? [Go to Lab 03](../linux-labs/03-vim-users-permissions-lab.md)
+
 ---
 # TOOL: 01. Linux – System Fundamentals | FILE: 09-file-ownership-&-permissions
 ---
 
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 File Ownership & Permissions
+# File Ownership & Permissions
+
+Every file on a Linux system has an owner, a group, and a set of permissions. These three things together answer one question: who is allowed to do what with this file.
+
+This is not abstract security theory. When nginx cannot read the webstore config file, it is a permissions problem. When a deploy script cannot write to the logs directory, it is a permissions problem. When a developer accidentally deletes a shared file, a missing sticky bit is the reason. Understanding permissions is understanding why services fail and how to fix them.
+
+---
 
 ## Table of Contents
-- [1. Permission Triads & Numeric Permissions](#1-permission-triads--numeric-permissions)
-- [2. Permission Syntax & Examples](#2-permission-syntax--examples)
-- [3. Interpreting `ls -l`](#3-interpreting-ls--l)
-- [4. Changing Ownership](#4-changing-ownership)
-- [5. Special Permissions](#5-special-permissions)
-- [6. Access Control Lists (ACLs)](#6-access-control-lists-acls)
-- [7. umask (Default Permissions)](#7-umask-default-permissions)
-- [8. Links & Inodes](#8-links--inodes)
-- [9. Quick Command Summary](#9-quick-command-summary)
+
+- [1. The Permission Model](#1-the-permission-model)
+- [2. Reading ls -l Output](#2-reading-ls--l-output)
+- [3. Numeric Permissions — The Octal System](#3-numeric-permissions--the-octal-system)
+- [4. chmod — Changing Permissions](#4-chmod--changing-permissions)
+- [5. chown and chgrp — Changing Ownership](#5-chown-and-chgrp--changing-ownership)
+- [6. Special Permissions](#6-special-permissions)
+- [7. umask — Default Permissions](#7-umask--default-permissions)
+- [8. Links and Inodes](#8-links-and-inodes)
+- [9. The Webstore Permission Setup](#9-the-webstore-permission-setup)
+- [10. Quick Reference](#10-quick-reference)
 
 ---
 
-<details>
-<summary><strong>1. Permission Triads & Numeric Permissions</strong></summary>
+## 1. The Permission Model
 
-***Theory & Notes***
+Every file has three sets of permissions — one for the owner, one for the group, and one for everyone else (others).
 
-- **Ownership**: each file or directory has an **owner** (user) and a **group**  
-- **Permissions** = three triads for user (`u`), group(`g`), other (`o`):
 ```
- USER    GROUP    OTHERS
- r w x   r w x   r w x
+-rw-r--r--  1  akhil  webstore-team  1.2K  Apr 5 09:14  webstore.conf
+│└────────┘     │      │
+│  permissions  │      └── group
+│               └── owner
+└── file type (- = regular file, d = directory, l = symlink)
 ```
-- **Values**: `read (r)` = 4, `write (w)` = 2, `execute (x)` = 1  
-- **Numeric permissions** map bits to values:
 
-| Octal | Symbolic | Calculation      | Meaning               |
-|:-----:|:--------:|------------------|-----------------------|
-| 0     | ---      | 0                | none                  |
-| 1     | --x      | 2⁰ = 1           | execute only          |
-| 2     | -w-      | 2¹ = 2           | write only            |
-| 3     | -wx      | 2¹+2⁰ = 3        | write+execute         |
-| 4     | r--      | 2² = 4           | read only             |
-| 5     | r-x      | 2²+2⁰ = 5        | read+execute          |
-| 6     | rw-      | 2²+2¹ = 6        | read+write            |
-| 7     | rwx      | 2²+2¹+2⁰ = 7     | read+write+execute    |
+Each permission set has three bits — read (`r`), write (`w`), execute (`x`):
+
+```
+USER    GROUP   OTHERS
+r w x   r w x   r w x
+```
+
+- **read (r)** — on a file: can read its contents. On a directory: can list its contents with `ls`
+- **write (w)** — on a file: can modify its contents. On a directory: can create, delete, and rename files inside it
+- **execute (x)** — on a file: can run it as a program. On a directory: can `cd` into it and access files inside
+
+**The directory execute bit is the one people miss.** A directory with `r` but no `x` lets you see the filenames with `ls` but not access the files themselves. You need `x` to actually enter a directory and use its contents.
+
+---
+
+## 2. Reading ls -l Output
 
 ```bash
-chmod 400 employees.txt    # r--------
-chmod 666 samplelog.txt    # rw-rw-rw-
-chmod 444 samplelog.txt    # r--r--r--
-chmod 777 pets.txt         # rwxrwxrwx
+ls -lh ~/webstore/
 ```
 
-</details>
-
----
-
-<details>
-<summary><strong>2. Permission Syntax & Examples</strong></summary>
-
-***Theory & Notes***
-
-* **Symbolic Mode**: modify with user (`u`), group(`g`), other (`o`) all (`a`) plus `+`/`-`/`=`
-* **Octal Mode**: three digits (0–7) for `u`/`g`/`o`
-
----
-
-| Operation                  | Symbolic                  | Octal                     | Description               |
-| -------------------------- | ------------------------- | ------------------------- | ------------------------- |
-| Grant execute to owner     | `chmod u+x pets.txt`      | `chmod 744 pets.txt`      | add execute bit for owner |
-| Grant write to group       | `chmod g+w sample.log`    | `chmod 664 sample.log`    | add write bit for group   |
-| Remove execute from others | `chmod o-x employees.txt` | `chmod 750 employees.txt` | remove execute for others |
-| Set owner-only read        | `chmod u=r file`          | `chmod 400 file`          | owner=read only           |
-| Full access to all         | `chmod a=rwx file`        | `chmod 777 file`          | all = rwx                 |
-
-</details>
-
----
-
-<details>
-<summary><strong>3. Interpreting `ls -l`</strong></summary>
-
-**Theory & Notes**
-`ls -l` breaks down into:
-
-1. **Type + permissions** (e.g. `-rwxr-xr--`)
-2. **Link count** (# of hard links)
-3. **Owner & group**
-4. **Size** (`-h` for human‐readable)
-5. **Timestamp** (modification date/time)
-6. **Filename**
-
-```bash
-ls -lh /home/navya/shared
-# -rw-r--r-- 1 navya devs 1.2K Jul 05 15:52 pets.txt
+```
+drwxr-xr-x  2  akhil  webstore-team  4.0K  Apr 5 09:00  config/
+drwxr-xr-x  2  akhil  webstore-team  4.0K  Apr 5 09:00  logs/
+-rw-r--r--  1  akhil  webstore-team   128  Apr 5 09:14  config/webstore.conf
+-rw-rw-r--  1  akhil  webstore-team  2.4K  Apr 5 09:20  logs/access.log
 ```
 
-</details>
+Reading each field left to right:
+
+| Field | Example | Meaning |
+|---|---|---|
+| Type + permissions | `drwxr-xr-x` | `d` = directory, owner=rwx, group=r-x, others=r-x |
+| Hard link count | `2` | Number of hard links pointing to this inode |
+| Owner | `akhil` | The user who owns the file |
+| Group | `webstore-team` | The group associated with the file |
+| Size | `4.0K` | File size (human-readable with `-h`) |
+| Timestamp | `Apr 5 09:00` | Last modification time |
+| Name | `config/` | File or directory name |
+
+**Decoding `drwxr-xr-x`:**
+- `d` — it is a directory
+- `rwx` — the owner (akhil) can read, write, and enter it
+- `r-x` — the group (webstore-team) can list and enter it but not create or delete files inside
+- `r-x` — everyone else can list and enter it but not create or delete files inside
 
 ---
 
-<details>
-<summary><strong>4. Changing Ownership</strong></summary>
+## 3. Numeric Permissions — The Octal System
 
-**Theory & Notes**
+Each permission bit has a numeric value. Add them up to get the octal digit for each set.
 
-* `chown user:group file` → sets both owner & group
-* `chown user file` → changes only owner
-* `chgrp group file` → changes only group
-* Requires `sudo` if you’re not owner or root
+| Value | Bit | Meaning |
+|---|---|---|
+| 4 | `r` | read |
+| 2 | `w` | write |
+| 1 | `x` | execute |
+
+| Octal | Symbolic | Meaning |
+|---|---|---|
+| `0` | `---` | no permissions |
+| `4` | `r--` | read only |
+| `5` | `r-x` | read and execute |
+| `6` | `rw-` | read and write |
+| `7` | `rwx` | read, write, and execute |
+
+**The permissions you will use most often:**
+
+| Octal | Symbolic | Use case |
+|---|---|---|
+| `600` | `rw-------` | Private files — SSH keys, credential files |
+| `640` | `rw-r-----` | Config files readable by the service group only |
+| `644` | `rw-r--r--` | Config files readable by everyone, writable only by owner |
+| `664` | `rw-rw-r--` | Shared files — owner and group can write |
+| `750` | `rwxr-x---` | Directories accessible by owner and group, not others |
+| `755` | `rwxr-xr-x` | Directories and executables accessible by everyone |
+| `777` | `rwxrwxrwx` | Full access for everyone — almost never correct in production |
+
+**Reading `644` as three digits:**
+- `6` = owner gets rw- (4+2=6)
+- `4` = group gets r-- (4)
+- `4` = others get r-- (4)
+
+---
+
+## 4. chmod — Changing Permissions
+
+**Octal mode — set exact permissions:**
 
 ```bash
-sudo chown bob:devs report.pdf
-sudo chown carol report.pdf
-sudo chgrp devs report.pdf
+# Config file — owner reads and writes, everyone else reads only
+chmod 644 ~/webstore/config/webstore.conf
+
+# Log file — owner and group can write, others read only
+chmod 664 ~/webstore/logs/access.log
+
+# Script — owner can execute, group and others can read only
+chmod 744 ~/webstore/api/deploy.sh
+
+# Entire webstore directory — recursively set directory permissions
+chmod -R 755 ~/webstore/
 ```
 
-</details>
-
----
-
-<details>
-<summary><strong>5. Special Permissions</strong></summary>
-
-**Theory & Notes**
-Linux adds three special bits atop the standard rwx:
-
-* **SUID (Set-UID)**
-
-  * Symbolic: `u+s`  | Numeric: prefix `4xxx`
-  * On **executables**: runs with **file owner's** privileges (e.g. `passwd` runs as root).
-
-* **SGID (Set-GID)**
-
-  * Symbolic: `g+s`  | Numeric: prefix `2xxx`
-  * On **executables**: runs with **file's group** privileges.
-  * On **directories**: new items inherit the **directory’s group**.
-
-* **Sticky bit**
-
-  * Symbolic: `o+t`  | Numeric: prefix `1xxx`
-  * Applies **only to directories**: only the **file owner**, **dir owner**, or **root** can delete/rename inside.
-  * Display as **`t`** (if others have execute) or **`T`** (if execute is off).
-
----
+**Symbolic mode — add or remove specific bits:**
 
 ```bash
-# Add sticky bit
-sudo chmod +t /shared
-ls -ld /shared   # drwxrwxrwt  -> 't' at end
+# Add execute permission for the owner only
+chmod u+x ~/webstore/api/deploy.sh
 
-# Toggle execute for others to see 'T'
-sudo chmod o-x /shared
-ls -ld /shared   # drwxrwxr-wT -> 'T'
+# Remove write permission from others
+chmod o-w ~/webstore/config/webstore.conf
+
+# Add write permission for the group
+chmod g+w ~/webstore/logs/
+
+# Remove all permissions for others
+chmod o= ~/webstore/config/webstore.conf
 ```
 
+| Symbolic syntax | Meaning |
+|---|---|
+| `u+x` | Add execute for owner |
+| `g-w` | Remove write for group |
+| `o=` | Set others to no permissions |
+| `a+r` | Add read for everyone (all) |
+
+**When to use octal vs symbolic:**
+Octal sets the complete state in one command — use it when you know exactly what the final permissions should be. Symbolic adds or removes specific bits without touching the others — use it when you want to make a targeted change without resetting everything.
+
+---
+
+## 5. chown and chgrp — Changing Ownership
+
 ```bash
-# Test deletion behavior
-touch /shared/bobs.txt
-rm /shared/bobs.txt   # fails if not owner
-sudo chown bob /shared/bobs.txt
-rm /shared/bobs.txt   # now succeeds
+# Change both owner and group
+sudo chown akhil:webstore-team ~/webstore/config/webstore.conf
+
+# Change owner only
+sudo chown akhil ~/webstore/logs/access.log
+
+# Change group only
+sudo chgrp webstore-team ~/webstore/config/
+
+# Change ownership recursively — entire directory tree
+sudo chown -R akhil:webstore-team ~/webstore/
 ```
 
-| Bit    | Numeric | Effect                                                 |
-| ------ | ------- | ------------------------------------------------------ |
-| SUID   | 4xxx    | exec runs as file owner                                |
-| SGID   | 2xxx    | dir: new items inherit dir’s group; exec runs as group |
-| Sticky | 1xxx    | dir: only owner/root can delete/rename inside          |
+**When you reach for `chown`:**
+After copying files from one server to another, ownership may come across as root or a different user. A fresh deploy might create files owned by the deploy script's user rather than the service user. `chown -R` corrects the entire tree in one command.
 
-</details>
+**Why `sudo` is required:**
+Only root can change a file's owner. A regular user can change the group of files they own, but only to groups they belong to. Any other ownership change requires `sudo`.
 
 ---
 
-<details>
-<summary><strong>6. Access Control Lists (ACLs)</strong></summary>
+## 6. Special Permissions
 
-**Theory & Notes**  
-ACLs let you grant/revoke for **multiple** users/groups:
+Three additional bits sit above the standard rwx and cover edge cases that standard permissions cannot handle.
 
-- `user:alice:rw-` → Alice gets rw  
-- `group:devs:r-x` → Devs group gets rx  
-- `mask:rwx` → max effective rights  
+**SUID (Set User ID) — numeric prefix `4`:**
 
-Default ACLs apply to new items in a directory.
-
----
+When set on an executable, it runs with the file owner's privileges regardless of who launches it. The classic example is `/usr/bin/passwd` — it needs to write to `/etc/shadow` which is root-only, but any user needs to change their own password. SUID lets it run as root even when launched by a regular user.
 
 ```bash
-sudo apt install acl
-getfacl /data/shared
-setfacl -m u:bob:rwX /data/shared
-setfacl -x u:alice /data/shared
-setfacl -d -m g:devs:rwx /data/shared
+ls -l /usr/bin/passwd
+# -rwsr-xr-x  root  root  ...  /usr/bin/passwd
+#    ^
+#    s in the owner execute position = SUID set
 ```
 
-</details>
+**SGID (Set Group ID) — numeric prefix `2`:**
 
----
-
-<details>
-<summary><strong>7. umask (Default Permissions)</strong></summary>
-
-**Theory & Notes**
-
-* Defaults: files `0666`, dirs `0777`
-* `umask 022` → files `644`, dirs `755`
-* `umask 077` → files `600`, dirs `700`
-* Persist via `~/.bashrc`
-
----
+On a directory: any new files created inside inherit the directory's group instead of the creator's primary group. This is useful for shared team directories — every file created in `~/webstore/logs/` automatically belongs to `webstore-team` regardless of who created it.
 
 ```bash
+# Set SGID on the webstore logs directory
+sudo chmod g+s ~/webstore/logs/
+ls -ld ~/webstore/logs/
+# drwxrwsr-x  akhil  webstore-team  ...  logs/
+#       ^
+#       s in the group execute position = SGID set
+```
+
+**Sticky bit — numeric prefix `1`:**
+
+On a directory: only the file's owner, the directory's owner, or root can delete or rename files inside — even if the directory is world-writable. `/tmp` always has the sticky bit set for this reason.
+
+```bash
+sudo chmod +t ~/webstore/logs/
+ls -ld ~/webstore/logs/
+# drwxrwxrwt  ...  logs/
+#          ^
+#          t at the end = sticky bit set
+```
+
+---
+
+## 7. umask — Default Permissions
+
+When a new file or directory is created, Linux starts from a maximum permission value and subtracts the umask to determine the actual permissions.
+
+- New files start at `666` (no execute by default)
+- New directories start at `777`
+- umask `022` subtracts: files get `644`, directories get `755`
+- umask `027` subtracts: files get `640`, directories get `750`
+
+```bash
+# Check current umask
 umask
+# 0022
+
+# Set a more restrictive umask for the current session
 umask 027
+
+# Make it permanent for your user
 echo 'umask 027' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-</details>
+**When umask `027` matters:**
+If your deploy script creates config files, the default `022` umask makes them world-readable — anyone on the server can read them. A `027` umask means only the owner and group can read new files. For config files containing database passwords, this matters.
 
 ---
 
-<details>
-<summary><strong>8. Links & Inodes</strong></summary>
+## 8. Links and Inodes
 
-**Theory & Notes**
+Every file on disk has an **inode** — a data structure that stores the file's metadata (permissions, owner, timestamps, size, and the location of the actual data blocks). The filename you see in a directory is just a pointer to an inode number.
 
-* **Inode**: metadata store (perms, owner, timestamps)
-* **Hard link**: same inode (no cross-fs)
-* **Symlink**: points to path (cross-fs; breaks if target removed)
+**Hard link:** another directory entry pointing to the same inode. Both names refer to the exact same file. Deleting one does not delete the data — the inode persists until all hard links to it are removed.
 
----
+**Symlink (symbolic link):** a special file that contains a path to another file. It points to a name, not an inode. If the target file is deleted, the symlink breaks.
 
 ```bash
-ls -li file.txt
-ln file.txt hardlink.txt
-ln -s file.txt symlink.txt
+# See inode numbers
+ls -li ~/webstore/config/
+# 524291 -rw-r--r-- 1 akhil webstore-team 128 Apr 5 webstore.conf
+
+# Create a hard link
+ln ~/webstore/config/webstore.conf ~/webstore/backup/webstore.conf.hard
+
+# Create a symlink — nginx sites-enabled uses this pattern
+ln -s ~/webstore/config/nginx.conf /etc/nginx/sites-enabled/webstore
 ```
 
-| Feature          | Hard Link  | Symlink   |
-| ---------------- | ---------- | --------- |
-| Points to        | same inode | file path |
-| Cross-filesystem | no         | yes       |
-| Broken if target | no         | yes       |
+**The nginx symlink pattern:**
+nginx keeps site configs in `sites-available/` and enables them by creating symlinks in `sites-enabled/`. To disable a site you remove the symlink — the config file in `sites-available/` is untouched and can be re-enabled by recreating the symlink.
 
-</details>
+| | Hard link | Symlink |
+|---|---|---|
+| Points to | Inode | File path |
+| Works across filesystems | No | Yes |
+| Breaks if target deleted | No | Yes |
+| Shows as `l` in `ls -l` | No | Yes |
 
 ---
 
-<details>
-<summary><strong>9. Quick Command Summary</strong></summary>
+## 9. The Webstore Permission Setup
 
-| Category            | Task                       | Command                             |
-|---------------------|----------------------------|-------------------------------------|
-| **Listing**         | List files (long & human)  | `ls -lh`                            |
-|                     | Show inode numbers         | `ls -li`                            |
-| **Mode Changes**    | Add user exec              | `chmod u+x file`                    |
-|                     | Revoke others exec         | `chmod o-x file`                    |
-|                     | Set exact octal mode       | `chmod 750 file`                    |
-| **Ownership**       | Change owner & group       | `sudo chown user:group file`        |
-|                     | Change owner only          | `sudo chown user file`              |
-|                     | Change group only          | `sudo chgrp group file`             |
-| **ACL Management**  | View ACLs                  | `getfacl path`                      |
-|                     | Add user ACL               | `setfacl -m u:user:rwX path`        |
-|                     | Remove user ACL            | `setfacl -x u:user path`            |
-|                     | Set default ACL            | `setfacl -d -m g:group:rwx dir`     |
-| **umask**           | View mask                  | `umask`                             |
-|                     | Set temporary mask         | `umask 027`                         |
-|                     | Persist mask               | `echo 'umask 027' >> ~/.bashrc`     |
-| **Links & Inodes**  | Create hard link           | `ln source target`                  |
-|                     | Create symlink             | `ln -s source target`               |
+This is the correct permission configuration for the webstore project on a Linux server. Every number here has a reason.
 
-</details>
+```bash
+# Set ownership — akhil owns, webstore-team is the group
+sudo chown -R akhil:webstore-team ~/webstore/
+
+# Directories — owner full access, group can enter and read, others nothing
+chmod 750 ~/webstore/
+chmod 750 ~/webstore/config/
+chmod 750 ~/webstore/api/
+chmod 750 ~/webstore/db/
+
+# Logs directory — owner and group can write (nginx writes here as www-data)
+chmod 770 ~/webstore/logs/
+
+# Config files — owner reads and writes, group reads, others nothing
+chmod 640 ~/webstore/config/webstore.conf
+
+# Frontend static files — nginx needs to read these, so others need read
+chmod 755 ~/webstore/frontend/
+chmod 644 ~/webstore/frontend/index.html
+
+# Deploy scripts — only owner can execute
+chmod 700 ~/webstore/api/deploy.sh
+
+# Set SGID on logs so nginx's files inherit webstore-team group
+sudo chmod g+s ~/webstore/logs/
+
+# Confirm the result
+ls -lh ~/webstore/
+```
+
+**Why `640` on webstore.conf and not `644`:**
+`644` would let any user on the server read the config — including the database password. `640` means only `akhil` and members of `webstore-team` can read it. nginx runs as `www-data` which is a member of `webstore-team`, so it can read the config. Random users on the server cannot.
+
+---
+
+## 10. Quick Reference
+
+| Command | What it does | Example |
+|---|---|---|
+| `chmod 644 <file>` | Set exact permissions — owner rw, group r, others r | `chmod 644 webstore.conf` |
+| `chmod u+x <file>` | Add execute for owner only | `chmod u+x deploy.sh` |
+| `chmod -R 755 <dir>` | Set permissions recursively on directory | `chmod -R 755 ~/webstore/` |
+| `chown user:group <file>` | Change owner and group | `sudo chown akhil:webstore-team webstore.conf` |
+| `chown -R user:group <dir>` | Change ownership recursively | `sudo chown -R akhil:webstore-team ~/webstore/` |
+| `chgrp group <file>` | Change group only | `sudo chgrp webstore-team webstore.conf` |
+| `chmod g+s <dir>` | Set SGID — new files inherit directory group | `sudo chmod g+s ~/webstore/logs/` |
+| `chmod +t <dir>` | Set sticky bit — only owners can delete inside | `sudo chmod +t ~/webstore/logs/` |
+| `umask` | Show current default permissions mask | `umask` |
+| `ln -s <src> <dest>` | Create a symlink | `ln -s ~/webstore/config/nginx.conf /etc/nginx/sites-enabled/webstore` |
+| `ls -li` | Show inode numbers alongside file details | `ls -li ~/webstore/config/` |
+
+---
 
 → Ready to practice? [Go to Lab 03](../linux-labs/03-vim-users-permissions-lab.md)
 
@@ -2190,442 +2531,262 @@ ln -s file.txt symlink.txt
 # TOOL: 01. Linux – System Fundamentals | FILE: 10-archiving-and-compression
 ---
 
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
 # Archiving and Compression
 
+Before every deploy, you archive the current state of the webstore. Before rotating logs, you compress last month's access log. When you need to move the entire project to a new server, you pack it into one file and transfer it. These are not optional practices — they are the habits that let you recover when something goes wrong.
+
+This file covers two distinct operations that are often confused:
+
+- **Archiving** — combining multiple files and directories into one file. No size reduction. The purpose is portability and organization.
+- **Compression** — reducing a file's size. The purpose is storage efficiency and faster transfer.
+
+`tar` archives. `gzip` compresses. Used together — `tar.gz` — you get both.
+
+---
+
 ## Table of Contents
 
-- [1. Compression vs Archiving](#1-compression-vs-archiving)
-- [2. ZIP – Compress & Archive Multiple Files](#2-zip--compress--archive-multiple-files)
-- [3. unzip – Extract ZIP Files](#3-unzip--extract-zip-files)
-- [4. zip -r – Archive a Directory](#4-zip--r--archive-a-directory)
-- [5. gzip – Compress a Single File](#5-gzip--compress-a-single-file)
-- [6. zcat / zmore / zless – View Compressed Content](#6-zcat--zmore--zless--view-compressed-content)
-- [7. gunzip – Decompress `.gz` Files](#7-gunzip--decompress-gz-files)
-- [8. tar -cvf – Archive Files](#8-tar--cvf--archive-files)
-- [9. tar -xzvf – Extract from `.tar.gz`](#9-tar--xzvf--extract-from-targz)
-- [10. tar -tvf – View Contents of `.tar.gz`](#10-tar--tvf--view-contents-of-targz)
-- [11. tar -czvf – Archive + Compress Files](#11-tar--czvf--archive--compress-files)
-- [12. Backup a Directory](#12-backup-a-directory)
+- [1. Archiving vs Compression](#1-archiving-vs-compression)
+- [2. tar — The Standard Tool](#2-tar--the-standard-tool)
+- [3. gzip — Compressing Single Files](#3-gzip--compressing-single-files)
+- [4. Reading Compressed Files Without Extracting](#4-reading-compressed-files-without-extracting)
+- [5. zip and unzip](#5-zip-and-unzip)
+- [6. The Webstore Backup Workflow](#6-the-webstore-backup-workflow)
+- [7. Quick Reference](#7-quick-reference)
 
 ---
 
-<details>
-<summary><strong>1. Compression vs Archiving</strong></summary>
+## 1. Archiving vs Compression
 
-## Theory
+| Tool | What it does | Output |
+|---|---|---|
+| `tar` | Combines files into one archive — no compression | `.tar` |
+| `gzip` | Compresses a single file | `.gz` |
+| `tar + gzip` | Archives and compresses in one step — the Linux standard | `.tar.gz` or `.tgz` |
+| `zip` | Archives and compresses — common on Windows, cross-platform | `.zip` |
 
-- **Compression** = reduce file size (faster transfer, less storage)
-- **Archiving** = combine multiple files into one (no size reduction)
-
-| Tool         | Function                        |
-|--------------|----------------------------------|
-| `zip`        | Compress + Archive               |
-| `gzip`       | Compress only (single file)      |
-| `tar`        | Archive only                     |
-| `tar + gzip` | Archive + Compress (Linux std)   |
-
-</details>
+**The rule in practice:** on Linux servers you use `tar.gz`. It preserves file permissions, ownership, symlinks, and directory structure — everything you need to restore a backup to an identical state. `zip` does not preserve Unix permissions reliably, which matters when restoring a webstore with carefully set `chmod` values.
 
 ---
 
-<details>
-<summary><strong>2. ZIP – Compress & Archive Multiple Files</strong></summary>
+## 2. tar — The Standard Tool
 
-## Theory
+`tar` reads like a sentence: what to do, how to do it, what to name the result, what to include.
 
-`zip` compresses and archives multiple files into a `.zip` file.
+**The flags you use constantly:**
+
+| Flag | Meaning |
+|---|---|
+| `c` | Create a new archive |
+| `x` | Extract from an archive |
+| `t` | List contents without extracting |
+| `z` | Compress or decompress with gzip |
+| `v` | Verbose — print each file as it is processed |
+| `f` | The next argument is the archive filename — always required |
+
+The order matters: `tar -czvf archive.tar.gz source/` — flags first, archive name second, source last.
+
+**Create an archive:**
+
+```bash
+# Archive the entire webstore directory — no compression yet
+tar -cvf webstore.tar ~/webstore/
+
+# Output — verbose shows every file being added:
+# webstore/
+# webstore/config/
+# webstore/config/webstore.conf
+# webstore/logs/
+# webstore/logs/access.log
+# webstore/logs/error.log
+# ...
+```
+
+**Create a compressed archive (the one you actually use):**
+
+```bash
+# Archive + compress the webstore in one step
+tar -czvf webstore-backup.tar.gz ~/webstore/
+
+# With a timestamp in the filename — essential for multiple backups
+tar -czvf webstore-backup-$(date +%Y-%m-%d).tar.gz ~/webstore/
+# Creates: webstore-backup-2025-04-05.tar.gz
+```
+
+**List contents without extracting — always do this before extracting:**
+
+```bash
+tar -tzvf webstore-backup-2025-04-05.tar.gz
+
+# Output shows permissions, owner, size, date, path:
+# drwxr-xr-x akhil/webstore-team    0  2025-04-05  webstore/
+# -rw-r--r-- akhil/webstore-team  128  2025-04-05  webstore/config/webstore.conf
+# -rw-rw-r-- akhil/webstore-team 2.4K  2025-04-05  webstore/logs/access.log
+```
+
+This confirms the archive contains what you expect before you extract it. Extracting blindly into the wrong directory can overwrite files.
+
+**Extract an archive:**
+
+```bash
+# Extract into the current directory
+tar -xzvf webstore-backup-2025-04-05.tar.gz
+
+# Extract into a specific directory — safer than extracting in place
+tar -xzvf webstore-backup-2025-04-05.tar.gz -C /tmp/restore/
+
+# Extract a single file from the archive
+tar -xzvf webstore-backup-2025-04-05.tar.gz webstore/config/webstore.conf
+```
+
+The `-C` flag is important. Without it, tar extracts relative to your current directory. With it, you control exactly where things land — critical when restoring to a non-default path.
 
 ---
 
-### Syntax:
-```bash
-zip [options] <archive_name.zip> <file1> <file2> ...
-```
+## 3. gzip — Compressing Single Files
 
-### Example:
+`gzip` compresses one file and replaces it with a `.gz` version. The original file is gone after compression — this is different from `tar` which always creates a new file.
 
 ```bash
-zip logs.zip access.log error.log
+# Compress last month's access log — original is replaced
+gzip ~/webstore/logs/access.log.old
+ls -lh ~/webstore/logs/
+# -rw-rw-r-- akhil webstore-team 312K access.log.old.gz
+# (was 1.8M before compression — typical 80% reduction for log files)
+
+# Maximum compression — slower but smallest output
+gzip -9 ~/webstore/logs/error.log.old
+
+# Keep the original file (do not replace it)
+gzip -k ~/webstore/logs/access.log.old
+
+# Decompress — restores the original file
+gunzip ~/webstore/logs/access.log.old.gz
 ```
 
-### Output:
-
-```text
-  adding: access.log (deflated 60%)
-  adding: error.log (deflated 55%)
-```
-
-Result:
-
-```bash
-ls -lh
-# -rw-r--r-- 1 user group 4.1K Jul 01 18:00 logs.zip
-```
-
-</details>
+**When you reach for gzip directly:**
+Log rotation — compressing last month's logs before archiving them off the server. Individual config file backup before editing. Log files compress extremely well (60-85% reduction) because they contain repetitive text.
 
 ---
 
-<details>
-<summary><strong>3. unzip – Extract ZIP Files</strong></summary>
+## 4. Reading Compressed Files Without Extracting
 
-## Theory
+When a log file is compressed, you do not have to decompress it to search it. These commands work directly on `.gz` files:
 
-The `unzip` command extracts contents from a `.zip` file.
+```bash
+# Print the entire contents of a compressed log
+zcat ~/webstore/logs/access.log.gz
+
+# Page through it
+zless ~/webstore/logs/access.log.gz
+
+# Search for 500 errors inside the compressed log — no extraction needed
+zcat ~/webstore/logs/access.log.gz | grep '500'
+
+# Count 500 errors in the compressed log
+zcat ~/webstore/logs/access.log.gz | grep -c '500'
+```
+
+This is the pattern for searching historical logs. You keep old logs compressed to save space, and `zcat` lets you query them without decompressing to disk.
 
 ---
 
-### Syntax:
+## 5. zip and unzip
+
+`zip` is useful when you need to share files with systems that expect `.zip` — Windows, certain APIs, email attachments. On Linux servers between themselves, use `tar.gz`.
 
 ```bash
-unzip <archive_name.zip>
+# Zip specific files
+zip webstore-logs.zip ~/webstore/logs/access.log ~/webstore/logs/error.log
+
+# Zip an entire directory recursively
+zip -r webstore-config.zip ~/webstore/config/
+
+# List contents without extracting
+unzip -l webstore-config.zip
+
+# Extract
+unzip webstore-config.zip
+
+# Extract to a specific directory
+unzip webstore-config.zip -d /tmp/restore/
 ```
 
-### Example:
-
-```bash
-unzip logs.zip
-```
-
-### Output:
-
-```text
-Archive:  logs.zip
-  inflating: access.log
-  inflating: error.log
-```
-
-</details>
+**zip vs tar.gz on Linux:**
+`tar.gz` preserves Unix permissions, ownership, and symlinks. `zip` may not. If you archive the webstore with `zip` and extract it on another Linux server, the file permissions may be wrong and you will have to run `chmod` and `chown` again. Use `tar.gz` for Linux-to-Linux transfers.
 
 ---
 
-<details>
-<summary><strong>4. zip -r – Archive a Directory</strong></summary>
+## 6. The Webstore Backup Workflow
 
-## Theory
+This is the sequence you run before every significant change to the webstore on a server — before a deploy, before editing config files, before a system update.
 
-`zip -r` archives an entire directory including its subfolders.
+```bash
+# Step 1 — create a timestamped backup of the entire project
+tar -czvf ~/webstore/backup/webstore-$(date +%Y-%m-%d-%H%M).tar.gz \
+    --exclude='~/webstore/backup' \
+    ~/webstore/
+
+# Step 2 — verify the archive is not corrupted and contains what you expect
+tar -tzvf ~/webstore/backup/webstore-2025-04-05-0914.tar.gz | head -20
+
+# Step 3 — confirm the size is reasonable
+ls -lh ~/webstore/backup/
+
+# Step 4 — if something goes wrong after your change, restore:
+tar -xzvf ~/webstore/backup/webstore-2025-04-05-0914.tar.gz -C /tmp/restore/
+# Then verify the restore, swap the directories, restart nginx
+```
+
+The `--exclude` flag prevents the backup directory from being included inside itself — without it, each backup would contain all previous backups.
+
+**Log rotation backup — compress old logs monthly:**
+
+```bash
+# Compress logs older than 30 days
+find ~/webstore/logs/ -name "*.log" -mtime +30 -exec gzip {} \;
+
+# Verify compression happened
+ls -lh ~/webstore/logs/
+```
 
 ---
 
-### Syntax:
+## 7. Quick Reference
 
-```bash
-zip -r <archive_name.zip> <directory_path>
-```
-
-### Example:
-
-```bash
-zip -r webstore-logs.zip /var/log/webstore
-```
-
-### Output:
-
-```text
-  adding: /var/log/webstore/ (stored 0%)
-  adding: /var/log/webstore/access.log (deflated 40%)
-  adding: /var/log/webstore/error.log (deflated 42%)
-```
-
-</details>
+| Command | What it does | Example |
+|---|---|---|
+| `tar -czvf <archive> <source>` | Create compressed archive | `tar -czvf backup.tar.gz ~/webstore/` |
+| `tar -tzvf <archive>` | List contents without extracting | `tar -tzvf backup.tar.gz` |
+| `tar -xzvf <archive>` | Extract compressed archive | `tar -xzvf backup.tar.gz` |
+| `tar -xzvf <archive> -C <dir>` | Extract to specific directory | `tar -xzvf backup.tar.gz -C /tmp/restore/` |
+| `tar -xzvf <archive> <file>` | Extract a single file | `tar -xzvf backup.tar.gz webstore/config/webstore.conf` |
+| `gzip <file>` | Compress file — replaces original | `gzip access.log.old` |
+| `gzip -k <file>` | Compress file — keep original | `gzip -k access.log` |
+| `gzip -9 <file>` | Maximum compression | `gzip -9 error.log.old` |
+| `gunzip <file>.gz` | Decompress | `gunzip access.log.gz` |
+| `zcat <file>.gz` | Print compressed file contents | `zcat access.log.gz` |
+| `zless <file>.gz` | Page through compressed file | `zless access.log.gz` |
+| `zcat <file>.gz \| grep <pattern>` | Search inside compressed file | `zcat access.log.gz \| grep '500'` |
+| `zip -r <archive> <dir>` | Zip a directory | `zip -r config.zip ~/webstore/config/` |
+| `unzip <archive> -d <dir>` | Extract zip to directory | `unzip config.zip -d /tmp/restore/` |
 
 ---
-
-<details>
-<summary><strong>5. gzip – Compress a Single File</strong></summary>
-
-## Theory
-
-`gzip` compresses one file and replaces it with a `.gz` version.
-
----
-
-### Syntax:
-
-```bash
-gzip [options] <filename>
-```
-
-### Example:
-
-```bash
-gzip access.log
-```
-
-### Output:
-
-```bash
-ls -lh
-# -rw-r--r-- 1 user group 2.1K Jul 01 18:10 access.log.gz
-```
-
-Maximum compression:
-
-```bash
-gzip -9 error.log
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>6. zcat / zmore / zless – View Compressed Content</strong></summary>
-
-## Theory
-
-These commands let you view compressed `.gz` files without extracting.
-
----
-
-### Syntax:
-
-```bash
-zcat <file.gz>
-zmore <file.gz>
-zless <file.gz>
-```
-
-### Example:
-
-```bash
-zcat access.log.gz
-```
-
-### Output:
-
-```text
-192.168.1.10 GET /api/products 200
-192.168.1.14 POST /api/orders 500
-...
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>7. gunzip – Decompress `.gz` Files</strong></summary>
-
-## Theory
-
-`gunzip` restores the original file by removing the `.gz` compression.
-
----
-
-### Syntax:
-
-```bash
-gunzip <file.gz>
-```
-
-### Example:
-
-```bash
-gunzip access.log.gz
-```
-
-### Output:
-
-```bash
-ls -lh
-# -rw-r--r-- 1 user group 4.8K Jul 01 18:11 access.log
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>8. tar -cvf – Archive Files</strong></summary>
-
-## Theory
-
-`tar -cvf` creates an archive file from multiple files, without compression.
-
----
-
-### Syntax:
-
-```bash
-tar -cvf <archive_name.tar> <file1> <file2> ...
-```
-
-### Example:
-
-```bash
-tar -cvf webstore-configs.tar nginx.conf webstore.conf
-```
-
-### Output:
-
-```text
-nginx.conf
-webstore.conf
-```
-
-```bash
-ls -lh
-# -rw-r--r-- 1 user group 6.0K Jul 01 18:12 webstore-configs.tar
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>9. tar -xzvf – Extract from `.tar.gz`</strong></summary>
-
-## Theory
-
-`tar -xzvf` extracts and decompresses a `.tar.gz` file.
-
----
-
-### Syntax:
-
-```bash
-tar -xzvf <archive.tar.gz>
-```
-
-### Example:
-
-```bash
-tar -xzvf webstore-configs.tar.gz
-```
-
-### Output:
-
-```text
-nginx.conf
-webstore.conf
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>10. tar -tvf – View Contents of `.tar.gz`</strong></summary>
-
-## Theory
-
-Lists the contents of a compressed `.tar.gz` archive without extracting.
-
----
-
-### Syntax:
-
-```bash
-tar -tvf <archive.tar.gz>
-```
-
-### Example:
-
-```bash
-tar -tvf webstore-configs.tar.gz
-```
-
-### Output:
-
-```text
--rw-r--r-- user/group  2096 2025-07-01 17:59 nginx.conf
--rw-r--r-- user/group  1800 2025-07-01 17:59 webstore.conf
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>11. tar -czvf – Archive + Compress Files</strong></summary>
-
-## Theory
-
-Combines archiving + compression. Produces a `.tar.gz` file from files/folders.
-
----
-
-### Syntax:
-
-```bash
-tar -czvf <archive.tar.gz> <file1> <file2> ...
-```
-
-### Example:
-
-```bash
-tar -czvf webstore-configs.tar.gz nginx.conf webstore.conf
-```
-
-### Output:
-
-```text
-nginx.conf
-webstore.conf
-```
-
-```bash
-ls -lh
-# -rw-r--r-- 1 user group 3.5K Jul 01 18:15 webstore-configs.tar.gz
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>12. Backup a Directory</strong></summary>
-
-## Theory
-
-`tar -czvf` can compress and archive full directories (with subfolders and metadata).
-
----
-
-### Syntax:
-
-```bash
-tar -czvf <backup_name.tar.gz> <directory_path>
-```
-
-### Example:
-
-```bash
-tar -czvf webstore-backup.tar.gz /var/log/webstore
-```
-
-### Output:
-
-```text
-/var/log/webstore/
-/var/log/webstore/access.log
-/var/log/webstore/error.log
-```
-
-To extract:
-
-```bash
-tar -xzvf webstore-backup.tar.gz
-```
-
-</details>
 
 → Ready to practice? [Go to Lab 04](../linux-labs/04-archive-packages-services-lab.md)
 
@@ -2633,528 +2794,565 @@ tar -xzvf webstore-backup.tar.gz
 # TOOL: 01. Linux – System Fundamentals | FILE: 11-package-management
 ---
 
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 Package Management
+# Package Management
+
+On a Linux server you never download software from a website and run an installer. You use the package manager — a tool that fetches verified software from trusted repositories, resolves all dependencies automatically, and tracks everything it installed so it can be cleanly removed later.
+
+This is how nginx gets on the webstore server. One command. No manual download. No guessing which libraries it needs. The package manager handles all of it.
+
+---
 
 ## Table of Contents
-1. [Why Packages Matter](#1-why-packages-matter)  
-2. [Using APT on Debian/Ubuntu](#2-using-apt-on-debianubuntu)  
-3. [Using YUM/DNF on RHEL/CentOS/Fedora](#3-using-yumdnf-on-rhelcentosfedora)  
-4. [Comparing Package Managers](#4-comparing-package-managers)  
-5. [Quick Command Summary](#5-quick-command-summary)
+
+- [1. What a Package Manager Does](#1-what-a-package-manager-does)
+- [2. APT — Debian and Ubuntu](#2-apt--debian-and-ubuntu)
+- [3. YUM and DNF — RHEL CentOS Fedora](#3-yum-and-dnf--rhel-centos-fedora)
+- [4. Comparing Package Managers](#4-comparing-package-managers)
+- [5. The Webstore Install Workflow](#5-the-webstore-install-workflow)
+- [6. Quick Reference](#6-quick-reference)
 
 ---
 
-<details>
-<summary><strong>1. Why Packages Matter</strong></summary>
+## 1. What a Package Manager Does
 
-**Theory & Purpose**  
-- A **package** bundles all files (binaries, libraries, configs, docs) needed to install software.  
-- A **package manager** automates:
-  - Installation, upgrade, removal  
-  - Dependency resolution  
-  - Repository management  
-  - Cleanup of unused files  
-- **Benefits**:
-  - **Consistency**: Same version everywhere (development, production)   
-  - **Safety**: Verified packages signed with GNU Privacy Guard (GPG)    
-  - **Simplicity**: One command instead of dozens     
+A **package** is a bundle containing everything a piece of software needs — the binary, its libraries, default config files, and documentation. The package manager handles four things you would otherwise do manually:
 
-> **Remember**: Manual installs risk version mismatches and missing dependencies. Always prefer your distro’s package manager for production and development.
+- **Installation** — downloads the package and puts every file in the right place
+- **Dependency resolution** — figures out what other packages this one needs and installs those too
+- **Verification** — checks GPG signatures to confirm the package has not been tampered with
+- **Removal** — tracks every file that was installed so it can cleanly remove them later
 
-</details>
+Without a package manager you would download a tarball, manually install it, manually install its 12 dependencies, then discover you installed the wrong version of one of them. Package managers exist because that process does not scale.
+
+**Two package ecosystems on Linux:**
+
+| Ecosystem | Package format | Package manager | Used on |
+|---|---|---|---|
+| Debian | `.deb` | `apt` | Ubuntu, Debian — what this runbook uses |
+| Red Hat | `.rpm` | `yum` / `dnf` | RHEL, CentOS, Fedora, Amazon Linux |
+
+Ubuntu is what AWS EC2 defaults to and what this runbook uses throughout. You will see both ecosystems in real jobs — know both at the command level.
 
 ---
 
-<details>
-<summary><strong>2. Using APT on Debian/Ubuntu</strong></summary>
+## 2. APT — Debian and Ubuntu
 
-**Theory & Notes**  
-- APT (`Advanced Package Tool`) is the high-level front end for `.deb` packages.  
-- Config lives in `/etc/apt/sources.list` and `/etc/apt/sources.list.d/`.  
-- You must **update** the local index after adding repositories.
+APT (Advanced Package Tool) is the package manager on Ubuntu. Its package lists live in `/etc/apt/sources.list` and `/etc/apt/sources.list.d/`. Before installing anything, you update the local index — this tells apt what versions are currently available in the repositories. The index is not updated automatically.
 
-### Commands Table
-
-| Action            | Command                          | Description                           |
-|-------------------|----------------------------------|---------------------------------------|
-| Update index      | `sudo apt update`                | Fetch latest package lists            |
-| Install package   | `sudo apt install <pkg>`         | Download & install `<pkg>`            |
-| Upgrade packages  | `sudo apt upgrade -y`            | Upgrade all installed packages        |
-| Remove package    | `sudo apt remove <pkg>`          | Remove `<pkg>` but keep config files  |
-| Purge package     | `sudo apt purge <pkg>`           | Remove `<pkg>` including config files |
-| Cleanup deps      | `sudo apt autoremove`            | Remove orphaned dependencies          |
-| Clean cache       | `sudo apt clean`                 | Delete downloaded `.deb` files        |
-
-### Examples
+**The standard install sequence — always in this order:**
 
 ```bash
-# 1. Update before installing:
+# Step 1 — refresh the package index
+# This does NOT install anything — it just updates what apt knows is available
 sudo apt update
 
-# 2. Install nginx web server:
+# Step 2 — install the package
 sudo apt install nginx
 
-# 3. Upgrade all packages non-interactively:
-sudo apt upgrade -y
+# What happens:
+# apt resolves all nginx dependencies
+# downloads nginx and every dependency
+# installs them in the correct order
+# creates the www-data user if it doesn't exist
+# puts the default config in /etc/nginx/
+# registers nginx as a systemd service
+```
 
-# 4. Remove a package but keep its config:
-sudo apt remove apache2
+Never skip `apt update` before installing. Without it you might install a stale version, or apt might fail to find a dependency that was recently renamed.
 
-# 5. Purge package and configs:
-sudo apt purge apache2
+**Full APT command set:**
 
-# 6. Clean up unused dependencies:
-sudo apt autoremove
+| Command | What it does | When you reach for it |
+|---|---|---|
+| `sudo apt update` | Refresh package index — fetch latest available versions | Before every install or upgrade |
+| `sudo apt install <pkg>` | Download and install a package and its dependencies | Installing nginx, curl, vim, git |
+| `sudo apt install <pkg>=<version>` | Install a specific version | Pinning nginx to a version that matches production |
+| `sudo apt upgrade -y` | Upgrade all installed packages to latest versions | Routine server maintenance |
+| `sudo apt remove <pkg>` | Remove a package but keep its config files | Removing nginx while keeping `/etc/nginx/` for reinstall |
+| `sudo apt purge <pkg>` | Remove a package and all its config files | Clean uninstall — nothing left behind |
+| `sudo apt autoremove` | Remove packages that were installed as dependencies but are no longer needed | After removing a package that pulled in many deps |
+| `sudo apt clean` | Delete downloaded `.deb` files from the local cache | Freeing disk space on a server with limited storage |
+| `apt list --installed` | List all installed packages | Auditing what is on a server |
+| `apt show <pkg>` | Show package details — version, size, dependencies | Checking what version is available before installing |
+| `apt search <keyword>` | Search available packages by keyword | Finding the right package name when you are not sure |
 
-# 7. Clear local cache:
+**remove vs purge — when it matters:**
+`apt remove nginx` removes the binary but leaves `/etc/nginx/` intact. If you reinstall nginx later, your config is still there. `apt purge nginx` removes everything including configs. Use `remove` when you plan to reinstall. Use `purge` for a complete clean uninstall.
+
+---
+
+## 3. YUM and DNF — RHEL CentOS Fedora
+
+YUM is the package manager on older Red Hat systems (RHEL 7, CentOS 7). DNF replaced it on RHEL 8+, Fedora, and Amazon Linux 2023. The commands are nearly identical — DNF is faster and has better dependency resolution.
+
+**YUM (CentOS / RHEL 7):**
+
+```bash
+sudo yum install nginx        # install
+sudo yum update -y            # upgrade all packages
+sudo yum remove nginx         # remove
+sudo yum clean all            # clear all cached data
+sudo yum list installed       # list installed packages
+```
+
+**DNF (Fedora / RHEL 8+ / Amazon Linux 2023):**
+
+```bash
+sudo dnf install nginx        # install
+sudo dnf upgrade -y           # upgrade all packages
+sudo dnf remove nginx         # remove
+sudo dnf clean all            # clear all cached data
+sudo dnf list installed       # list installed packages
+```
+
+The key difference from APT: YUM and DNF do not separate `update` (refresh index) from `upgrade` (install updates). `yum update` and `dnf upgrade` do both in one step.
+
+---
+
+## 4. Comparing Package Managers
+
+| | APT | YUM | DNF |
+|---|---|---|---|
+| Used on | Ubuntu, Debian | CentOS, RHEL 7 | Fedora, RHEL 8+, Amazon Linux |
+| Package format | `.deb` | `.rpm` | `.rpm` |
+| Refresh index | `apt update` | Automatic with install | Automatic with install |
+| Install | `apt install <pkg>` | `yum install <pkg>` | `dnf install <pkg>` |
+| Upgrade all | `apt upgrade` | `yum update` | `dnf upgrade` |
+| Remove | `apt remove <pkg>` | `yum remove <pkg>` | `dnf remove <pkg>` |
+| Remove + configs | `apt purge <pkg>` | No direct equivalent | No direct equivalent |
+| Clean cache | `apt clean` | `yum clean all` | `dnf clean all` |
+| List installed | `apt list --installed` | `yum list installed` | `dnf list installed` |
+| Repo config | `/etc/apt/sources.list` | `/etc/yum.repos.d/` | `/etc/yum.repos.d/` |
+
+---
+
+## 5. The Webstore Install Workflow
+
+This is the sequence you run on a fresh Ubuntu server to get the webstore stack installed and ready.
+
+```bash
+# Start with a clean, updated index
+sudo apt update
+
+# Install nginx to serve the webstore frontend
+sudo apt install -y nginx
+
+# Confirm nginx installed and check its version
+nginx -v
+# nginx version: nginx/1.24.0
+
+# Install useful tools for working with the webstore
+sudo apt install -y curl vim git
+
+# Install the postgresql client to connect to webstore-db
+sudo apt install -y postgresql-client
+
+# Verify what got installed
+apt list --installed | grep -E 'nginx|curl|vim|git|postgresql'
+
+# Check disk space after installs
+df -h
+
+# Clean up downloaded package files — good habit after large installs
 sudo apt clean
-````
-
-</details>
-
----
-
-<details>
-<summary><strong>3. Using YUM/DNF on RHEL/CentOS/Fedora</strong></summary>
-
-**Theory & Notes**
-
-* YUM and DNF are front-end interfaces for `.rpm` (Red Hat Package Manager) packages.   
-
-  * **YUM** stands for **Yellowdog Updater, Modified**.
-  * **DNF** stands for **Dandified YUM**.
-
-* **YUM is the default package-management interface on CentOS (Community Enterprise Operating System) and Red Hat Enterprise Linux 7; DNF is the default on Fedora and Red Hat Enterprise Linux 8 and later.**
-
-* **They handle**:
-
-  * **Repository metadata** (information about available packages in software repositories)
-  * **GNU Privacy Guard (GPG) keys** (for verifying package authenticity)
-  * **Dependency resolution** (automatically determining and installing all required libraries and packages)
-
-
-#### YUM (CentOS/RHEL 7)
-
-| Action          | Command                  | Description                        |
-| --------------- | ------------------------ | ---------------------------------- |
-| Install package | `sudo yum install <pkg>` | Install `<pkg>` from enabled repos |
-| Update packages | `sudo yum update -y`     | Update all installed packages      |
-| Remove package  | `sudo yum remove <pkg>`  | Uninstall `<pkg>`                  |
-| Clean cache     | `sudo yum clean all`     | Remove all cached data             |
-
-```bash
-# Install Docker:
-sudo yum install docker
-
-# Update everything:
-sudo yum update -y
-
-# Remove Docker:
-sudo yum remove docker
-
-# Clean all yum cache:
-sudo yum clean all
+sudo apt autoremove
 ```
 
-#### DNF (Fedora, RHEL 8+)
-
-| Action           | Command                  | Description                    |
-| ---------------- | ------------------------ | ------------------------------ |
-| Install package  | `sudo dnf install <pkg>` | Install `<pkg>`                |
-| Upgrade packages | `sudo dnf upgrade -y`    | Upgrade all installed packages |
-| Remove package   | `sudo dnf remove <pkg>`  | Uninstall `<pkg>`              |
-| Clean cache      | `sudo dnf clean all`     | Remove all cached data         |
-
-```bash
-# Install Git:
-sudo dnf install git
-
-# Upgrade system:
-sudo dnf upgrade -y
-
-# Remove Git:
-sudo dnf remove git
-
-# Clean all dnf cache:
-sudo dnf clean all
-```
-
-</details>
+**Why `-y` on some installs:**
+`-y` answers "yes" automatically to the confirmation prompt. Use it in scripts or when you know exactly what you are installing. Skip it when installing interactively so you can review what dependencies will be pulled in before confirming.
 
 ---
 
-<details>
-<summary><strong>4. Comparing Package Managers</strong></summary>
+## 6. Quick Reference
 
-| Feature      | APT (`.deb`)        | YUM (`.rpm`)        | DNF (`.rpm`)        |
-| ------------ | ------------------- | ------------------- | ------------------- |
-| Default On   | Debian, Ubuntu      | CentOS, RHEL 7      | Fedora, RHEL 8+     |
-| Install Cmd  | `apt install <pkg>` | `yum install <pkg>` | `dnf install <pkg>` |
-| Update Index | `apt update`        | `yum update`        | `dnf check-update`  |
-| Upgrade All  | `apt upgrade`       | `yum update`        | `dnf upgrade`       |
-| Remove Cmd   | `apt remove <pkg>`  | `yum remove <pkg>`  | `dnf remove <pkg>`  |
-| Cleanup      | `apt autoremove`    | `yum clean all`     | `dnf clean all`     |
-| Repo Config  | `/etc/apt/`         | `/etc/yum.repos.d/` | `/etc/yum.repos.d/` |
+**APT (Ubuntu/Debian):**
 
-</details>
+| Command | What it does |
+|---|---|
+| `sudo apt update` | Refresh package index |
+| `sudo apt install <pkg>` | Install a package |
+| `sudo apt install <pkg>=<version>` | Install specific version |
+| `sudo apt upgrade -y` | Upgrade all packages |
+| `sudo apt remove <pkg>` | Remove package, keep configs |
+| `sudo apt purge <pkg>` | Remove package and configs |
+| `sudo apt autoremove` | Remove unused dependencies |
+| `sudo apt clean` | Clear downloaded package cache |
+| `apt list --installed` | List installed packages |
+| `apt show <pkg>` | Show package details |
+| `apt search <keyword>` | Search available packages |
 
----
+**YUM (CentOS/RHEL 7):**
 
-<details>
-<summary><strong>5. Quick Command Summary</strong></summary>
+| Command | What it does |
+|---|---|
+| `sudo yum install <pkg>` | Install a package |
+| `sudo yum update -y` | Upgrade all packages |
+| `sudo yum remove <pkg>` | Remove a package |
+| `sudo yum clean all` | Clear all cached data |
+| `sudo yum list installed` | List installed packages |
 
-### APT
+**DNF (Fedora/RHEL 8+):**
 
-| Action          | Command                  |
-| --------------- | ------------------------ |
-| Update index    | `sudo apt update`        |
-| Install package | `sudo apt install <pkg>` |
-| Upgrade all     | `sudo apt upgrade -y`    |
-| Remove package  | `sudo apt remove <pkg>`  |
-| Purge package   | `sudo apt purge <pkg>`   |
-| Cleanup deps    | `sudo apt autoremove`    |
-| Clean cache     | `sudo apt clean`         |
-
----
-
-### YUM
-
-| Action          | Command                  |
-| --------------- | ------------------------ |
-| Install package | `sudo yum install <pkg>` |
-| Update all      | `sudo yum update -y`     |
-| Remove package  | `sudo yum remove <pkg>`  |
-| Clean cache     | `sudo yum clean all`     |
+| Command | What it does |
+|---|---|
+| `sudo dnf install <pkg>` | Install a package |
+| `sudo dnf upgrade -y` | Upgrade all packages |
+| `sudo dnf remove <pkg>` | Remove a package |
+| `sudo dnf clean all` | Clear all cached data |
+| `sudo dnf list installed` | List installed packages |
 
 ---
 
-### DNF
+→ Ready to practice? [Go to Lab 04](../linux-labs/04-archive-packages-services-lab.md)
 
-| Action          | Command                  |
-| --------------- | ------------------------ |
-| Install package | `sudo dnf install <pkg>` |
-| Upgrade all     | `sudo dnf upgrade -y`    |
-| Remove package  | `sudo dnf remove <pkg>`  |
-| Clean cache     | `sudo dnf clean all`     |
-
-</details>
 ---
 # TOOL: 01. Linux – System Fundamentals | FILE: 12-service-management
 ---
 
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 Service Management
+# Service Management
+
+A service is a process that runs in the background without any user interaction — started at boot, running continuously, doing its job silently until something goes wrong. nginx serving the webstore frontend is a service. The SSH daemon that lets you log into the server remotely is a service. The process collecting logs is a service.
+
+On modern Linux systems, all of these are managed by `systemd` — the same process that took control after the kernel booted (PID 1). Every service you start, stop, enable, or debug goes through `systemctl`, systemd's command-line interface.
+
+---
 
 ## Table of Contents
 
-* [1. Introduction to Services](#1-introduction-to-services)
-* [2. Role of systemd](#2-role-of-systemd)
-* [3. Managing Services with `systemctl`](#3-managing-services-with-systemctl)
-* [4. Practical: Managing nginx with systemctl](#4-practical-managing-nginx-with-systemctl)
-* [5. Quick Command Summary](#5-quick-command-summary)
+- [1. Services and Daemons](#1-services-and-daemons)
+- [2. systemd — How It Manages Services](#2-systemd--how-it-manages-services)
+- [3. systemctl — The Control Interface](#3-systemctl--the-control-interface)
+- [4. restart vs reload — The Critical Distinction](#4-restart-vs-reload--the-critical-distinction)
+- [5. journalctl — Reading Service Logs](#5-journalctl--reading-service-logs)
+- [6. The Webstore nginx Lifecycle](#6-the-webstore-nginx-lifecycle)
+- [7. Quick Reference](#7-quick-reference)
 
 ---
 
-<details>
-<summary><strong>1. Introduction to Services</strong></summary>
+## 1. Services and Daemons
 
-## Theory & Notes
+A **daemon** is a background process that was started at boot and keeps running until the system shuts down. The name comes from Unix tradition — daemons run silently in the background, invisible unless you look for them.
 
-* A **service** is a background process that performs tasks automatically and continuously.
-* These are also known as **daemons**.
-* Examples include:
+Every daemon has a config file that defines its behavior:
 
-  * Web servers (`nginx`)
-  * Databases (`mysqld`)
-  * Schedulers (`cron`)
-  * Loggers (`journald`)
+| Daemon | What it does | Config file |
+|---|---|---|
+| `nginx` | Serves web content — the webstore frontend | `/etc/nginx/nginx.conf` |
+| `sshd` | Accepts incoming SSH connections | `/etc/ssh/sshd_config` |
+| `cron` | Runs scheduled tasks | `/etc/crontab`, `/etc/cron.d/` |
+| `journald` | Collects and stores all system logs | `/etc/systemd/journald.conf` |
+| `postgresql` | Runs the webstore database | `/etc/postgresql/*/main/postgresql.conf` |
 
-### Legacy Approach – SysVinit
-
-* Used in older Linux systems to start services during boot.
-* Struggled with service dependency management.
-* Example: A web server might start before MySQL is ready, causing errors.
-
-### Modern Replacement – systemd
-
-* Handles boot process and manages all services.
-* Provides:
-
-  * Parallel service startup
-  * Dependency resolution
-  * Centralized logging
-
-### What are daemons?
-
-* Specialized background processes started at boot.
-* Examples:
-
-  * `sshd`: Secure remote login
-  * `crond`: Scheduled tasks
-  * `nginx`: Web server
-  * `mysqld`: Database engine
-  * `journald`: System logs collector
-* Daemons use config files to define behavior
-  (e.g., `/etc/ssh/sshd_config` for `sshd`, `/etc/nginx/nginx.conf` for `nginx`).
-
-</details>
+When you edit a config file, nothing changes until you tell the service to reload or restart. The running process in memory is using the old config until you explicitly apply the new one.
 
 ---
 
-<details>
-<summary><strong>2. Role of systemd</strong></summary>
+## 2. systemd — How It Manages Services
 
-## Theory & Notes
+systemd manages services through **unit files** — text files that describe a service: what binary to run, what user to run it as, what other services it depends on, and whether it should restart automatically if it crashes.
 
-* **systemd** is the first process started by the kernel (PID 1).
-* It manages:
+Unit files live in `/lib/systemd/system/` (package-installed) and `/etc/systemd/system/` (custom overrides). You never edit these directly in normal operations — you use `systemctl` commands which call systemd on your behalf.
 
-  * Boot process
-  * All services (start, stop, restart)
-  * User sessions and power
-  * Resource control with cgroups
-  * Logging with `journalctl`
+**Unit types you will encounter:**
 
-### Key Features
+| Unit type | File extension | Purpose |
+|---|---|---|
+| Service | `.service` | Background daemons — nginx, sshd, postgresql |
+| Timer | `.timer` | Scheduled jobs — replacement for cron |
+| Socket | `.socket` | Socket-activated services |
+| Target | `.target` | Groups of units — defines boot states |
 
-* **Units**: systemd uses unit files to manage resources.
+**System targets — what state the system boots into:**
 
-  * `.service` – background daemons
-  * `.socket` – IPC sockets that can auto-start services
-  * `.path` – watches paths and triggers services
-  * `.timer` – schedules jobs like cron
+| Target | Old runlevel | Purpose |
+|---|---|---|
+| `poweroff.target` | 0 | Shutdown |
+| `rescue.target` | 1 | Single-user recovery mode |
+| `multi-user.target` | 3 | Full CLI with networking — standard for servers |
+| `graphical.target` | 5 | Multi-user with GUI — standard for desktops |
+| `reboot.target` | 6 | Restart |
 
-### System Targets (Replacing Runlevels)
-
-| Runlevel | systemd Target    | Purpose             |
-| -------- | ----------------- | ------------------- |
-| 0        | poweroff.target   | Shutdown            |
-| 1        | rescue.target     | Single-user mode    |
-| 3        | multi-user.target | CLI with networking |
-| 5        | graphical.target  | GUI login           |
-| 6        | reboot.target     | Reboot              |
-
-</details>
+Servers run at `multi-user.target`. When you SSH into a cloud server, this is the target that brought up networking and SSH before you connected.
 
 ---
 
-<details>
-<summary><strong>3. Managing Services with <code>systemctl</code></strong></summary>
+## 3. systemctl — The Control Interface
 
-## Theory & Notes
-
-### Start/Stop/Restart/Reload
-
-| Command                   | Description                        |
-| ------------------------- | ---------------------------------- |
-| `systemctl start <svc>`   | Start service immediately          |
-| `systemctl stop <svc>`    | Stop a running service             |
-| `systemctl restart <svc>` | Restart (stop + start)             |
-| `systemctl reload <svc>`  | Reload config without full restart |
-
-### Enable/Disable at Boot
-
-| Command                   | Description                           |
-| ------------------------- | ------------------------------------- |
-| `systemctl enable <svc>`  | Auto-start service on boot            |
-| `systemctl disable <svc>` | Prevent service from starting on boot |
-
-### Check Status
-
-| Command                      | Description             |
-| ---------------------------- | ----------------------- |
-| `systemctl status <svc>`     | Detailed service status |
-| `systemctl is-active <svc>`  | Is the service running? |
-| `systemctl is-enabled <svc>` | Will it start on boot?  |
-
-### List Services
-
-| Command                                               | Description           |
-| ----------------------------------------------------- | --------------------- |
-| `systemctl list-units`                                | All active units      |
-| `systemctl list-units --type=service`                 | Only services         |
-| `systemctl list-units --type=service --state=running` | Only running services |
-
-</details>
-
----
-
-<details>
-<summary><strong>4. Practical: Managing nginx with systemctl</strong></summary>
-
-## Theory & Notes
-
-nginx is the web server that will serve webstore-frontend in production.
-This section teaches you to manage it as a systemd service — the same skill
-you will use when deploying webstore to a real server.
-
----
-
-### Install nginx
+**Starting and stopping:**
 
 ```bash
-sudo apt update
-sudo apt install nginx -y
-```
-
-### Check Version
-
-```bash
-nginx -v
-```
-
-### Check Status
-
-```bash
-sudo systemctl status nginx
-```
-
-If not running:
-
-```bash
+# Start a service immediately — does not affect boot behavior
 sudo systemctl start nginx
-```
 
-Enable on boot:
+# Stop a running service
+sudo systemctl stop nginx
 
-```bash
-sudo systemctl enable nginx
-```
+# Restart — stop then start — drops all active connections
+sudo systemctl restart nginx
 
-Test it is serving:
-
-```bash
-curl http://localhost
-```
-
-**What to observe:** nginx default welcome page returned
-
----
-
-### Configure nginx to Serve webstore-frontend
-
-Create the webstore-frontend directory:
-
-```bash
-sudo mkdir -p /var/www/webstore-frontend
-```
-
-Create a simple index page:
-
-```bash
-echo "<h1>webstore-frontend</h1>" | sudo tee /var/www/webstore-frontend/index.html
-```
-
-Edit the default nginx site config:
-
-```bash
-sudo nano /etc/nginx/sites-available/default
-```
-
-Change the `root` directive:
-
-```nginx
-# Change this:
-root /var/www/html;
-
-# To this:
-root /var/www/webstore-frontend;
-```
-
-### Test the Config
-
-```bash
-sudo nginx -t
-```
-
-**What to observe:** `syntax is ok` and `test is successful`
-
-### Apply Config Changes
-
-```bash
+# Reload — apply new config without dropping connections
 sudo systemctl reload nginx
 ```
 
-### Verify the Change
+**Enabling and disabling at boot:**
 
 ```bash
-curl http://localhost
-```
+# Enable — service will start automatically on next boot
+sudo systemctl enable nginx
 
-**What to observe:** `<h1>webstore-frontend</h1>` — nginx is now serving the webstore frontend directory
+# Enable AND start immediately in one command
+sudo systemctl enable --now nginx
 
----
-
-### Stop and Disable nginx
-
-```bash
-sudo systemctl stop nginx
+# Disable — service will not start on boot
 sudo systemctl disable nginx
+
+# Disable AND stop immediately
+sudo systemctl disable --now nginx
 ```
 
-Check status:
+`enable` and `start` are independent. `enable` without `start` means it will start next boot but is not running now. `start` without `enable` means it is running now but will not start after a reboot. In production you almost always want both.
+
+**Checking status:**
 
 ```bash
+# Full status — active state, enabled state, recent log lines, PID
 sudo systemctl status nginx
-# Should show: inactive (dead)
+
+# Is it running right now?
+systemctl is-active nginx
+# active  or  inactive
+
+# Will it start on boot?
+systemctl is-enabled nginx
+# enabled  or  disabled
 ```
 
-</details>
+**What `systemctl status` output tells you:**
+
+```
+● nginx.service - A high performance web server and a reverse proxy server
+     Loaded: loaded (/lib/systemd/system/nginx.service; enabled; vendor preset: enabled)
+     Active: active (running) since Sat 2025-04-05 09:14:22 UTC; 2h 3min ago
+    Process: 1234 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=0/SUCCESS)
+   Main PID: 1235 (nginx)
+      Tasks: 2 (limit: 1136)
+     CGroup: /system.slice/nginx.service
+             ├─1235 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;
+             └─1236 nginx: worker process
+```
+
+Reading this output: `Loaded` tells you the unit file path and whether it is enabled. `Active` tells you current state and how long it has been running. `Main PID` is the process ID — you can use this with `kill` if needed. The `CGroup` section shows every process the service spawned.
+
+**Listing services:**
+
+```bash
+# All active units
+systemctl list-units
+
+# Only services
+systemctl list-units --type=service
+
+# Only running services
+systemctl list-units --type=service --state=running
+
+# Services that failed
+systemctl list-units --type=service --state=failed
+```
+
+`--state=failed` is the first thing you check when something stopped working and you are not sure which service died.
 
 ---
 
-<details>
-<summary><strong>5. Quick Command Summary</strong></summary>
+## 4. restart vs reload — The Critical Distinction
 
-| Command                                               | Description                            |
-| ----------------------------------------------------- | -------------------------------------- |
-| `systemctl start <service>`                           | Start a service immediately            |
-| `systemctl stop <service>`                            | Stop a running service                 |
-| `systemctl restart <service>`                         | Restart a service                      |
-| `systemctl reload <service>`                          | Reload config without stopping service |
-| `systemctl enable <service>`                          | Enable service to auto-start on boot   |
-| `systemctl disable <service>`                         | Disable service from starting on boot  |
-| `systemctl status <service>`                          | Show detailed status of a service      |
-| `systemctl is-active <service>`                       | Check if service is currently running  |
-| `systemctl is-enabled <service>`                      | Check if service is enabled at boot    |
-| `systemctl list-units`                                | List all active units                  |
-| `systemctl list-units --type=service`                 | List only services                     |
-| `systemctl list-units --type=service --state=running` | List only running services             |
-| `nginx -v`                                            | Check nginx version                    |
-| `sudo nginx -t`                                       | Validate nginx config syntax           |
-| `curl http://localhost`                               | Fetch nginx landing page               |
-| `sudo nano /etc/nginx/sites-available/default`        | Edit nginx site config                 |
+This distinction matters in production. Getting it wrong drops active connections.
 
-</details>
+**`restart`** — stops the process completely, then starts a fresh one. Any user currently connected to the service loses their connection. Use this when a config change requires a full process restart, or when a service is misbehaving and needs to be killed and restarted clean.
+
+**`reload`** — sends a signal to the running process asking it to re-read its config file. The process stays running. Active connections are not dropped. nginx supports reload — it spins up new worker processes with the new config while old workers finish serving their current requests, then exits gracefully.
+
+```bash
+# You edited nginx.conf — test it first, then reload
+sudo nginx -t                    # test syntax — always do this first
+sudo systemctl reload nginx      # apply without dropping connections
+
+# nginx is consuming too much memory and not responding — restart it
+sudo systemctl restart nginx     # drops connections, starts fresh
+```
+
+**The rule:** for config changes on a running production server, always try `reload` first. Only use `restart` when `reload` is not supported or when the service needs to be killed.
+
+---
+
+## 5. journalctl — Reading Service Logs
+
+systemd collects all service output in a centralized journal. `journalctl` is how you read it. This is where you look when a service fails to start or behaves unexpectedly.
+
+```bash
+# View all logs for nginx — most recent at bottom
+journalctl -u nginx
+
+# Follow live — new lines appear as they are written
+journalctl -u nginx -f
+
+# Show only the last 50 lines
+journalctl -u nginx -n 50
+
+# Show logs since boot
+journalctl -u nginx -b
+
+# Show logs from the last hour
+journalctl -u nginx --since "1 hour ago"
+
+# Show logs between two timestamps
+journalctl -u nginx --since "2025-04-05 09:00" --until "2025-04-05 10:00"
+
+# Show only error-level messages
+journalctl -u nginx -p err
+
+# View logs for a failed service immediately after it dies
+journalctl -u nginx -n 100 --no-pager
+```
+
+**The debug loop when a service fails to start:**
+
+```bash
+sudo systemctl start nginx          # attempt to start
+sudo systemctl status nginx         # see if it started or failed
+journalctl -u nginx -n 50          # read what went wrong
+# fix the problem
+sudo nginx -t                       # verify the config is valid
+sudo systemctl start nginx          # try again
+```
+
+`journalctl -u nginx -n 50` after a failed start shows you the exact error message that caused the failure. This is faster than grepping log files.
+
+---
+
+## 6. The Webstore nginx Lifecycle
+
+This is the complete sequence from installation to serving the webstore frontend — every step in order.
+
+```bash
+# Step 1 — install nginx
+sudo apt update && sudo apt install -y nginx
+
+# Step 2 — confirm it installed and check version
+nginx -v
+# nginx version: nginx/1.24.0
+
+# Step 3 — check status — nginx auto-starts after install on Ubuntu
+sudo systemctl status nginx
+# Active: active (running)
+
+# Step 4 — test the default page
+curl http://localhost
+# Returns the nginx welcome page HTML
+
+# Step 5 — create the webstore frontend directory
+sudo mkdir -p /var/www/webstore-frontend
+echo "<h1>webstore-frontend is live</h1>" | sudo tee /var/www/webstore-frontend/index.html
+
+# Step 6 — create an nginx site config for webstore
+sudo tee /etc/nginx/sites-available/webstore << 'EOF'
+server {
+    listen 80;
+    server_name localhost;
+    root /var/www/webstore-frontend;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    access_log /var/log/nginx/webstore-access.log;
+    error_log  /var/log/nginx/webstore-error.log;
+}
+EOF
+
+# Step 7 — enable the site by creating a symlink
+sudo ln -s /etc/nginx/sites-available/webstore /etc/nginx/sites-enabled/webstore
+
+# Step 8 — disable the default site to avoid conflict
+sudo rm /etc/nginx/sites-enabled/default
+
+# Step 9 — test the config — always before reload or restart
+sudo nginx -t
+# nginx: configuration file /etc/nginx/nginx.conf test is successful
+
+# Step 10 — reload nginx to apply the new config without dropping connections
+sudo systemctl reload nginx
+
+# Step 11 — verify it is serving the webstore
+curl http://localhost
+# <h1>webstore-frontend is live</h1>
+
+# Step 12 — enable nginx to survive reboots
+sudo systemctl enable nginx
+# Created symlink /etc/systemd/system/multi-user.target.wants/nginx.service
+
+# Step 13 — confirm enabled
+systemctl is-enabled nginx
+# enabled
+```
+
+**The sites-available / sites-enabled pattern:**
+nginx config files live in `sites-available/` — all of them, enabled or not. `sites-enabled/` contains only symlinks to the configs that are active. To disable a site you remove the symlink. To enable a site you create one. The actual config file is never touched. This is the same symlink pattern from the permissions file.
+
+---
+
+## 7. Quick Reference
+
+| Command | What it does |
+|---|---|
+| `sudo systemctl start <svc>` | Start service now |
+| `sudo systemctl stop <svc>` | Stop service now |
+| `sudo systemctl restart <svc>` | Stop and start — drops connections |
+| `sudo systemctl reload <svc>` | Reload config — no dropped connections |
+| `sudo systemctl enable <svc>` | Start on boot |
+| `sudo systemctl enable --now <svc>` | Enable AND start now |
+| `sudo systemctl disable <svc>` | Do not start on boot |
+| `sudo systemctl status <svc>` | Full status — state, PID, recent logs |
+| `systemctl is-active <svc>` | active or inactive |
+| `systemctl is-enabled <svc>` | enabled or disabled |
+| `systemctl list-units --type=service --state=running` | All running services |
+| `systemctl list-units --type=service --state=failed` | All failed services |
+| `journalctl -u <svc> -f` | Follow live logs |
+| `journalctl -u <svc> -n 50` | Last 50 log lines |
+| `journalctl -u <svc> -p err` | Error-level messages only |
+| `sudo nginx -t` | Test nginx config syntax before applying |
+
+---
 
 → Ready to practice? [Go to Lab 04](../linux-labs/04-archive-packages-services-lab.md)
 
@@ -3162,343 +3360,436 @@ sudo systemctl status nginx
 # TOOL: 01. Linux – System Fundamentals | FILE: 13-networking
 ---
 
-[Home](../README.md) | 
-[Boot](../01-boot-process/README.md) | 
-[Basics](../02-basics/README.md) | 
-[Files](../03-working-with-files/README.md) | 
-[Filters](../04-filter-commands/README.md) | 
-[sed](../05-sed-stream-editor/README.md) | 
-[awk](../06-awk/README.md) | 
-[Editors](../07-text-editor/README.md) | 
-[Users](../08-user-&-group-management/README.md) | 
-[Permissions](../09-file-ownership-&-permissions/README.md) | 
-[Archive](../10-archiving-and-compression/README.md) | 
-[Packages](../11-package-management/README.md) | 
-[Services](../12-service-management/README.md) | 
+[Home](../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[Editors](../07-text-editor/README.md) |
+[Users](../08-user-&-group-management/README.md) |
+[Permissions](../09-file-ownership-&-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
 [Networking](../13-networking/README.md)
 
-# 🐧 Networking
+# Linux Networking
 
-## Table of Contents
-1. [ping – Check if a computer is online](#1-ping-–-check-if-a-computer-is-online)  
-2. [traceroute – See the path packets take](#2-traceroute-–-see-the-path-packets-take)  
-3. [dig – Look up website addresses](#3-dig-–-look-up-website-addresses)  
-4. [curl – Download or talk to a website](#4-curl-–-download-or-talk-to-a-website)  
-5. [ip – View and set your computer’s network address](#5-ip-–-view-and-set-your-computers-network-address)  
-6. [ss – See your computer’s connections](#6-ss-–-see-your-computers-connections)  
-7. [tcpdump – Capture live network traffic](#7-tcpdump-–-capture-live-network-traffic)  
-8. [netcat (nc) – Talk on open ports](#8-netcat-nc-–-talk-on-open-ports)  
-9. [nmap – Scan a network for computers](#9-nmap-–-scan-a-network-for-computers)  
-10. [iftop – Watch network speed live](#10-iftop-–-watch-network-speed-live)  
-11. [Quick Practice Examples](#11-quick-practice-examples)
+When something is wrong with a running service, the problem is often in the network layer. nginx is running but not responding. The API cannot reach the database. A port that should be open is not. A request is arriving but taking 3 seconds to respond and you do not know where the delay is.
+
+These tools are how you answer those questions from the command line. No GUI. No external monitoring tool. Just the terminal and the commands that let you see exactly what is happening on the network right now.
 
 ---
 
-<details>
-<summary><strong>1. ping – Check if a computer is online</strong></summary>
+## Table of Contents
 
-**Why use it?** To see if another computer (or website) can talk back.
+- [1. ip — Inspect Network Interfaces](#1-ip--inspect-network-interfaces)
+- [2. ping — Confirm Reachability](#2-ping--confirm-reachability)
+- [3. traceroute — Find Where Delay Lives](#3-traceroute--find-where-delay-lives)
+- [4. dig — Query DNS](#4-dig--query-dns)
+- [5. curl — Test HTTP Endpoints](#5-curl--test-http-endpoints)
+- [6. ss — See What Is Listening](#6-ss--see-what-is-listening)
+- [7. nc — Test Port Connectivity](#7-nc--test-port-connectivity)
+- [8. tcpdump — Capture Live Traffic](#8-tcpdump--capture-live-traffic)
+- [9. nmap — Scan Open Ports](#9-nmap--scan-open-ports)
+- [10. iftop — Watch Bandwidth Live](#10-iftop--watch-bandwidth-live)
+- [11. The Webstore Debug Workflow](#11-the-webstore-debug-workflow)
+- [12. Quick Reference](#12-quick-reference)
 
-- **What it does**: Sends a small message called an ICMP echo request. If the other computer is on and reachable, it sends the same message back.
-- **Basic use**:
-  ```bash
-  ping example.com
+---
 
+## 1. ip — Inspect Network Interfaces
 
-This keeps sending messages until you stop it (Ctrl+C).
+`ip` shows and configures network interfaces — the connections your server has to the network. When you SSH into a server for the first time, `ip addr` tells you what IP addresses the machine has and on which interfaces.
 
-* **Count option**: Send only a few messages.
+```bash
+# Show all interfaces and their IP addresses
+ip addr show
 
-  ```bash
-  ping -c 3 example.com
-  ```
+# Output:
+# 1: lo: <LOOPBACK,UP,LOWER_UP>
+#     inet 127.0.0.1/8 scope host lo
+# 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP>
+#     inet 10.0.1.45/24 brd 10.0.1.255 scope global eth0
+```
 
-  * `-c 3` means “stop after 3 messages.”
+`lo` is the loopback interface — `127.0.0.1`, the address a service uses to talk to itself on the same machine. `eth0` (or `enp3s0` on newer systems) is the real network interface with the server's actual IP.
 
-* **What you’ll see**:
+```bash
+# Show the routing table — how the server decides where to send traffic
+ip route show
 
-  ```text
-  PING example.com (93.184.216.34): 56 data bytes
-  64 bytes from 93.184.216.34: icmp_seq=0 ttl=56 time=10.2 ms
-  64 bytes from 93.184.216.34: icmp_seq=1 ttl=56 time=10.5 ms
-  64 bytes from 93.184.216.34: icmp_seq=2 ttl=56 time=10.1 ms
-  --- example.com ping statistics ---
-  3 packets transmitted, 3 received, 0% packet loss
-  round-trip min/avg/max = 10.1/10.3/10.5 ms
-  ```
+# Output:
+# default via 10.0.1.1 dev eth0        ← default gateway
+# 10.0.1.0/24 dev eth0 proto kernel    ← local network route
 
-  * **`time=10.2 ms`** tells you how fast (lower is better).
+# Show only a specific interface
+ip addr show eth0
+```
 
-</details>
+**When you reach for `ip`:**
+Confirming the server's IP after provisioning. Checking which interface is active when you have multiple network cards. Verifying the default gateway when traffic is not routing correctly.
 
-<details>
-<summary><strong>2. traceroute – See the path packets take</strong></summary>
+---
 
-**Why use it?** To find where network delays happen between you and another server.
+## 2. ping — Confirm Reachability
 
-* **What it does**: Sends test messages with increasing “time to live” (TTL). Each router along the way shows where it passed through and how long each step took.
+`ping` sends ICMP echo requests to a target and measures whether it responds and how long it takes. It answers the most basic question: can this machine reach that machine?
 
-* **Basic use**:
+```bash
+# Ping the webstore-api from another container or server
+ping webstore-api
 
-  ```bash
-  traceroute example.com
-  ```
+# Stop after 4 packets
+ping -c 4 webstore-api
 
-* **Skip name lookups** (faster output):
+# Output:
+# PING webstore-api (172.18.0.3): 56 data bytes
+# 64 bytes from 172.18.0.3: icmp_seq=0 ttl=64 time=0.312 ms
+# 64 bytes from 172.18.0.3: icmp_seq=1 ttl=64 time=0.287 ms
+# --- webstore-api ping statistics ---
+# 4 packets transmitted, 4 received, 0% packet loss
+# round-trip min/avg/max = 0.287/0.299/0.312 ms
+```
 
-  ```bash
-  traceroute -n example.com
-  ```
+**Reading ping output:**
+`time=0.312 ms` is round-trip latency — how long the packet took to go and come back. On a local network this should be under 1ms. Across the internet, 10–50ms is normal. Packet loss above 0% means something is dropping packets between the two machines.
 
-  * `-n` shows only IP addresses without trying to turn them into names.
+**When `ping` fails:**
+A failed ping does not always mean the host is down. Some servers block ICMP deliberately. If ping fails, follow up with `nc` or `curl` to test a specific port before concluding the host is unreachable.
 
-* **What you’ll see**:
+```bash
+# Ping the database to confirm network connectivity
+ping -c 3 webstore-db
 
-  ```text
-   1  192.168.1.1   1.123 ms  0.987 ms  1.045 ms
-   2  10.0.0.1     10.234 ms 10.456 ms 10.112 ms
-   3  93.184.216.34 20.333 ms 20.221 ms 20.412 ms
-  ```
+# Ping localhost to confirm the loopback interface is up
+ping -c 2 localhost
+```
 
-  * Each numbered line is one “hop” (router).
-  * The times are how long each hop took.
+---
 
-</details>
+## 3. traceroute — Find Where Delay Lives
 
-<details>
-<summary><strong>3. dig – Look up website addresses</strong></summary>
+`traceroute` maps every router hop between you and a destination, showing the latency at each step. When a request is slow and you do not know where the delay is, `traceroute` tells you exactly which hop is adding the time.
 
-**Why use it?** To see the IP address (and other info) behind a website name.
+```bash
+# Trace the path to the webstore API server
+traceroute webstore-api.example.com
 
-* **What it does**: Asks DNS servers “What IP is example.com?”
+# Skip DNS lookups — faster, shows only IPs
+traceroute -n webstore-api.example.com
 
-* **Basic use**:
+# Output:
+#  1  10.0.1.1      0.891 ms  0.823 ms  0.812 ms     ← your gateway
+#  2  172.16.0.1    1.234 ms  1.198 ms  1.211 ms     ← ISP router
+#  3  54.239.1.1    8.456 ms  8.421 ms  8.433 ms     ← AWS edge
+#  4  54.239.2.15  10.123 ms 10.098 ms 10.112 ms     ← destination
+```
 
-  ```bash
-  dig example.com
-  ```
+Each line is one hop. Three time values are three probes sent to that hop. `* * *` means a router is blocking traceroute probes — not necessarily broken, just silent.
 
-* **Short answer only**:
+**When you reach for `traceroute`:**
+API response times jumped from 50ms to 800ms. `traceroute` shows hop 3 suddenly adding 700ms — you know the delay is at the ISP level, not your server.
 
-  ```bash
-  dig +short example.com
-  ```
+---
 
-  * `+short` means “just show me the IP(s).”
+## 4. dig — Query DNS
 
-* **What you’ll see**:
+`dig` queries DNS servers directly and shows the full response. When a hostname is not resolving, or resolving to the wrong IP, `dig` shows you exactly what the DNS server returned and which server answered.
 
-  ```text
-  93.184.216.34
-  ```
+```bash
+# Look up the IP for webstore-api
+dig webstore-api.example.com
 
-</details>
+# Short answer only — just the IP
+dig +short webstore-api.example.com
+# 54.239.28.81
 
-<details>
-<summary><strong>4. curl – Download or talk to a website</strong></summary>
+# Query a specific DNS server — bypass your default resolver
+dig @8.8.8.8 webstore-api.example.com
 
-**Why use it?** To grab a page or talk to a web service without a browser.
+# Look up the DNS server responsible for a domain (NS record)
+dig webstore-api.example.com NS
 
-* **What it does**: Sends HTTP or HTTPS requests and shows you the response.
-* **Basic use** (download a page):
+# Trace the full DNS resolution path from root servers down
+dig +trace webstore-api.example.com
 
-  ```bash
-  curl http://example.com
-  ```
-* **See headers only**:
+# Check if a domain has an MX record
+dig webstore-api.example.com MX
+```
 
-  ```bash
-  curl -I http://example.com
-  ```
+**What the `dig` output tells you:**
 
-  * `-I` means “show only the response headers, not the page body.”
-* **Save output to a file**:
+```
+;; ANSWER SECTION:
+webstore-api.example.com.  300  IN  A  54.239.28.81
+#                          ^^^
+#                          TTL — seconds until this record expires from cache
+```
 
-  ```bash
-  curl http://example.com -o page.html
-  ```
+TTL (Time to Live) is how long resolvers cache this answer. A TTL of 300 means DNS changes take up to 5 minutes to propagate. If you just updated a DNS record and it is not working yet, check the TTL.
 
-  * `-o page.html` writes the response into `page.html`.
+**When you reach for `dig`:**
+You deployed to a new server and updated the DNS record but traffic is still hitting the old server. `dig +short` shows the old IP is still being returned — the TTL has not expired yet.
 
-</details>
+---
 
-<details>
-<summary><strong>5. ip – View and set your computer’s network address</strong></summary>
+## 5. curl — Test HTTP Endpoints
 
-**Why use it?** To check or change your computer’s IP address and network interfaces.
+`curl` makes HTTP requests from the terminal. It is how you test whether a service is responding correctly without opening a browser — essential on a server with no GUI.
 
-* **What it does**: Replaces older tools like `ifconfig` with more details.
-* **Show your IP addresses**:
+```bash
+# Test the webstore-api is responding
+curl http://localhost:8080
 
-  ```bash
-  ip addr show
-  ```
-* **Bring an interface up** (turn it on):
+# Test with verbose output — see request headers and response headers
+curl -v http://localhost:8080/api/products
 
-  ```bash
-  sudo ip link set eth0 up
-  ```
+# Test only the response headers — useful for checking status codes
+curl -I http://localhost:8080/api/products
+# HTTP/1.1 200 OK
+# Content-Type: application/json
+# ...
 
-  * `eth0` is the interface name (yours might be `enp3s0` or `wlan0`).
-* **Add a new IP**:
+# POST request with a JSON body — testing the orders endpoint
+curl -X POST http://localhost:8080/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{"product_id": 1, "quantity": 2}'
 
-  ```bash
-  sudo ip addr add 192.168.1.50/24 dev eth0
-  ```
+# Follow redirects automatically
+curl -L http://webstore.example.com
 
-  * Sets your computer’s address to `192.168.1.50` on a 255.255.255.0 network.
+# Test with a specific Host header — testing virtual host routing
+curl -H "Host: webstore.example.com" http://localhost
 
-</details>
+# Set a timeout — fail if no response in 5 seconds
+curl --max-time 5 http://localhost:8080/api/products
 
-<details>
-<summary><strong>6. ss – See your computer’s connections</strong></summary>
+# Save response to a file
+curl http://localhost:8080/api/products -o products.json
+```
 
-**Why use it?** To list which programs are talking to the network.
+**Reading curl -I output:**
+The HTTP status code tells you immediately what happened — `200 OK` means success, `301/302` means redirect, `404` means not found, `502 Bad Gateway` means nginx received the request but the upstream API did not respond, `503 Service Unavailable` means nginx could not reach the upstream at all.
 
-* **What it does**: Shows active TCP/UDP sockets (connections).
-* **Show all TCP connections**:
+**When you reach for `curl`:**
+After a deploy, before announcing the service is up. After editing nginx config, to confirm the new routing is working. When a user reports an endpoint is broken — reproduce it from the server with curl to confirm and capture the exact response.
 
-  ```bash
-  ss -t
-  ```
-* **Show listening ports only**:
+---
 
-  ```bash
-  ss -l
-  ```
+## 6. ss — See What Is Listening
 
-  * `-l` means “listening” (waiting for connections).
-* **Full view (no name lookups)**:
+`ss` shows socket statistics — every active network connection and every port the server is listening on. It replaced `netstat` on modern Linux systems.
 
-  ```bash
-  ss -tunp
-  ```
+```bash
+# Show all listening TCP ports with process names
+sudo ss -tlnp
 
-  * `-t` TCP, `-u` UDP, `-n` numeric only, `-p` show process name.
+# Output:
+# State    Recv-Q  Send-Q  Local Address:Port  Peer Address:Port  Process
+# LISTEN   0       511     0.0.0.0:80         0.0.0.0:*          users:(("nginx",pid=1235,fd=6))
+# LISTEN   0       128     0.0.0.0:22         0.0.0.0:*          users:(("sshd",pid=845,fd=3))
+# LISTEN   0       128     127.0.0.1:5432     0.0.0.0:*          users:(("postgres",pid=987,fd=5))
+```
 
-</details>
+Reading this output: port 80 is nginx listening on all interfaces (`0.0.0.0`) — accessible from outside. Port 5432 is postgres listening only on `127.0.0.1` — only accessible locally, not from outside the server. Port 22 is sshd.
 
-<details>
-<summary><strong>7. tcpdump – Capture live network traffic</strong></summary>
+```bash
+# Show all TCP and UDP connections with process names — numeric only
+sudo ss -tunp
 
-**Why use it?** To record exactly what goes in and out of your network interface.
+# Show connections to a specific port — who is connected to port 8080
+sudo ss -t dst :8080
 
-* **What it does**: Saves raw packets so you can inspect them.
-* **Basic capture**:
+# Show established connections only
+sudo ss -t state established
 
-  ```bash
-  sudo tcpdump -i eth0 -c 5 -nn
-  ```
+# Check if nginx is listening on port 80
+sudo ss -tlnp | grep :80
+```
 
-  * `-i eth0` choose interface, `-c 5` stop after 5 packets, `-nn` no name lookups.
-* **Save to a file**:
+**When you reach for `ss`:**
+You deployed nginx but `curl http://localhost` is not responding. `ss -tlnp` shows nginx is not in the list — it failed to start or is not bound to the expected port. Or you see port 8080 is not in the list — the API service is not running.
 
-  ```bash
-  sudo tcpdump -i eth0 -w capture.pcap
-  ```
+---
 
-  * `-w capture.pcap` writes packets to `capture.pcap` for later analysis.
+## 7. nc — Test Port Connectivity
 
-</details>
+`nc` (netcat) opens a raw TCP or UDP connection to a port. It is the fastest way to test whether a specific port is open and accepting connections — without needing to speak the full protocol of whatever service is running there.
 
-<details>
-<summary><strong>8. netcat (nc) – Talk on open ports</strong></summary>
+```bash
+# Test if port 8080 on the API server is accepting connections
+nc -zv webstore-api 8080
+# Connection to webstore-api 8080 port [tcp/*] succeeded!
 
-**Why use it?** To send or receive raw data over TCP or UDP, often for testing.
+# Test if the database port is reachable
+nc -zv webstore-db 5432
+# Connection to webstore-db 5432 port [tcp/*] succeeded!
 
-* **What it does**: Opens a simple connection to a port.
-* **Check if port 80 is open**:
+# Test with a timeout — fail after 3 seconds
+nc -zv -w 3 webstore-api 8080
 
-  ```bash
-  nc -vz example.com 80
-  ```
+# Test if port 80 is open on a remote server
+nc -zv webstore.example.com 80
+```
 
-  * `-v` verbose, `-z` zero-I/O (just test connect).
-* **Listen on a port** (simple server):
+`-z` means zero I/O — just test the connection, do not send data. `-v` is verbose — shows whether the connection succeeded or failed.
 
-  ```bash
-  nc -l -p 1234 > received.txt
-  ```
+**When you reach for `nc`:**
+The API cannot connect to the database. Before debugging the application, use `nc -zv webstore-db 5432` from the API server. If nc fails, it is a network problem. If nc succeeds, the problem is in the application layer — wrong credentials, wrong database name, wrong connection string.
 
-  * Waits on port 1234 and writes incoming data to `received.txt`.
+---
 
-</details>
+## 8. tcpdump — Capture Live Traffic
 
-<details>
-<summary><strong>9. nmap – Scan a network for computers</strong></summary>
+`tcpdump` captures raw network packets in real time. It shows you exactly what is going over the wire — every request, every response, every header. It is the deepest debugging tool in this list and the one you reach for when everything else has failed to explain what is happening.
 
-**Why use it?** To find which computers and services are available on a network.
+```bash
+# Capture all traffic on eth0 — stop with Ctrl+C
+sudo tcpdump -i eth0
 
-* **What it does**: Probes a range of IPs and ports.
-* **Scan a single host**:
+# Capture only HTTP traffic on port 80
+sudo tcpdump -i eth0 port 80
 
-  ```bash
-  nmap example.com
-  ```
-* **Scan a subnet**:
+# Capture traffic to or from the webstore-api IP
+sudo tcpdump -i eth0 host 10.0.1.45
 
-  ```bash
-  nmap 192.168.1.0/24
-  ```
-* **Fast scan specific ports**:
+# Capture with no DNS lookups — shows IPs not hostnames
+sudo tcpdump -i eth0 -n port 80
 
-  ```bash
-  nmap -p 22,80,443 example.com
-  ```
+# Capture and show packet contents in ASCII
+sudo tcpdump -i eth0 -A port 8080
 
-</details>
+# Save capture to a file for analysis
+sudo tcpdump -i eth0 -w webstore-capture.pcap port 8080
 
-<details>
-<summary><strong>10. iftop – Watch network speed live</strong></summary>
+# Read from a saved capture file
+sudo tcpdump -r webstore-capture.pcap
+```
 
-**Why use it?** To see which connections use the most bandwidth right now.
+**When you reach for `tcpdump`:**
+`curl` returns a response but it looks wrong. `ss` shows connections are being established. But something in the data is not right. `tcpdump -A port 8080` shows you the raw HTTP request and response — every header, every body. You can see exactly what nginx is sending and what it is receiving.
 
-* **What it does**: Shows a real-time table of data rates per connection.
-* **Run on interface**:
+---
 
-  ```bash
-  sudo iftop -i eth0
-  ```
-* **Show only IPs** (no DNS lookups):
+## 9. nmap — Scan Open Ports
 
-  ```bash
-  sudo iftop -n -i eth0
-  ```
+`nmap` probes a host or range of hosts and reports which ports are open. On your own servers, it confirms your firewall is configured correctly — that only the ports you intend to expose are exposed.
 
-</details>
+```bash
+# Scan the webstore server — which ports are open?
+nmap webstore.example.com
 
-<details>
-<summary><strong>11. Quick Practice Examples</strong></summary>
+# Scan specific ports only
+nmap -p 22,80,443,8080 webstore.example.com
 
-Try these in your terminal:
+# Scan with service version detection
+nmap -sV webstore.example.com
 
-1. Check if Google is online and stop after 2 pings:
+# Fast scan — top 100 most common ports
+nmap -F webstore.example.com
 
-   ```bash
-   ping -c 2 google.com
-   ```
-2. Find how many hops to your router:
+# Output:
+# PORT     STATE  SERVICE
+# 22/tcp   open   ssh
+# 80/tcp   open   http
+# 8080/tcp open   http-proxy
+# 5432/tcp closed postgresql   ← good — DB should not be exposed
+```
 
-   ```bash
-   traceroute -n 192.168.1.1
-   ```
-3. See your own IP address:
+**When you reach for `nmap`:**
+After configuring a firewall, confirm that port 5432 (database) is closed to the outside world and port 80 is open. `nmap` from an external machine gives you the attacker's view of your server — what they can see.
 
-   ```bash
-   ip addr show
-   ```
-4. Download example.com homepage into a file:
+---
 
-   ```bash
-   curl http://example.com -o homepage.html
-   ```
-5. List listening TCP ports:
+## 10. iftop — Watch Bandwidth Live
 
-   ```bash
-   ss -ltnp
-   ```
+`iftop` shows a real-time view of network bandwidth usage per connection. When a server is saturating its network link and you need to know which connection is consuming it, `iftop` shows you immediately.
 
-</details>
+```bash
+# Watch all traffic on eth0
+sudo iftop -i eth0
+
+# Show IPs only — no DNS lookups
+sudo iftop -n -i eth0
+```
+
+Press `q` to quit. The display shows source and destination IPs with bandwidth rates — 2s, 10s, and 40s averages.
+
+**When you reach for `iftop`:**
+A server's network usage jumped to 90% of capacity. `iftop` shows one IP address consuming almost all of it — a likely sign of a backup job, a runaway log shipper, or a DDoS attempt.
+
+---
+
+## 11. The Webstore Debug Workflow
+
+This is the sequence you follow when something is wrong with the webstore and you need to isolate where the problem is. Work from the outside in — network first, then application.
+
+**Scenario: users report the webstore is not loading**
+
+```bash
+# Step 1 — is nginx running and listening on port 80?
+sudo ss -tlnp | grep :80
+# If nothing appears — nginx is not listening. Check status:
+sudo systemctl status nginx
+journalctl -u nginx -n 20
+
+# Step 2 — can the server respond to HTTP at all?
+curl -I http://localhost
+# 200 OK → nginx is up
+# Connection refused → nginx is not running or not bound to port 80
+
+# Step 3 — can the API be reached from the frontend server?
+nc -zv webstore-api 8080
+# succeeded → port is open, network is fine
+# failed → check if the API service is running, check firewall
+
+# Step 4 — is the API actually responding correctly?
+curl -v http://webstore-api:8080/api/products
+# Check status code and response body
+
+# Step 5 — can the API reach the database?
+nc -zv webstore-db 5432
+# succeeded → database port is reachable
+# failed → database is down or firewall is blocking
+
+# Step 6 — is DNS resolving correctly?
+dig +short webstore-api.example.com
+# Compare to the IP you expect
+
+# Step 7 — if traffic is getting in but responses are wrong, capture it
+sudo tcpdump -A -i eth0 port 8080 -c 20
+# Read the raw HTTP request and response
+```
+
+Work through each step in order. Each command either confirms a layer is working or identifies where the break is.
+
+---
+
+## 12. Quick Reference
+
+| Command | What it does | When you reach for it |
+|---|---|---|
+| `ip addr show` | Show all interfaces and IP addresses | First thing after SSHing into a new server |
+| `ip route show` | Show routing table | Diagnosing routing problems |
+| `ping -c 4 <host>` | Test reachability with 4 packets | Confirming two machines can reach each other |
+| `traceroute -n <host>` | Trace route, show IPs only | Finding which hop is adding latency |
+| `dig +short <host>` | Quick DNS lookup | Confirming a hostname resolves to the right IP |
+| `dig +trace <host>` | Full DNS resolution trace | Debugging DNS propagation after a record change |
+| `curl -I <url>` | Show HTTP response headers only | Checking status code without full body |
+| `curl -v <url>` | Verbose HTTP request and response | Debugging headers, auth, redirects |
+| `sudo ss -tlnp` | Show listening TCP ports with process names | Confirming a service is bound to the right port |
+| `sudo ss -tunp` | Show all TCP and UDP connections | Full socket inventory |
+| `nc -zv <host> <port>` | Test if a port is open | Isolating network vs application problems |
+| `sudo tcpdump -i eth0 port <port>` | Capture traffic on a specific port | Deep packet inspection when nothing else explains it |
+| `sudo tcpdump -A -i eth0 port <port>` | Capture with ASCII payload | Reading raw HTTP request and response content |
+| `nmap -p <ports> <host>` | Scan specific ports | Verifying firewall rules from outside |
+| `sudo iftop -n -i eth0` | Watch bandwidth per connection live | Finding which connection is saturating the link |
+
+---
+
 → Ready to practice? [Go to Lab 05](../linux-labs/05-networking-lab.md)
 
 ---
@@ -3517,9 +3808,29 @@ Try these in your terminal:
 
 # Linux Labs
 
-Hands-on sessions for every topic in the Linux notes.
+Hands-on sessions for every phase in the Linux notes.
 
 Do them in order. Do not move to the next lab until the checklist at the bottom is fully checked.
+
+---
+
+## The Project Thread
+
+These five labs are not isolated exercises. They are five stages in the life of one project — the webstore — running on a Linux server. Each lab picks up exactly where the previous one left off.
+
+By the time you finish Lab 05 you will have built the webstore's server foundation from scratch: a structured project on disk, permissions locked down, nginx serving the frontend, and the full network stack verified and debugged. That is the state Git picks up from in the next tool.
+
+| Lab | Where the webstore is | What you do |
+|---|---|---|
+| [Lab 01](./01-boot-basics-files-lab.md) | Blank server | Build the project directory, write config files, set up the file structure that every future lab depends on |
+| [Lab 02](./02-filters-sed-awk-lab.md) | Running for a week, logs accumulating | Act as the on-call engineer — find errors in the logs using only the terminal |
+| [Lab 03](./03-vim-users-permissions-lab.md) | About to be handed to a second developer | Lock it down — correct users, groups, and permissions so nobody reads what they should not |
+| [Lab 04](./04-archive-packages-services-lab.md) | Deploy day | Archive the current state, install nginx, configure it to serve the frontend, make it survive reboots |
+| [Lab 05](./05-networking-lab.md) | Something is wrong, users are reporting issues | Debug the network layer from outside in — no monitoring, no dashboard, just the terminal |
+
+---
+
+## Labs
 
 | Lab | Topics | Notes |
 |---|---|---|
@@ -3530,433 +3841,414 @@ Do them in order. Do not move to the next lab until the checklist at the bottom 
 | [Lab 05](./05-networking-lab.md) | Networking | [13](../13-networking/README.md) |
 
 ---
+
+## How to Use These Labs
+
+Read the notes for each phase before opening a terminal. Every lab assumes you have read the corresponding notes files first.
+
+Write every command from scratch. Do not copy-paste. Typing forces your brain to process each flag and each decision.
+
+Every lab has a "Break It on Purpose" section. Do not skip it. These are the failure states you will actually hit in production. Seeing the error yourself and fixing it is the point.
+
+Do not move to the next lab until every box in the checklist is checked. If you cannot check a box honestly, go back and do it properly.
+
+---
 # TOOL: 02. Git & GitHub – Version Control | FILE: 01-foundations
 ---
 
-[Home](../README.md) | 
-[Foundations](../01-foundations/README.md) | 
-[Stash & Tags](../02-stash-tags/README.md) | 
-[History & Branching](../03-history-branching/README.md) | 
-[Contribute](../04-contribute/README.md) | 
+[Home](../README.md) |
+[Foundations](../01-foundations/README.md) |
+[Stash & Tags](../02-stash-tags/README.md) |
+[History & Branching](../03-history-branching/README.md) |
+[Contribute](../04-contribute/README.md) |
 [Undo & Recovery](../05-undo-recovery/README.md)
 
-# Git Foundations  
-> From Local Control to Remote Collaboration
+# Git Foundations
+
+Before Git, the way people saved progress on a project was to zip the folder. `webstore_final.zip` became `webstore_final_v2.zip` became `webstore_final_REAL_final.zip`. Nobody knew which was current. Nobody knew what changed between them. If something broke, there was no reliable way back.
+
+Git solves this by recording every change as a permanent snapshot with a timestamp, a message, and the identity of who made it. You can jump to any point in that history instantly. You can work on a new feature without touching the working version. You can collaborate with other engineers without overwriting each other's work.
+
+In DevOps, Git is the source of truth. GitHub Actions reads from it to know when to build. Terraform reads from it to know what infrastructure to provision. ArgoCD reads from it to know what to deploy. Everything downstream depends on what is in the repo.
 
 ---
 
 ## Table of Contents
-- [0. Introduction – Why Version Control Matters](#0-introduction--why-version-control-matters)  
-- [1. Installing Git – Setting Up Your Environment](#1-installing-git--setting-up-your-environment)  
-- [2. Git Config – Defining Your Identity](#2-git-config--defining-your-identity)  
-- [3. Creating a Repository – The Project's Birth](#3-creating-a-repository--the-projects-birth)  
-- [4. Understanding Tracked vs Untracked Files](#4-understanding-tracked-vs-untracked-files)  
-- [5. The Staging Environment – The Waiting Room](#5-the-staging-environment--the-waiting-room)  
-- [6. Commit – Capturing Your Project's Timeline](#6-commit--capturing-your-projects-timeline)  
-- [7. .gitignore – Telling Git What to Ignore](#7-gitignore--telling-git-what-to-ignore)
-- [8. Git Workflow – From Edit to Push](#8-git-workflow--from-edit-to-push)  
-- [9. Best Practices & Troubleshooting](#9-best-practices--troubleshooting)
+
+- [1. How Git Tracks History](#1-how-git-tracks-history)
+- [2. Installing and Configuring Git](#2-installing-and-configuring-git)
+- [3. Creating a Repository — The Project's Birth](#3-creating-a-repository--the-projects-birth)
+- [4. The Three States — Working, Staged, Committed](#4-the-three-states--working-staged-committed)
+- [5. Your First Commits — Building the Webstore History](#5-your-first-commits--building-the-webstore-history)
+- [6. .gitignore — What Git Should Never See](#6-gitignore--what-git-should-never-see)
+- [7. Connecting to GitHub — The Remote](#7-connecting-to-github--the-remote)
+- [8. Commit Message Convention](#8-commit-message-convention)
+- [9. Quick Reference](#9-quick-reference)
 
 ---
 
-<details>
-<summary><strong>0. Introduction – Why Version Control Matters</strong></summary>
+## 1. How Git Tracks History
 
-Before Git, developers kept zipping folders as  
-`project_final.zip → project_final_v2.zip → final_realfinal.zip`.  
-Collaboration was chaos, and history was fragile.
+Git stores history as a chain of **commits**. Each commit is a snapshot of your entire project at a point in time — not a diff, not a patch, a complete snapshot. Every commit has:
 
-**Git** changed that — it became a *time machine* for code.  
-It tracks *what changed, when, and by whom* — and lets teams roll back or branch without fear.
+- A unique **SHA hash** — a 40-character fingerprint like `a3f92c1b...` that identifies it permanently
+- A **message** — what changed and why
+- The **author** — who made the change and when
+- A pointer to its **parent commit** — the previous snapshot
 
-In DevOps, Git is the **source of truth**.  
-Tools like GitHub Actions, Docker, and Terraform rely on it to detect, version, and automate infrastructure.
+The chain looks like this:
 
 ```
-Edit → Stage → Commit → Push → Collaborate
+A ← B ← C ← D   (main branch)
 ```
 
-Git works locally on your machine, but can sync with **remote repositories** on GitHub, GitLab, or Bitbucket.
+Each letter is a commit. Each one points back to its parent. `D` is the most recent. `A` is the first. Every commit between them is preserved permanently.
 
-</details>
+**HEAD** is a pointer that tells Git where you currently are — which commit you are looking at right now. When you make a new commit, HEAD moves forward automatically.
 
 ---
 
-<details>
-<summary><strong>1. Installing Git – Setting Up Your Environment</strong></summary>
+## 2. Installing and Configuring Git
 
-### macOS
+**Install:**
+
 ```bash
+# Ubuntu/Debian
+sudo apt install git -y
+
+# macOS
 brew install git
-```
 
-### Linux (Ubuntu)
-```bash
-sudo apt-get install git
-```
-
-### Windows
-Download from [git-scm.com](https://git-scm.com) and run the installer.
-This also installs **Git Bash** — a terminal that supports Unix-style commands.
-
-### Verify installation
-```bash
+# Verify
 git --version
 ```
 
-### Set your default editor
-```bash
-git config --global core.editor "code --wait"   # VS Code
-git config --global core.editor "vim"           # Vim
-```
-
----
-
-**Common Installation Issues**
-
-| Problem | Fix |
-|---|---|
-| `git: command not found` | Add Git to PATH and reopen terminal |
-| Permission denied | Run as Administrator or use `sudo` |
-| Wrong version | Update using package manager or reinstall |
-
-</details>
-
----
-
-<details>
-<summary><strong>2. Git Config – Defining Your Identity</strong></summary>
-
-Before committing, Git must know who you are.
-Each commit carries your name and email — your *digital signature.*
-
-### Set Global Identity
+**Configure your identity — required before your first commit:**
 
 ```bash
-git config --global user.name "Your Name"
-git config --global user.email "your@email.com"
+git config --global user.name "Akhil Teja Doosari"
+git config --global user.email "doosariakhilteja@gmail.com"
 ```
 
-### Check Your Settings
+Every commit you make carries this identity. On GitHub it links your commits to your account. On a team, it shows your teammates who made each change.
+
+**Set your default editor:**
+
+```bash
+git config --global core.editor "vim"
+```
+
+**Check all settings:**
 
 ```bash
 git config --list
 ```
 
----
+**Config levels — where settings live:**
 
-### Understanding Config Levels
-
-| Level | Flag | Location | Affects |
+| Level | Flag | File | Affects |
 |---|---|---|---|
-| **System** | `--system` | `/etc/gitconfig` | All users |
-| **Global** | `--global` | `~/.gitconfig` | Your user |
-| **Local** | `--local` | `.git/config` | Current repo only |
+| System | `--system` | `/etc/gitconfig` | Every user on this machine |
+| Global | `--global` | `~/.gitconfig` | Your user account |
+| Local | `--local` | `.git/config` | This repo only |
 
-**Priority:** `Local → Global → System`
+Local overrides global overrides system. Use local config when you work with a company email on one project and a personal email on others:
 
-Use local config to override identity for a specific project:
 ```bash
-git config --local user.email "work@company.com"
+# Inside the work repo
+git config --local user.email "akhil@company.com"
 ```
 
-</details>
-
 ---
 
-<details>
-<summary><strong>3. Creating a Repository – The Project's Birth</strong></summary>
+## 3. Creating a Repository — The Project's Birth
 
-A **repository (repo)** is a folder Git watches for changes.
+When you run `git init` in a directory, Git creates a hidden `.git/` folder inside it. That folder is the entire repository — every commit, every branch, every tag. The `.git/` folder is what makes a directory a Git repo.
 
 ```bash
-mkdir webstore
-cd webstore
+# Turn the webstore directory into a Git repo
+cd ~/webstore
 git init
 ```
 
-This creates a hidden `.git/` folder containing all version history.
-
-```bash
-ls -a
-# .  ..  .git
+```
+Initialized empty Git repository in /home/akhil/webstore/.git/
 ```
 
-You now have an empty repository ready to track files.
+```bash
+# Confirm .git exists
+ls -la
+# .git  frontend/  api/  db/  logs/  config/  backup/
+```
 
-</details>
+The webstore project now has version control. Nothing is tracked yet — Git is watching but has not been told what to remember.
 
 ---
 
-<details>
-<summary><strong>4. Understanding Tracked vs Untracked Files</strong></summary>
+## 4. The Three States — Working, Staged, Committed
 
-A new file you create is **untracked** until you tell Git to monitor it.
+Every file in a Git repository is in one of three states. Understanding this is the mental model that makes every Git command make sense.
+
+```
+Working Directory → Staging Area → Repository
+      edit             git add        git commit
+```
+
+**Working Directory** — where you edit files. Git sees the changes but has not been asked to do anything with them yet. Running `git status` shows what has changed.
+
+**Staging Area** — a holding area where you explicitly choose what goes into the next commit. Think of it as preparing a package before sealing it. You decide exactly what is in this snapshot.
+
+**Repository** — committed history. Permanent. Immutable. Every commit here is preserved indefinitely.
+
+**Why the staging area exists:**
+You edited five files but only three are ready to commit. The staging area lets you commit those three as one logical change while leaving the other two in progress. Without it, every `git commit` would include everything you touched.
 
 ```bash
-echo "db_host=webstore-db" > webstore.conf
+# See where everything stands
 git status
-```
 
-Output:
-```
-Untracked files:
-  webstore.conf
-```
+# Stage a specific file
+git add config/webstore.conf
 
-- **Untracked** — exists in your folder but Git is ignoring it
-- **Tracked** — Git is monitoring it for changes
+# Stage everything
+git add .
 
-To begin tracking:
-```bash
-git add webstore.conf
+# Unstage a file you added by mistake
+git restore --staged config/webstore.conf
+
+# See what is staged vs what is not
+git diff --staged   # shows staged changes
+git diff            # shows unstaged changes
 ```
-
-</details>
 
 ---
 
-<details>
-<summary><strong>5. The Staging Environment – The Waiting Room</strong></summary>
+## 5. Your First Commits — Building the Webstore History
 
-The **staging area** is a buffer between your edits and permanent history.
-Think of it as a checklist before committing — you decide exactly what goes into each snapshot.
+This is the moment the webstore project becomes trackable. Every future deploy, every incident, every feature will be traceable back to this history.
 
-| Command | Meaning |
-|---|---|
-| `git add <file>` | Stage a specific file |
-| `git add .` | Stage all changes |
-| `git status` | Check what's staged or not |
-| `git restore --staged <file>` | Unstage a file |
+**The first commit:**
 
-Example:
 ```bash
-git add webstore.conf
+cd ~/webstore
+
+# Check what Git sees
 git status
+
+# Stage everything — the whole initial project
+git add .
+
+# Confirm what is staged
+git status
+# Changes to be committed:
+#   new file: frontend/index.html
+#   new file: api/server.js
+#   new file: config/webstore.conf
+#   ...
+
+# Create the first commit
+git commit -m "feat: initialize webstore project structure
+
+- add frontend, api, db, logs, config, backup directories
+- add webstore.conf with db and api connection settings
+- add placeholder files for each service layer"
 ```
 
-Output:
-```
-Changes to be committed:
-  new file: webstore.conf
-```
-
-If you added the wrong file:
-```bash
-git restore --staged webstore.conf
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>6. Commit – Capturing Your Project's Timeline</strong></summary>
-
-A **commit** is a snapshot of your staged files — a permanent save point in history.
-
-```bash
-git commit -m "add webstore config"
-```
-
-Each commit includes your name, email, date, message, and a unique **commit hash**.
-
-### What's a Commit Hash?
-
-Every commit is identified by a SHA-1 hash:
-```
-1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
-```
-
-Short form (first 7 chars) is enough for most operations:
-```
-1a2b3c4
-```
-
-### View History
+**View the commit:**
 
 ```bash
 git log --oneline
+# a3f92c1 feat: initialize webstore project structure
 ```
 
-Example:
-```
-a12f45c add webstore config
-b78d23d add dockerfile
-c91e7ef initial commit
-```
-
-### Amend Last Commit (before pushing)
+**Build more history — each commit tells the story of what the webstore became:**
 
 ```bash
-git commit --amend -m "add webstore config file"
+# Second commit — first real config
+echo "nginx_worker_processes=4" >> config/webstore.conf
+git add config/webstore.conf
+git commit -m "config: add nginx worker process setting"
+
+# Third commit — add the first log entry
+echo "2025-04-05 09:00 server started" >> logs/access.log
+git add logs/access.log
+git commit -m "logs: add initial server startup entry"
+
+# View the growing history
+git log --oneline
+# c8d21fa logs: add initial server startup entry
+# b71e3a2 config: add nginx worker process setting
+# a3f92c1 feat: initialize webstore project structure
 ```
 
-</details>
+Each commit is a chapter. The message explains what changed. The hash identifies it permanently. Anyone who clones this repo can read this history and understand how the project evolved.
 
 ---
 
-<details>
-<summary><strong>7. .gitignore – Telling Git What to Ignore</strong></summary>
+## 6. .gitignore — What Git Should Never See
 
-`.gitignore` is a file in your repo root that tells Git which files and folders to never track.
+`.gitignore` tells Git which files to completely ignore — never track, never show in `git status`, never accidentally commit. This is one of the most important files in any repo.
 
-**Why it matters:**
-- Keeps secrets (`.env`, credentials) out of your repo
-- Avoids committing build artifacts and dependencies
-- Keeps `git status` clean so you only see files that actually matter
-- Prevents breaking layer caching in Docker builds (covered in Docker notes)
-
-### Create a .gitignore
-
-```bash
-touch .gitignore
-```
-
-### Common entries for a DevOps project
+**What belongs in `.gitignore`:**
 
 ```
-# Dependencies
-node_modules/
-
-# Environment files — never commit secrets
+# Environment files — database passwords, API keys, secrets
 .env
 .env.local
+.env.production
 
-# Build output
+# Build output — generated, not source
 dist/
 build/
+*.tar
+*.gz
 
-# OS files
+# Dependencies — installed, not committed
+node_modules/
+
+# OS noise
 .DS_Store
 Thumbs.db
 
-# Logs
+# Logs — runtime data, not source
 *.log
 
-# Terraform state — contains sensitive data
+# Terraform — contains sensitive infrastructure state
 *.tfstate
 *.tfstate.backup
 .terraform/
 
-# Docker
-*.tar
+# IDE files
+.vscode/
+.idea/
 ```
 
-### How it works
+**Create it at the root of the repo:**
 
 ```bash
-echo "SECRET_KEY=abc123" > .env
-git status
+vim ~/webstore/.gitignore
+# add the entries above
+git add .gitignore
+git commit -m "chore: add .gitignore"
 ```
 
-Without `.gitignore`:
-```
-Untracked files:
-  .env           ← dangerous — would be committed
-```
+**The most important rule:** create `.gitignore` before your first `git add .`. If you accidentally commit a secret, it is in the history permanently — even if you delete the file later. The history is immutable.
 
-After adding `.env` to `.gitignore`:
+**If you accidentally tracked a file that should be ignored:**
+
 ```bash
-echo ".env" >> .gitignore
-git status
-```
-
-```
-Untracked files:
-  .gitignore     ← only the ignore file shows, not the secret
-```
-
-### Ignore a file that's already tracked
-
-If you accidentally committed a file and now want to ignore it:
-```bash
+# Remove from tracking without deleting from disk
 git rm --cached .env
 echo ".env" >> .gitignore
-git commit -m "remove .env from tracking"
+git commit -m "fix: remove .env from tracking, add to gitignore"
 ```
 
-`git rm --cached` removes it from Git's tracking without deleting the file from disk.
-
-### Check why a file is ignored
+**Check why a file is being ignored:**
 
 ```bash
 git check-ignore -v .env
+# .gitignore:1:.env  .env
 ```
-
-Output tells you exactly which `.gitignore` rule matched.
-
-**One-line rule:**
-`.gitignore` exists so you never accidentally push secrets, build junk, or OS noise into your repo.
-
-</details>
 
 ---
 
-<details>
-<summary><strong>8. Git Workflow – From Edit to Push</strong></summary>
+## 7. Connecting to GitHub — The Remote
 
-The natural rhythm of every Git project:
+A remote is a Git repository hosted somewhere else — GitHub in this case. When you push, Git sends your commits to the remote. When you pull, Git fetches commits from the remote into your local repo.
+
+**Create the repo on GitHub first** (github.com → New repository → webstore), then connect it:
 
 ```bash
-git init
-git add .
-git commit -m "initial commit"
-git remote add origin https://github.com/username/repo.git
+# Add the remote — named "origin" by convention
+git remote add origin https://github.com/AkhilTejaDoosari/webstore.git
+
+# Verify the connection
+git remote -v
+# origin  https://github.com/AkhilTejaDoosari/webstore.git (fetch)
+# origin  https://github.com/AkhilTejaDoosari/webstore.git (push)
+
+# Push the local history to GitHub for the first time
 git push -u origin main
 ```
 
-**Typical daily flow:**
-```
-Edit → git status → git add → git commit → git push
-```
+The `-u` flag sets origin/main as the default upstream — after this, `git push` and `git pull` with no arguments work from the right place.
 
-**Pulling updates from remote:**
+**The daily workflow after the first push:**
+
 ```bash
-git pull
+# Edit files
+git status               # see what changed
+git add .                # stage changes
+git commit -m "message"  # commit
+git push                 # push to GitHub
 ```
-
-Fetches and merges new changes from the remote repository.
-
-</details>
 
 ---
 
-<details>
-<summary><strong>9. Best Practices & Troubleshooting</strong></summary>
+## 8. Commit Message Convention
 
-### Best Practices
+Every commit you make is a permanent record. Write messages that a teammate — or you in six months — can read and immediately understand what changed and why.
 
-- Commit **frequently** with short, meaningful messages
-- Always check status before staging: `git status`
-- Stage only what's intentional — never `git add .` blindly
-- Push regularly to back up work
-- Review before committing: `git diff`
-- Keep commits atomic — one logical change per commit
-- Always have a `.gitignore` before your first commit
-
-### Commit Message Convention
+**The format:**
 
 ```
-type: short description
+type: short description (under 72 characters)
 
-feat: add webstore login endpoint
-fix: correct port binding in docker-compose
-docs: update README with setup instructions
-chore: add .gitignore
+Optional longer explanation if needed.
 ```
 
-### Common Issues
+**Common types:**
 
-| Issue | Fix |
+| Type | When to use |
 |---|---|
-| Accidentally staged wrong file | `git restore --staged <file>` |
-| Commit message typo | `git commit --amend` |
-| Merge conflicts | Resolve manually → `git add` → `git commit` |
-| Permission denied on push | Check GitHub credentials or SSH setup |
-| Detached HEAD | `git switch <branch>` to return to a branch |
+| `feat` | A new feature or capability |
+| `fix` | A bug fix |
+| `config` | Configuration changes |
+| `docs` | Documentation only |
+| `chore` | Maintenance — dependencies, gitignore, tooling |
+| `refactor` | Code restructure with no behavior change |
+| `test` | Adding or fixing tests |
 
-</details>
+**Good vs bad examples:**
+
+```
+# Bad — tells you nothing
+git commit -m "update"
+git commit -m "fix stuff"
+git commit -m "wip"
+
+# Good — tells you what and why
+git commit -m "feat: add product listing endpoint to webstore-api"
+git commit -m "fix: correct db_port in webstore.conf — was 27017, should be 5432"
+git commit -m "config: add nginx worker process setting for production load"
+```
+
+**The webstore history should read like documentation.** Anyone cloning the repo for the first time should be able to run `git log --oneline` and understand how the project evolved without opening a single file.
+
+---
+
+## 9. Quick Reference
+
+| Command | What it does |
+|---|---|
+| `git init` | Initialize a repo in the current directory |
+| `git config --global user.name "Name"` | Set global identity |
+| `git status` | Show working directory and staging area state |
+| `git add <file>` | Stage a specific file |
+| `git add .` | Stage all changes |
+| `git restore --staged <file>` | Unstage a file |
+| `git commit -m "message"` | Commit staged changes |
+| `git log --oneline` | View compact commit history |
+| `git diff` | Show unstaged changes |
+| `git diff --staged` | Show staged changes |
+| `git rm --cached <file>` | Remove from tracking without deleting |
+| `git remote add origin <url>` | Connect to a GitHub remote |
+| `git push -u origin main` | Push and set upstream (first push) |
+| `git push` | Push commits to remote |
+| `git pull` | Fetch and merge remote changes |
+| `git check-ignore -v <file>` | Show which gitignore rule matched |
+
+---
 
 → Ready to practice? [Go to Lab 01](../git-labs/01-foundations-lab.md)
 
@@ -3964,205 +4256,209 @@ chore: add .gitignore
 # TOOL: 02. Git & GitHub – Version Control | FILE: 02-stash-tags
 ---
 
-[Home](../README.md) | 
-[Foundations](../01-foundations/README.md) | 
-[Stash & Tags](../02-stash-tags/README.md) | 
-[History & Branching](../03-history-branching/README.md) | 
-[Contribute](../04-contribute/README.md) | 
+[Home](../README.md) |
+[Foundations](../01-foundations/README.md) |
+[Stash & Tags](../02-stash-tags/README.md) |
+[History & Branching](../03-history-branching/README.md) |
+[Contribute](../04-contribute/README.md) |
 [Undo & Recovery](../05-undo-recovery/README.md)
 
-# Git Stash & Tags  
-> Managing Work in Progress and Marking Milestones
+# Git Stash & Tags
+
+Two tools for two different situations. Stash is for when you are in the middle of something and need to stop without committing half-finished work. Tags are for when you finish something and want to mark that moment permanently — a release, a milestone, a version that CI/CD can reference.
 
 ---
 
-## Table of Contents  
-- [1. Git Stash – Pausing Unfinished Work](#1-git-stash--pausing-unfinished-work)  
-- [2. Git Tags – Marking Versions and Releases](#2-git-tags--marking-versions-and-releases)
+## Table of Contents
+
+- [1. Git Stash — Pausing Without Committing](#1-git-stash--pausing-without-committing)
+- [2. Git Tags — Marking the Webstore's First Release](#2-git-tags--marking-the-webstores-first-release)
+- [3. Quick Reference](#3-quick-reference)
 
 ---
 
-<details>
-<summary><strong>1. Git Stash – Pausing Unfinished Work</strong></summary>
+## 1. Git Stash — Pausing Without Committing
 
-### Why Git Stash Exists  
-Sometimes you need to switch tasks, fix a bug, or test something quickly, but your current work isn't ready to commit.  
-**Git stash** acts like a temporary *shelf* for unfinished changes — letting you save progress, return to a clean state, and restore your work later.
+You are halfway through updating `webstore.conf` to point at a new database host. Your changes are not ready to commit. Then an urgent message arrives — a bug in production, needs a fix right now. You need a clean working directory to switch branches and investigate.
 
----
+This is what stash is for. It saves your in-progress changes to a temporary shelf, gives you back a clean state, and lets you restore everything exactly where you left it when you are done.
 
-### Key Commands for Stashing  
-| Command | Description |
-|---|---|
-| `git stash` | Save tracked changes (staged + unstaged) |
-| `git stash -u` | Include new/untracked files |
-| `git stash push -m "message"` | Stash with a custom message |
-| `git stash list` | Show all saved stashes |
-| `git stash show [-p]` | Show summary (`-p` = full diff) |
-| `git stash apply [stash@{n}]` | Re-apply stash (keeps it in list) |
-| `git stash pop [stash@{n}]` | Apply + delete stash |
-| `git stash drop stash@{n}` | Delete a specific stash |
-| `git stash clear` | Delete all stashes (irreversible) |
-| `git stash branch <branch>` | Create a new branch from a stash |
-
----
-
-### How Stashing Works  
-Each stash you create is added to a **stack**:  
-```
-stash@{0}   ← newest
-stash@{1}
-stash@{2}   ← oldest
-```
-The top of the stack (`stash@{0}`) is the most recent.
-
----
-
-### Example: Save and Restore Work  
-```bash
-git stash push -m "WIP: webstore api changes"
-# switch branch, fix urgent bug, come back
-git stash pop    # apply + remove from list
-```
-
----
-
-### Including Untracked Files
-
-By default, untracked (new) files are not stashed.
-To include them:
-```bash
-git stash -u
-```
-
----
-
-### Viewing and Inspecting Stashes
+**The basic stash workflow:**
 
 ```bash
-git stash list          # list all stashes
-git stash show          # summary of latest stash
-git stash show -p       # full diff of latest stash
+# You are mid-work on webstore.conf
+cat ~/webstore/config/webstore.conf
+# db_host=webstore-db-new   ← work in progress, not ready to commit
+
+# Save it to the stash — your working directory becomes clean
+git stash push -m "WIP: updating db_host to new database server"
+
+# Check status — clean
+git status
+# nothing to commit, working tree clean
+
+# Switch to fix the urgent bug
+git switch main
+# fix the bug, commit it, push it
+
+# Come back and restore your work
+git stash pop
+cat ~/webstore/config/webstore.conf
+# db_host=webstore-db-new   ← your changes are back exactly as you left them
 ```
 
----
+**The stash is a stack.** Each stash is pushed on top. The most recent is `stash@{0}`.
 
-### Create a Branch from a Stash
-
-```bash
-git stash branch feature-branch stash@{0}
+```
+stash@{0}  ← most recent — "WIP: updating db_host"
+stash@{1}  ← older
+stash@{2}  ← oldest
 ```
 
-Creates a new branch, applies the stash, and removes it once done.
+**All stash commands:**
 
----
-
-### Best Practices for Stashing
-
-- Use clear messages: `git stash push -m "WIP: user-auth feature"`
-- Don't treat stashes as long-term storage — commit soon after
-- Review and clean old stashes regularly
-- Remember: stashes are **local only** and expire after ~90 days
-
----
-
-### Troubleshooting
-
-| Problem | Fix |
-|---|---|
-| Lost changes | `git stash list` → `git stash apply` |
-| Conflicts on apply | Resolve manually like merge conflicts |
-| Untracked files missing | Use `git stash -u` next time |
-| Accidentally cleared | `git stash clear` is permanent — cannot recover |
-
-</details>
-
----
-
-<details>
-<summary><strong>2. Git Tags – Marking Versions and Releases</strong></summary>
-
-### Why Git Tags Exist
-
-Commits tell the full story, but tags mark the **key chapters** — the release versions and milestones that CI-CD pipelines and teams rely on.
-
----
-
-### Key Commands for Tagging
-
-| Command | Description |
-|---|---|
-| `git tag <tagname>` | Create a lightweight tag |
-| `git tag -a <tagname> -m "message"` | Create an annotated tag (recommended) |
-| `git tag <tagname> <commit-hash>` | Tag an older commit |
-| `git tag` | List all tags |
-| `git show <tagname>` | Show tag + commit details |
-| `git push origin <tagname>` | Push one tag to remote |
-| `git push --tags` | Push all tags to remote |
-| `git tag -d <tagname>` | Delete local tag |
-| `git push origin --delete tag <tagname>` | Delete remote tag |
-
----
-
-### Lightweight vs Annotated Tags
-
-| Type | Contains | Best For |
+| Command | What it does | When you reach for it |
 |---|---|---|
-| **Lightweight** | Commit pointer only | Quick local bookmarks |
-| **Annotated** | Author, date, message | Releases and shared milestones |
+| `git stash` | Save tracked changes to the stash | Quick save before switching context |
+| `git stash push -m "message"` | Save with a descriptive label | Always — anonymous stashes are hard to identify later |
+| `git stash -u` | Include untracked (new) files | When you have new files not yet staged |
+| `git stash list` | Show all saved stashes | Checking what is on the stack |
+| `git stash show` | Summary of the most recent stash | Quick reminder of what you stashed |
+| `git stash show -p` | Full diff of the most recent stash | Reading exactly what changed |
+| `git stash pop` | Apply most recent stash and remove it from the stack | Normal restore — most common |
+| `git stash apply stash@{1}` | Apply a specific stash but keep it on the stack | When you want to apply without removing |
+| `git stash drop stash@{1}` | Delete a specific stash | Cleaning up old stashes you no longer need |
+| `git stash clear` | Delete all stashes | Nuclear option — permanent, no recovery |
 
-Always use annotated tags for releases:
+**Stash only saves tracked files by default.** If you created a new file and have not run `git add` on it yet, `git stash` leaves it behind. Use `git stash -u` to include untracked files:
+
 ```bash
-git tag -a v1.0 -m "webstore v1.0 — initial release"
+touch ~/webstore/api/new-endpoint.js   # new file, not tracked yet
+git stash -u                           # includes it
 ```
 
----
-
-### Tag a Specific Commit
+**Create a branch from a stash** — when you realize mid-work that what you are building should be its own feature branch:
 
 ```bash
-git tag -a v1.1 1a2b3c4d -m "hotfix release"
+git stash branch feature/new-db-config stash@{0}
+# Creates the branch, checks it out, applies the stash, removes it
 ```
+
+**What stash is not:** stash is local only — it does not push to GitHub. It expires after 90 days. It is a temporary shelf, not long-term storage. If you are working on something for more than a day, commit it to a branch instead.
 
 ---
 
-### Pushing Tags to Remote
+## 2. Git Tags — Marking the Webstore's First Release
 
-Tags are not pushed automatically:
+The webstore has been running, commits have been made, nginx is serving the frontend. At some point the project reaches a stable state — everything works, the foundation is solid, this is a version worth marking.
+
+That mark is a tag. Tags are permanent pointers to specific commits. Unlike branch names which move forward as you commit, a tag never moves. `v1.0` will always point to exactly the commit you tagged.
+
+**Why tags matter in DevOps:**
+CI/CD pipelines are often configured to trigger on tags. When you push `v1.0` to GitHub, GitHub Actions can detect it, build a Docker image, tag the image as `webstore-api:1.0`, and push it to the registry. The tag in Git becomes the version in Docker becomes the version in Kubernetes. It is the chain that connects your code to your deployment.
+
+**Two types of tags:**
+
+| Type | What it contains | When to use |
+|---|---|---|
+| Lightweight | Just a pointer to a commit | Local bookmarks, private notes |
+| Annotated | Pointer + author + date + message | Releases — always use this for anything shared |
+
+Always use annotated tags for releases. They carry a message and your identity, they show up properly in GitHub's releases page, and they are what CI/CD pipelines expect.
+
+**Tagging the webstore v1.0:**
+
 ```bash
-git push origin v1.0    # push one tag
-git push --tags         # push all tags
+# First confirm where you are
+git log --oneline
+# c8d21fa logs: add initial server startup entry
+# b71e3a2 config: add nginx worker process setting
+# a3f92c1 feat: initialize webstore project structure
+
+# Tag the current commit — the stable foundation
+git tag -a v1.0 -m "webstore v1.0 — Linux foundation complete
+
+- directory structure established
+- nginx configured and serving frontend
+- permissions locked down
+- ready for containerization"
+
+# View the tag and its details
+git show v1.0
 ```
 
+**Tags are not pushed automatically** — you have to push them explicitly:
+
+```bash
+# Push a single tag
+git push origin v1.0
+
+# Push all local tags at once
+git push --tags
+```
+
+**Other tag operations:**
+
+```bash
+# List all tags
+git tag
+
+# Tag an older specific commit — when you forgot to tag at the right time
+git tag -a v0.9 a3f92c1 -m "initial structure — pre-nginx"
+
+# Delete a local tag — if you tagged the wrong commit
+git tag -d v1.0
+
+# Delete a remote tag — only after deleting locally
+git push origin --delete tag v1.0
+```
+
+**Semantic versioning — the standard format:**
+
+```
+v1.0.0   ← major.minor.patch
+v1.1.0   ← new feature, backward compatible
+v1.1.1   ← bug fix
+v2.0.0   ← breaking change
+```
+
+For the webstore journey:
+- `v1.0` — Linux foundation complete
+- `v1.1` — first Docker commit
+- `v2.0` — running on Kubernetes
+
 ---
 
-### When to Use Tags
+## 3. Quick Reference
 
-- **Releases:** Mark stable versions (`v1.0`, `v2.0`)
-- **Milestones:** Feature completions
-- **Deployments:** CI-CD pipelines reference tags to decide what to deploy
-- **Hotfixes:** Return to stable versions safely
+**Stash:**
 
----
-
-### Best Practices for Tagging
-
-- Always use annotated tags (`-a -m`) for anything shared
-- Tag only stable commits after tests pass
-- Follow semantic versioning: `v1.0.0`, `v1.1.2`
-- Avoid `--force` unless correcting an unavoidable mistake
-
----
-
-### Troubleshooting
-
-| Problem | Solution |
+| Command | What it does |
 |---|---|
-| Tag already exists | `git tag -d <tag>` → recreate |
-| Wrong tag pushed | Delete local + remote, push correct one |
-| Tag missing on remote | `git push origin <tag>` |
+| `git stash push -m "message"` | Save changes with a label |
+| `git stash -u` | Include untracked files |
+| `git stash list` | Show all stashes |
+| `git stash show -p` | Full diff of most recent stash |
+| `git stash pop` | Restore and remove most recent stash |
+| `git stash apply stash@{n}` | Restore specific stash, keep it on stack |
+| `git stash drop stash@{n}` | Delete a specific stash |
+| `git stash clear` | Delete all stashes permanently |
+| `git stash branch <name>` | Create branch from most recent stash |
 
-</details>
+**Tags:**
+
+| Command | What it does |
+|---|---|
+| `git tag -a v1.0 -m "message"` | Create annotated tag at current commit |
+| `git tag -a v1.0 <hash> -m "message"` | Tag a specific past commit |
+| `git tag` | List all tags |
+| `git show v1.0` | Show tag details and the commit it points to |
+| `git push origin v1.0` | Push a single tag to remote |
+| `git push --tags` | Push all local tags to remote |
+| `git tag -d v1.0` | Delete a local tag |
+| `git push origin --delete tag v1.0` | Delete a remote tag |
+
+---
 
 → Ready to practice? [Go to Lab 02](../git-labs/02-stash-tags-lab.md)
 
@@ -4170,343 +4466,336 @@ git push --tags         # push all tags
 # TOOL: 02. Git & GitHub – Version Control | FILE: 03-history-branching
 ---
 
-[Home](../README.md) | 
-[Foundations](../01-foundations/README.md) | 
-[Stash & Tags](../02-stash-tags/README.md) | 
-[History & Branching](../03-history-branching/README.md) | 
-[Contribute](../04-contribute/README.md) | 
+[Home](../README.md) |
+[Foundations](../01-foundations/README.md) |
+[Stash & Tags](../02-stash-tags/README.md) |
+[History & Branching](../03-history-branching/README.md) |
+[Contribute](../04-contribute/README.md) |
 [Undo & Recovery](../05-undo-recovery/README.md)
 
-# Git History & Branching  
-> Working in Parallel and Understanding Project History
+# Git History & Branching
+
+The webstore has a commit history now. Someone wants to add a product pagination feature to the API. You cannot build it directly on `main` — that is the stable, deployed version. If the feature breaks halfway through, the whole project is broken.
+
+Branches solve this. A branch is a separate line of development — a parallel timeline where you can build, experiment, and break things without touching what is working. When the feature is done and tested, you merge it back.
 
 ---
 
 ## Table of Contents
-1. [Reading Project History](#1-reading-project-history)
-2. [Branching Fundamentals](#2-branching-fundamentals)
-3. [Working with Branches – Create, Switch & Merge](#3-working-with-branches--create-switch--merge)
-4. [Merging Types & Conflict Resolution](#4-merging-types--conflict-resolution)
-5. [Rebase – Keeping History Linear](#5-rebase--keeping-history-linear)
-6. [Branching Strategies](#6-branching-strategies)
+
+- [1. Reading Project History](#1-reading-project-history)
+- [2. Branching — What It Is and Why It Exists](#2-branching--what-it-is-and-why-it-exists)
+- [3. Creating, Switching, and Merging Branches](#3-creating-switching-and-merging-branches)
+- [4. Merge Types — Fast-Forward and 3-Way](#4-merge-types--fast-forward-and-3-way)
+- [5. Conflict Resolution](#5-conflict-resolution)
+- [6. Rebase — Keeping History Linear](#6-rebase--keeping-history-linear)
+- [7. Branching Strategies](#7-branching-strategies)
+- [8. Quick Reference](#8-quick-reference)
 
 ---
 
-<details>
-<summary><strong>1. Reading Project History</strong></summary>
+## 1. Reading Project History
 
-Every Git repository maintains a **complete timeline** — every edit, commit, and merge is recorded permanently.
-
----
-
-### Key Commands
-
-| Command | Description |
-|---|---|
-| `git log` | Full commit history with author, date, message |
-| `git log --oneline` | Condensed summary |
-| `git show <commit>` | Detailed info and file changes for one commit |
-| `git diff` | Compare unstaged changes with last commit |
-| `git diff --staged` | Compare staged changes with last commit |
-| `git log --graph --oneline` | ASCII diagram of commit and merge history |
-
----
-
-### Viewing History
+Every commit in Git is a permanent record. Reading history is how you understand what happened — who changed what, when, and why.
 
 ```bash
+# Compact one-line view — most useful for daily navigation
 git log --oneline
-```
+# c8d21fa logs: add initial server startup entry
+# b71e3a2 config: add nginx worker process setting
+# a3f92c1 feat: initialize webstore project structure
 
-Example:
-```
-a91b23c add webstore api endpoint
-b78d23d fix login bug
-c11aa8d initial commit
-```
+# Full detail — author, date, message, hash
+git log
 
-### Inspect a Specific Commit
-
-```bash
-git show a91b23c
-```
-
-Shows author, timestamp, message, and exact diff.
-
-### Compare File Versions
-
-```bash
-git diff              # unstaged changes
-git diff --staged     # staged but uncommitted
-git diff 1a2b3c4 9f8e7d6   # two specific commits
-```
-
-### Graph History
-
-```bash
+# Visual branch and merge history
 git log --graph --oneline
+# * c8d21fa (HEAD -> main) logs: add initial server startup entry
+# * b71e3a2 config: add nginx worker process setting
+# * a3f92c1 feat: initialize webstore project structure
+
+# Show exactly what changed in a specific commit
+git show c8d21fa
+
+# Compare two commits — what changed between them
+git diff a3f92c1 c8d21fa
+
+# Show unstaged changes in working directory
+git diff
+
+# Show staged changes waiting to be committed
+git diff --staged
 ```
 
-```
-* 7d33e45 merge feature/api
-|\
-| * b24aa33 add order endpoint
-| * c28ef12 add product endpoint
-* | a7bc9d2 fix frontend navbar
-|/
-* 1a2b3c4 initial commit
-```
+**When you reach for `git log`:**
+A deployment broke something. You need to know what changed between yesterday's working version and today's broken one. `git log --oneline` shows you the commits in between. `git show <hash>` shows you exactly what each one changed.
 
-</details>
-
----
-
-<details>
-<summary><strong>2. Branching Fundamentals</strong></summary>
-
-A **branch** is a lightweight pointer to a series of commits — a parallel timeline where you can develop freely without touching the main codebase.
-
-### Why Branches Exist
-
-- Develop features without touching working code
-- Fix bugs in isolation
-- Let multiple people work simultaneously
-- Experiment and discard without consequences
-
-### The HEAD Pointer
-
-`HEAD` tells Git where you currently are — the latest commit in your active branch.
-Switching branches moves `HEAD` to another line of history.
-
-### Key Branch Commands
-
-| Command | Purpose |
+| Command | What it shows |
 |---|---|
-| `git branch` | List all branches |
-| `git branch <name>` | Create a new branch |
-| `git switch <name>` | Switch to a branch |
-| `git switch -c <name>` | Create and switch in one step |
-| `git branch -m old new` | Rename a branch |
-| `git branch -d <name>` | Delete a merged branch |
-| `git branch -D <name>` | Force delete unmerged branch |
-
-</details>
+| `git log --oneline` | Compact history — commit hash and message |
+| `git log --graph --oneline` | Visual branch and merge diagram |
+| `git show <hash>` | Full detail and file diff for one commit |
+| `git diff` | Unstaged changes in working directory |
+| `git diff --staged` | Staged changes waiting to commit |
+| `git diff <hash1> <hash2>` | Changes between any two commits |
 
 ---
 
-<details>
-<summary><strong>3. Working with Branches – Create, Switch & Merge</strong></summary>
+## 2. Branching — What It Is and Why It Exists
 
-### Real workflow — feature branch
+A **branch** is a lightweight pointer to a commit — a named position in the commit chain. When you create a branch, Git creates a new pointer at your current commit. When you make commits on that branch, only that pointer moves forward. `main` stays exactly where it was.
+
+```
+Before branching:
+main → A → B → C   (HEAD is here)
+
+After creating feature/products-api:
+main → A → B → C
+feature/products-api → C   (same starting point)
+
+After two commits on the feature branch:
+main → A → B → C
+feature/products-api → C → D → E   (main untouched)
+```
+
+**HEAD** is the pointer that tells Git which branch — and therefore which commit — you are currently on. When you switch branches, HEAD moves.
+
+---
+
+## 3. Creating, Switching, and Merging Branches
+
+**The feature branch workflow — what you do for every new piece of work:**
 
 ```bash
-# Start from main
+# Start from main — always branch from a known good state
 git switch main
+git pull   # make sure you have the latest
 
-# Create and switch to feature branch
-git switch -c feature/webstore-api
+# Create and switch to the feature branch in one step
+git switch -c feature/webstore-api-pagination
 
-# Make changes and commit
-git add .
-git commit -m "add product listing endpoint"
+# Make changes and commit them on the feature branch
+vim ~/webstore/api/server.js
+git add api/server.js
+git commit -m "feat: add product pagination to webstore API"
+
+vim ~/webstore/api/server.js
+git add api/server.js
+git commit -m "feat: add pagination query param validation"
+
+# Check where you are and what the history looks like
+git log --graph --oneline
 
 # Return to main
 git switch main
 
-# Merge feature back
-git merge feature/webstore-api
+# Merge the feature branch back
+git merge feature/webstore-api-pagination
 
-# Clean up
-git branch -d feature/webstore-api
+# Delete the branch — it has been merged, no longer needed
+git branch -d feature/webstore-api-pagination
 ```
+
+**Branch management commands:**
+
+| Command | What it does |
+|---|---|
+| `git branch` | List all local branches |
+| `git branch -a` | List local and remote branches |
+| `git branch <name>` | Create a branch (without switching) |
+| `git switch <name>` | Switch to an existing branch |
+| `git switch -c <name>` | Create and switch in one step |
+| `git branch -m old new` | Rename a branch |
+| `git branch -d <name>` | Delete a merged branch |
+| `git branch -D <name>` | Force delete — even if unmerged |
 
 ---
 
-### Fast-Forward Merge
+## 4. Merge Types — Fast-Forward and 3-Way
 
-If main hasn't changed since you branched — Git simply moves the pointer forward:
+When you merge, Git decides how to combine the histories. The result depends on what happened to both branches since they diverged.
 
-```
-Before:  main → A → B
-                         feature → C → D
+**Fast-Forward Merge — main has not moved:**
 
-After merge:  main → A → B → C → D
-```
-
-History stays linear, no merge commit created.
-
----
-
-### 3-Way Merge
-
-If both main and your branch have new commits since branching — Git creates a **merge commit**:
+If no new commits were added to `main` while you worked on the feature branch, Git simply moves the `main` pointer forward to match the feature branch tip. No merge commit is created. The history stays linear.
 
 ```
-Before:  main → A → B → E
-                         feature → C → D
+Before:
+main → A → B → C
+feature → C → D → E
 
-After:   main → A → B → E → M  (M is the merge commit)
-                         C → D ↗
+After fast-forward merge:
+main → A → B → C → D → E
+(feature pointer deleted)
 ```
-
-</details>
-
----
-
-<details>
-<summary><strong>4. Merging Types & Conflict Resolution</strong></summary>
-
-Conflicts happen when two branches modify the same lines in the same file.
-
-### What a conflict looks like
-
-```text
-<<<<<<< HEAD
-api_port=8080
-=======
-api_port=9090
->>>>>>> feature/webstore-api
-```
-
-- Everything above `=======` is your current branch (HEAD)
-- Everything below is the incoming branch
-
-### Resolve it
-
-1. Edit the file — keep what's correct, delete the markers
-2. Stage the resolved file: `git add <file>`
-3. Complete the merge: `git commit`
-
-### Best Practices
-
-- Keep branches small and focused — smaller diffs = fewer conflicts
-- Merge or rebase frequently to stay in sync with main
-- Communicate with teammates about shared files
-
-</details>
-
----
-
-<details>
-<summary><strong>5. Rebase – Keeping History Linear</strong></summary>
-
-### What is rebase?
-
-Rebase moves your branch's commits so they appear to start from the tip of another branch — creating a **linear history** with no merge commits.
-
-**Merge result:**
-```
-main → A → B → E → M (merge commit)
-                C → D ↗
-```
-
-**Rebase result:**
-```
-main → A → B → E → C' → D'
-```
-
-Your commits (C, D) are rewritten as (C', D') on top of main. Clean, linear history.
-
-### Basic rebase workflow
 
 ```bash
-git switch feature/webstore-api
-
-# Rebase onto latest main
-git rebase main
-
-# Fix any conflicts, then:
-git rebase --continue
-
-# Switch to main and fast-forward
 git switch main
-git merge feature/webstore-api
+git merge feature/webstore-api-pagination
+# Fast-forward — history is linear, no merge commit
 ```
 
-### Merge vs Rebase — when to use which
+**3-Way Merge — main has also moved:**
+
+If new commits were added to `main` while you worked on the feature branch, Git cannot just move the pointer. It has to create a **merge commit** that combines both lines of history.
+
+```
+Before:
+main → A → B → C → F → G
+feature → C → D → E
+
+After 3-way merge:
+main → A → B → C → F → G → M   (M is the merge commit)
+                   ↗
+              D → E
+```
+
+```bash
+git switch main
+git merge feature/webstore-api-pagination
+# Merge commit created — Git opens your editor for the merge commit message
+```
+
+**When each happens:**
+Fast-forward happens when you branch, work, and merge without anyone else committing to main in between. 3-way happens when the team is active and main moved while you were working.
+
+---
+
+## 5. Conflict Resolution
+
+Conflicts happen when two branches modify the same lines in the same file. Git cannot decide automatically which version to keep — it marks the conflict and asks you to resolve it.
+
+**What a conflict looks like:**
+
+```
+<<<<<<< HEAD
+db_host=webstore-db-primary
+=======
+db_host=webstore-db-replica
+>>>>>>> feature/db-failover
+```
+
+- Everything above `=======` is from the branch you are merging into (HEAD)
+- Everything below is from the incoming branch
+- The `<<<<<<<` and `>>>>>>>` markers are not valid content — they must be removed
+
+**The resolution process:**
+
+```bash
+# Git tells you there is a conflict
+git merge feature/db-failover
+# CONFLICT (content): Merge conflict in config/webstore.conf
+
+# Open the file and find the conflict markers
+vim config/webstore.conf
+
+# Edit it to keep what is correct — remove all markers
+# Result: db_host=webstore-db-primary
+
+# Mark it resolved
+git add config/webstore.conf
+
+# Complete the merge
+git commit
+# Git opens the editor with a default merge commit message — save and close
+```
+
+**The conflict resolution mindset:** a conflict is not an error. It is Git saying "two people changed the same thing — which version should survive?" You make the decision, stage the result, and commit.
+
+---
+
+## 6. Rebase — Keeping History Linear
+
+Rebase rewrites your branch's commits so they appear to start from the current tip of another branch. The result is a clean, linear history with no merge commits.
+
+**Merge result — history shows the branching:**
+
+```
+main → A → B → C → F → G → M (merge commit)
+                   ↗
+              D → E
+```
+
+**Rebase result — history looks like it was always linear:**
+
+```
+main → A → B → C → F → G → D' → E'
+```
+
+Your commits (`D`, `E`) are rewritten as new commits (`D'`, `E'`) on top of the latest `main`. Same changes, different parent.
+
+**The rebase workflow:**
+
+```bash
+# On the feature branch — update it to start from latest main
+git switch feature/webstore-api-pagination
+git rebase main
+
+# If conflicts arise during rebase:
+# fix the conflict
+git add <file>
+git rebase --continue
+
+# If something goes badly wrong — abort and return to before
+git rebase --abort
+
+# After a successful rebase — fast-forward merge on main
+git switch main
+git merge feature/webstore-api-pagination
+# Fast-forward — clean linear history
+```
+
+**Merge vs Rebase — the decision:**
 
 | | Merge | Rebase |
 |---|---|---|
-| **History** | Preserves full branching history | Creates clean linear history |
-| **Use when** | Merging completed features | Updating a feature branch with latest main |
-| **Safe on shared branches** | ✅ Yes | ❌ No — never rebase pushed commits |
-| **Creates merge commit** | ✅ Yes | ❌ No |
+| History | Preserves the branch structure | Creates a linear timeline |
+| Use for | Merging completed features to main | Updating a feature branch with latest main |
+| Safe on shared branches | Yes | No — never rebase commits that have been pushed |
+| Creates merge commit | Yes | No |
 
-**The golden rule of rebase:**
-Never rebase commits that have already been pushed to a shared remote branch. It rewrites history and causes problems for everyone else.
+**The golden rule of rebase:** never rebase commits that have already been pushed to a shared remote branch. Rebase rewrites history — if someone else pulled those commits before you rebased, their local history now diverges from yours and they will have problems.
 
-### Abort a rebase
-
-```bash
-git rebase --abort
-```
-
-Use this if things go wrong — returns you to the state before rebase started.
-
-</details>
+Rebase is safe on a **local feature branch you have not pushed yet**, or on a **personal branch that nobody else has pulled**.
 
 ---
 
-<details>
-<summary><strong>6. Branching Strategies</strong></summary>
+## 7. Branching Strategies
 
-A **branching strategy** is a team agreement on how branches are named, when they're created, and how they flow into production. Interviewers ask about this. Teams fight about this. Know both.
+A branching strategy is a team agreement on how branches are named, when they are created, and how they flow into production. These come up in interviews.
 
----
-
-### Git Flow
-
-The classic strategy. Multiple long-lived branches.
+**Git Flow — the classic approach:**
 
 ```
-main        — production-ready code only
-develop     — integration branch for features
-feature/*   — individual features branch off develop
+main        — production-ready code only, every commit is deployable
+develop     — integration branch, features merge here before going to main
+feature/*   — individual features, branch off develop
 release/*   — stabilization before merging to main
 hotfix/*    — emergency fixes directly off main
 ```
 
-**Flow:**
 ```
-feature/x → develop → release/1.0 → main
-                                   ↘ tag v1.0
-hotfix/y → main → develop (backport)
+feature/x → develop → release/1.0 → main  ← tag v1.0
+                                        ↘ hotfix/y → main → develop
 ```
 
-**Good for:** Teams with scheduled release cycles, versioned software.
-**Bad for:** Fast-moving teams — too much branch overhead.
+Good for: versioned software with scheduled release cycles.
+Bad for: fast-moving teams — too much branch overhead.
 
----
+**Trunk-Based Development — the DevOps standard:**
 
-### Trunk-Based Development
-
-Everyone commits to `main` (the trunk) directly or via very short-lived feature branches (1-2 days max).
+Everyone commits to `main` directly, or via very short-lived feature branches (1–2 days maximum). No long-running branches.
 
 ```
-main  ← everyone integrates here frequently
+main  ← everyone integrates here, frequently
   ↑
-feature branches live < 2 days, then merged
+small feature branches, merged within 1-2 days
 ```
 
-**Good for:** CI-CD pipelines, fast-moving teams, SaaS products.
-**Bad for:** Teams that need long stabilization periods.
+Good for: CI/CD pipelines, fast-moving teams, SaaS products.
+Why DevOps teams prefer it: GitHub Actions and ArgoCD trigger on commits to main. Long-lived branches delay integration and create merge hell. Feature flags replace the need for long feature branches.
 
----
-
-### Which one does DevOps prefer?
-
-**Trunk-based.** Here's why:
-
-- GitHub Actions and ArgoCD trigger on commits to main
-- Long-lived branches delay integration and create merge hell
-- Feature flags replace the need for long feature branches
-- Most modern DevOps teams (Google, Netflix, Amazon) use trunk-based
-
-You will use **trunk-based** in Phase 06 when you build the CI-CD pipeline.
-
----
-
-### Branch naming conventions (used in both strategies)
+**Branch naming conventions:**
 
 ```
 feature/webstore-api-pagination
@@ -4517,7 +4806,27 @@ release/v1.2.0
 hotfix/fix-payment-crash
 ```
 
-</details>
+---
+
+## 8. Quick Reference
+
+| Command | What it does |
+|---|---|
+| `git log --oneline` | Compact commit history |
+| `git log --graph --oneline` | Visual branch diagram |
+| `git show <hash>` | Full detail for one commit |
+| `git diff` | Unstaged changes |
+| `git diff --staged` | Staged changes |
+| `git branch` | List branches |
+| `git switch -c <name>` | Create and switch to new branch |
+| `git switch <name>` | Switch to existing branch |
+| `git merge <branch>` | Merge branch into current |
+| `git branch -d <name>` | Delete merged branch |
+| `git rebase main` | Rebase current branch onto main |
+| `git rebase --continue` | Continue after resolving rebase conflict |
+| `git rebase --abort` | Cancel rebase entirely |
+
+---
 
 → Ready to practice? [Go to Lab 03](../git-labs/03-history-branching-lab.md)
 
@@ -4525,218 +4834,247 @@ hotfix/fix-payment-crash
 # TOOL: 02. Git & GitHub – Version Control | FILE: 04-contribute
 ---
 
-[Home](../README.md) | 
-[Foundations](../01-foundations/README.md) | 
-[Stash & Tags](../02-stash-tags/README.md) | 
-[History & Branching](../03-history-branching/README.md) | 
-[Contribute](../04-contribute/README.md) | 
+[Home](../README.md) |
+[Foundations](../01-foundations/README.md) |
+[Stash & Tags](../02-stash-tags/README.md) |
+[History & Branching](../03-history-branching/README.md) |
+[Contribute](../04-contribute/README.md) |
 [Undo & Recovery](../05-undo-recovery/README.md)
 
-# Git Contribute  
-> Fork, Clone & Pull Requests – Working with Others
+# Git Contribute
+
+The webstore is on GitHub. A second developer joins the team and needs to work on the products API. They cannot push directly to main — that is the production branch. They need their own copy to work from, a way to propose their changes for review, and a way to stay in sync when main moves forward while they are working.
+
+This is the collaboration model. Understanding it is what separates someone who uses Git alone from someone who uses Git on a team.
 
 ---
 
 ## Table of Contents
-1. [Understanding Collaboration](#1-understanding-collaboration)
-2. [Forking a Repository](#2-forking-a-repository)
-3. [Cloning – Bringing It to Your Local Machine](#3-cloning--bringing-it-to-your-local-machine)
-4. [Remotes – origin and upstream](#4-remotes--origin-and-upstream)
-5. [Pushing Changes](#5-pushing-changes)
-6. [Pull Requests – Suggesting Changes](#6-pull-requests--suggesting-changes)
-7. [Collaboration Flow Recap](#7-collaboration-flow-recap)
+
+- [1. Two Collaboration Contexts](#1-two-collaboration-contexts)
+- [2. Cloning — Getting the Repo Locally](#2-cloning--getting-the-repo-locally)
+- [3. Remotes — origin and upstream](#3-remotes--origin-and-upstream)
+- [4. The Feature Branch PR Workflow](#4-the-feature-branch-pr-workflow)
+- [5. Forking — Contributing to a Repo You Do Not Own](#5-forking--contributing-to-a-repo-you-do-not-own)
+- [6. Keeping Your Fork in Sync](#6-keeping-your-fork-in-sync)
+- [7. What Makes a Good Pull Request](#7-what-makes-a-good-pull-request)
+- [8. Quick Reference](#8-quick-reference)
 
 ---
 
-<details>
-<summary><strong>1. Understanding Collaboration</strong></summary>
+## 1. Two Collaboration Contexts
 
-In teams or open-source projects, you rarely push directly to someone else's repository — you **propose** your changes instead.
+You will work in two different contexts depending on whether you own the repo.
 
-The collaboration cycle:
-```
-Fork → Clone → Branch → Edit → Push → Pull Request → Review → Merge
-```
+| Context | When | What you do |
+|---|---|---|
+| **Company repo** | You are on the team, have access | Clone directly, work in feature branches, open PRs to main |
+| **Open-source repo** | You do not have write access | Fork the repo first, clone your fork, open PR to the original |
 
-**Two contexts you'll encounter:**
-
-| Context | What you do |
-|---|---|
-| **Company repo** | Clone directly, work in feature branches, open PRs to main |
-| **Open-source repo** | Fork first, clone your fork, open PR to original |
-
-In DevOps day-to-day work, you'll mostly use the company repo pattern — clone, branch, PR.
-
-</details>
+In DevOps day-to-day work — your team's infrastructure repo, the webstore deployment manifests, Terraform configs — you use the company repo pattern. Fork is for contributing to projects you do not own.
 
 ---
 
-<details>
-<summary><strong>2. Forking a Repository</strong></summary>
+## 2. Cloning — Getting the Repo Locally
 
-A **fork** is a complete copy of another repository under your GitHub account.
-Used mainly for open-source contributions where you don't have write access to the original.
-
-Forking is a **GitHub feature**, not a Git command.
-
-### Steps on GitHub
-1. Navigate to the repository
-2. Click **Fork** (top-right)
-3. GitHub creates a copy under your account
-
-You now have full write access to your fork.
-
-</details>
-
----
-
-<details>
-<summary><strong>3. Cloning – Bringing It to Your Local Machine</strong></summary>
-
-Clone downloads the full repository to your machine.
+Clone downloads the full repository to your machine — all commits, all branches, all history.
 
 ```bash
-# Clone a repo
-git clone https://github.com/username/webstore.git
+# Clone the webstore repo
+git clone https://github.com/AkhilTejaDoosari/webstore.git
 
 # Clone into a specific folder name
-git clone https://github.com/username/webstore.git my-webstore
-```
+git clone https://github.com/AkhilTejaDoosari/webstore.git my-webstore
 
-After cloning:
-```bash
+# After cloning
 cd webstore
-git status
-# On branch main — nothing to commit, working tree clean
+git log --oneline   # full history is here
+git branch -a       # all branches, local and remote
 ```
 
-</details>
+After cloning, you have:
+- A full local copy of the repository
+- One remote called `origin` pointing back to GitHub
+- A local `main` branch tracking `origin/main`
 
 ---
 
-<details>
-<summary><strong>4. Remotes – origin and upstream</strong></summary>
+## 3. Remotes — origin and upstream
 
-A **remote** is a named reference to a repository hosted somewhere (GitHub, GitLab, etc).
-
-### Check your remotes
+A remote is a named reference to a repository hosted somewhere else. Every connection to GitHub is a remote.
 
 ```bash
+# Check what remotes you have
 git remote -v
+# origin  https://github.com/AkhilTejaDoosari/webstore.git (fetch)
+# origin  https://github.com/AkhilTejaDoosari/webstore.git (push)
 ```
 
-After cloning, you have one remote named **origin** — the repo you cloned from:
-```
-origin  https://github.com/username/webstore.git (fetch)
-origin  https://github.com/username/webstore.git (push)
-```
+**`origin`** is the repo you cloned from — your team's repo or your fork. You push to origin and pull from origin.
 
-### When you need upstream (open-source workflow)
-
-If you forked a repo and want to stay in sync with the original:
+**`upstream`** is the original repo when you have forked. You pull from upstream to stay in sync but never push to it directly.
 
 ```bash
-# Add the original repo as upstream
+# Add upstream (open-source workflow — after forking)
 git remote add upstream https://github.com/original-owner/webstore.git
 
 git remote -v
-# origin    https://github.com/your-username/webstore.git
-# upstream  https://github.com/original-owner/webstore.git
+# origin    https://github.com/your-username/webstore.git (fetch)
+# origin    https://github.com/your-username/webstore.git (push)
+# upstream  https://github.com/original-owner/webstore.git (fetch)
+# upstream  https://github.com/original-owner/webstore.git (push)
 ```
 
-Then pull updates from the original:
-```bash
-git fetch upstream
-git merge upstream/main
-```
-
-| Remote | Purpose | Access |
+| Remote | Purpose | You push to it? |
 |---|---|---|
-| `origin` | Your fork or your team's repo | Read + Write |
-| `upstream` | Original repo you forked from | Read only |
-
-</details>
+| `origin` | Your fork or your team's repo | Yes |
+| `upstream` | Original repo you forked from | No — read only |
 
 ---
 
-<details>
-<summary><strong>5. Pushing Changes</strong></summary>
+## 4. The Feature Branch PR Workflow
 
-After making commits locally, push them to the remote:
+This is what you do every day on a team. Every new piece of work — feature, fix, config change — gets its own branch. When done, you open a pull request on GitHub for review before it merges to main.
 
 ```bash
-git add .
-git commit -m "add webstore product endpoint"
+# Step 1 — start from latest main
+git switch main
+git pull
+
+# Step 2 — create your feature branch
+git switch -c feature/webstore-product-pagination
+
+# Step 3 — do the work, make commits
+vim api/server.js
+git add api/server.js
+git commit -m "feat: add pagination to products endpoint"
+
+vim api/server.js
+git add api/server.js
+git commit -m "feat: add page size validation"
+
+# Step 4 — push the branch to GitHub
+git push origin feature/webstore-product-pagination
+
+# Step 5 — open a pull request on GitHub
+# github.com → your repo → "Compare & pull request"
+# Base: main  ←  Compare: feature/webstore-product-pagination
+# Write a clear title and description
+# Submit for review
+
+# Step 6 — after review and approval, merge on GitHub
+# (or merge locally if you have permission)
+
+# Step 7 — clean up locally after merge
+git switch main
+git pull                                           # get the merged commit
+git branch -d feature/webstore-product-pagination  # delete the branch
+```
+
+**Why the PR exists:**
+A pull request is a checkpoint. Before code merges to main — the production branch — a teammate reads it, asks questions, catches bugs, and approves. This is how teams catch mistakes before they reach production. Even on a solo project, opening a PR forces you to read your own diff one more time before merging.
+
+---
+
+## 5. Forking — Contributing to a Repo You Do Not Own
+
+A fork is a complete copy of someone else's repository under your GitHub account. You have full write access to your fork. The original repo is unaffected by anything you do.
+
+Forking is a GitHub feature, not a Git command. You fork on the GitHub website, then clone your fork to work locally.
+
+**The open-source contribution workflow:**
+
+```bash
+# Step 1 — fork on GitHub
+# github.com → original repo → Fork button (top right)
+# GitHub creates a copy at: github.com/your-username/webstore
+
+# Step 2 — clone your fork
+git clone https://github.com/your-username/webstore.git
+cd webstore
+
+# Step 3 — add the original repo as upstream
+git remote add upstream https://github.com/original-owner/webstore.git
+
+# Step 4 — create a feature branch
+git switch -c fix/webstore-api-timeout
+
+# Step 5 — make changes and commit
+git commit -m "fix: increase api timeout from 5s to 30s"
+
+# Step 6 — push to your fork
+git push origin fix/webstore-api-timeout
+
+# Step 7 — open a PR from your fork to the original repo
+# github.com → your fork → Compare & pull request
+# Base repository: original-owner/webstore  base: main
+# Head repository: your-username/webstore  compare: fix/webstore-api-timeout
+```
+
+---
+
+## 6. Keeping Your Fork in Sync
+
+While you work on your fork, the original repo keeps moving forward. Before you submit a PR — and regularly while working — you need to pull in those changes so your fork does not fall behind.
+
+```bash
+# Fetch all new commits from the original repo
+git fetch upstream
+
+# See what is new
+git log --oneline main..upstream/main
+
+# Merge upstream changes into your local main
+git switch main
+git merge upstream/main
+
+# Push the updated main to your fork on GitHub
 git push origin main
+
+# Rebase your feature branch on top of the updated main
+git switch fix/webstore-api-timeout
+git rebase main
 ```
 
-Or if working on a feature branch:
-```bash
-git push origin feature/webstore-api
-```
-
-</details>
+If you do not stay in sync, your PR will have merge conflicts and may be rejected until you resolve them.
 
 ---
 
-<details>
-<summary><strong>6. Pull Requests – Suggesting Changes</strong></summary>
+## 7. What Makes a Good Pull Request
 
-A **pull request (PR)** is a proposal to merge your branch or fork into another branch.
+The PR is what your teammates read when reviewing your work. A good PR makes review fast and approval easy. A poor PR makes review painful and delays the merge.
 
-### Company repo workflow (most common in DevOps)
+**A good PR:**
+- Has a clear title that matches the commit convention: `feat: add pagination to products endpoint`
+- Explains what changed and why — not just "updated server.js"
+- Is focused on one logical change — one feature, one fix, not five things at once
+- Links to the related issue if one exists
+- Is small enough to review in one sitting — the bigger the PR, the less thorough the review
 
-```bash
-git switch -c feature/webstore-api
-# make changes
-git push origin feature/webstore-api
-```
+**A poor PR:**
+- Title: "changes" or "WIP" or "stuff"
+- Touches ten different files with no common theme
+- Has no description
+- Is so large that reviewers skim it
 
-Then on GitHub:
-1. Click **Compare & Pull Request**
-2. Set base branch → `main`, compare branch → `feature/webstore-api`
-3. Add title and description explaining what changed and why
-4. Submit — teammates review, comment, approve
-5. Merge when approved
-
-### Open-source workflow
-
-Same steps — but you're pushing to your fork and opening a PR from your fork to the original repo.
-
-### What makes a good PR
-
-- One logical change per PR — easier to review and rollback
-- Clear title: `feat: add webstore product pagination`
-- Description explains the why, not just the what
-- Link to any related issue
-
-</details>
+The single biggest lever for getting PRs approved quickly: keep them small. One logical change per PR. If a feature is large, break it into multiple PRs that each stand on their own.
 
 ---
 
-<details>
-<summary><strong>7. Collaboration Flow Recap</strong></summary>
+## 8. Quick Reference
 
-**Company repo (DevOps day-to-day):**
-```
-Clone → Branch → Commit → Push → Pull Request → Review → Merge
-```
+| Command | What it does |
+|---|---|
+| `git clone <url>` | Download full repository to local machine |
+| `git remote -v` | List all remotes |
+| `git remote add upstream <url>` | Add the original repo as upstream |
+| `git fetch upstream` | Fetch new commits from upstream without merging |
+| `git merge upstream/main` | Merge upstream changes into current branch |
+| `git push origin <branch>` | Push a branch to your remote |
+| `git switch -c feature/<n>` | Create and switch to feature branch |
+| `git pull` | Fetch and merge from current tracking remote |
 
-**Open-source contribution:**
-```
-Fork → Clone → Branch → Commit → Push → Pull Request → Review → Merge
-```
-
-**Essential commands:**
-```bash
-git clone <url>                    # get the repo locally
-git switch -c feature/name         # create feature branch
-git push origin feature/name       # push branch to remote
-git remote -v                      # check your remotes
-git fetch upstream                 # sync with original (open-source)
-```
-
-</details>
+---
 
 → Ready to practice? [Go to Lab 04](../git-labs/04-contribute-lab.md)
 
@@ -4744,220 +5082,266 @@ git fetch upstream                 # sync with original (open-source)
 # TOOL: 02. Git & GitHub – Version Control | FILE: 05-undo-recovery
 ---
 
-[Home](../README.md) | 
-[Foundations](../01-foundations/README.md) | 
-[Stash & Tags](../02-stash-tags/README.md) | 
-[History & Branching](../03-history-branching/README.md) | 
-[Contribute](../04-contribute/README.md) | 
+[Home](../README.md) |
+[Foundations](../01-foundations/README.md) |
+[Stash & Tags](../02-stash-tags/README.md) |
+[History & Branching](../03-history-branching/README.md) |
+[Contribute](../04-contribute/README.md) |
 [Undo & Recovery](../05-undo-recovery/README.md)
 
-# Git Undo & Recovery  
-> Mastering Revert, Reflog & Amend
+# Git Undo & Recovery
+
+Mistakes happen. You commit the wrong file. You write a bad commit message. You reset too far and lose commits. You delete a branch before merging it.
+
+Git has tools for all of these situations — but the right tool depends on *what state you are in* and *whether the commit has been pushed*. Using the wrong tool creates more problems than it solves. This file explains what state each mistake puts you in and which command gets you back.
 
 ---
 
 ## Table of Contents
-1. [When Things Go Wrong – The Need for Recovery](#1-when-things-go-wrong--the-need-for-recovery)
-2. [Revert – Safely Undoing Published Commits](#2-revert--safely-undoing-published-commits)
-3. [Amend – Fixing the Most Recent Commit](#3-amend--fixing-the-most-recent-commit)
-4. [Reset – Moving the Pointer](#4-reset--moving-the-pointer)
-5. [Reflog – Recovering Lost Work](#5-reflog--recovering-lost-work)
-6. [Best Practices & Guardrails](#6-best-practices--guardrails)
+
+- [1. The Mental Model — What Can Go Wrong and Where](#1-the-mental-model--what-can-go-wrong-and-where)
+- [2. amend — Fix the Last Commit Before It Leaves](#2-amend--fix-the-last-commit-before-it-leaves)
+- [3. revert — Undo a Pushed Commit Safely](#3-revert--undo-a-pushed-commit-safely)
+- [4. reset — Move the Pointer Back](#4-reset--move-the-pointer-back)
+- [5. reflog — Recover Anything](#5-reflog--recover-anything)
+- [6. The Decision Table](#6-the-decision-table)
+- [7. Quick Reference](#7-quick-reference)
 
 ---
 
-<details>
-<summary><strong>1. When Things Go Wrong – The Need for Recovery</strong></summary>
+## 1. The Mental Model — What Can Go Wrong and Where
 
-Mistakes happen — wrong commit, deleted branch, reset gone bad.
-Git provides multiple safety nets to fix or roll back without losing history.
+Before reaching for a recovery command, identify where in the workflow the mistake happened:
 
-| Layer | Tool | Purpose |
+```
+Working Directory → Staging Area → Local Commit → Pushed to Remote
+      edit             git add        git commit      git push
+```
+
+| Where the mistake is | What happened | Tool to use |
 |---|---|---|
-| Surface | `git commit --amend` | Fix your last commit (message or files) |
-| Mid-Level | `git revert` | Undo older commits safely with new commits |
-| Deep Recovery | `git reflog` / `git reset` | Restore lost work or move to any past state |
+| Working directory | Edited a file and want to discard changes | `git restore <file>` |
+| Staging area | Staged a file you did not mean to | `git restore --staged <file>` |
+| Last local commit — not pushed | Wrong message, wrong files, forgot a file | `git commit --amend` |
+| Older local commit — not pushed | Made several bad commits | `git reset` |
+| Pushed commit | Bad commit others may have pulled | `git revert` |
+| Lost commit after reset | Thought it was gone | `git reflog` |
+| Deleted branch | Deleted before merging | `git reflog` + `git branch` |
 
-</details>
+The critical question before every recovery: **has this commit been pushed?**
+If yes — you cannot rewrite history. Use `revert`.
+If no — you can rewrite history. Use `amend` or `reset`.
 
 ---
 
-<details>
-<summary><strong>2. Revert – Safely Undoing Published Commits</strong></summary>
+## 2. amend — Fix the Last Commit Before It Leaves
 
-`git revert` creates a **new commit** that reverses the changes of an earlier commit — without deleting history.
+`amend` rewrites the most recent commit. It changes the commit hash — Git treats the amended commit as an entirely new commit. This is why you must only amend commits that have not been pushed.
 
-**Analogy:** Crossing out a line in a notebook instead of tearing the page — the record remains.
+**Fix a typo in the commit message:**
 
-### Commands
+```bash
+git commit -m "feat: add paginaton to products endpoint"  # typo
 
-| Command | Description |
-|---|---|
-| `git revert HEAD` | Undo the latest commit |
-| `git revert <commit-hash>` | Undo a specific commit |
-| `git revert HEAD~2` | Undo a commit two steps back |
-| `git revert --no-edit` | Skip editing commit message |
+git commit --amend -m "feat: add pagination to products endpoint"
+# The old commit is replaced — the typo never existed
+```
 
-### Example
+**Add a file you forgot to include:**
+
+```bash
+git commit -m "feat: add pagination to products endpoint"
+# Realize you forgot to stage tests/pagination.test.js
+
+git add tests/pagination.test.js
+git commit --amend --no-edit
+# The file is added to the existing commit — no new commit created
+```
+
+**Remove a file you accidentally included:**
+
+```bash
+# You committed webstore.conf but it should not be in this commit
+git reset HEAD^ -- webstore.conf    # unstage it from the commit
+git commit --amend --no-edit        # recommit without it
+```
+
+**The rule:** only amend before pushing. If you amend a pushed commit and force push, you rewrite shared history and cause problems for anyone who already pulled.
+
+---
+
+## 3. revert — Undo a Pushed Commit Safely
+
+`revert` creates a new commit that exactly reverses the changes of a specific earlier commit. The original bad commit stays in history — nothing is erased. A new commit records the reversal.
+
+This is the safe undo for commits that have already been pushed. It does not rewrite history — it adds to it.
+
+**The scenario:**
+You pushed a commit that broke the webstore API. Other engineers on the team may have already pulled it. You cannot rewrite history. You revert.
+
+```bash
+# Find the bad commit hash
+git log --oneline
+# d4e8f21 feat: add pagination   ← broke the API
+# c8d21fa config: update nginx
+# b71e3a2 feat: initialize project
+
+# Revert it — creates a new commit that undoes d4e8f21
+git revert d4e8f21 --no-edit
+
+# New history:
+# a91b23c Revert "feat: add pagination"   ← new commit, undoes the bad one
+# d4e8f21 feat: add pagination            ← still in history
+# c8d21fa config: update nginx
+
+# Push the revert
+git push
+```
+
+**What `--no-edit` does:** skips opening the editor for the revert commit message, uses the auto-generated "Revert '<original message>'" message. Leave it out if you want to write a custom message.
+
+**If the revert has conflicts:**
+
+```bash
+git revert d4e8f21
+# CONFLICT — fix the conflict manually
+git add <file>
+git revert --continue
+```
+
+---
+
+## 4. reset — Move the Pointer Back
+
+`reset` moves HEAD and the current branch pointer to a different commit. Unlike `revert`, it does not create a new commit — it rewrites history. This is why it is only safe on commits that have not been pushed.
+
+**Three modes — the key differences:**
+
+```
+--soft  → HEAD moves back. Changes from undone commits stay staged.
+--mixed → HEAD moves back. Changes from undone commits are unstaged (in working dir). DEFAULT.
+--hard  → HEAD moves back. Changes from undone commits are permanently erased.
+```
 
 ```bash
 git log --oneline
-# a91b23c add broken feature
-# b78d23d fix login
+# d4e8f21 bad commit 2   ← HEAD is here
+# c8d21fa bad commit 1
+# b71e3a2 good state     ← want to go back to here
 
-git revert a91b23c --no-edit
-# Creates new commit that undoes a91b23c
-# History is preserved — nothing is deleted
+# --soft: undo 2 commits, keep all changes staged and ready to recommit
+git reset --soft b71e3a2
+
+# --mixed: undo 2 commits, keep changes in working directory but unstaged
+git reset --mixed b71e3a2
+
+# --hard: undo 2 commits and erase all changes — permanent
+git reset --hard b71e3a2
 ```
 
-### Troubleshooting
+**The relative notation — without needing a hash:**
 
-| Issue | Solution |
-|---|---|
-| Conflict occurs | Fix manually → `git add .` → `git revert --continue` |
-| Want to cancel | `git revert --abort` |
+```bash
+git reset --soft HEAD~1    # undo 1 commit
+git reset --soft HEAD~3    # undo 3 commits
+```
 
-**Use revert when:** the commit has already been pushed and others may have pulled it.
+**When you reach for each mode:**
 
-</details>
+`--soft` — you want to undo commits but keep the work. You are going to recommit it differently, or split it into separate commits.
+
+`--mixed` — you want to undo commits and the staging state. Changes are in your working directory, you can review and re-stage selectively.
+
+`--hard` — you want to completely discard the commits and everything in them. Use with care — `--hard` is the one that loses work.
+
+**Never reset commits that have been pushed to a shared branch.** If you reset and force push, everyone else who pulled those commits will have a diverged history.
 
 ---
 
-<details>
-<summary><strong>3. Amend – Fixing the Most Recent Commit</strong></summary>
+## 5. reflog — Recover Anything
 
-`git commit --amend` rewrites your last commit.
-
-⚠️ Only use on **local commits** — never amend something already pushed.
-
-### Fix a commit message
-
-```bash
-git commit --amend -m "add webstore config file"
-```
-
-### Add a forgotten file
-
-```bash
-git add missing-file.txt
-git commit --amend --no-edit
-```
-
-### Remove a file from the last commit
-
-```bash
-git reset HEAD^ -- unwanted.txt
-git commit --amend --no-edit
-```
-
-After amending, the commit hash changes — Git treats it as a new commit.
-
-</details>
-
----
-
-<details>
-<summary><strong>4. Reset – Moving the Pointer</strong></summary>
-
-`git reset` moves your HEAD pointer to a specific commit.
-
-### Modes
-
-| Command | Effect |
-|---|---|
-| `git reset --soft <commit>` | Move HEAD, keep changes staged |
-| `git reset --mixed <commit>` | Move HEAD, unstage changes (default) |
-| `git reset --hard <commit>` | Move HEAD and erase all changes |
-| `git reset <file>` | Unstage a specific file only |
-
-### Example
-
-```bash
-git log --oneline
-# a91b23c bad commit
-# b78d23d good state
-
-git reset --soft b78d23d
-# HEAD moves back — changes from a91b23c are now staged, ready to recommit
-```
-
-### Visual summary
-
-```
---soft  → HEAD moves, files stay staged
---mixed → HEAD moves, files unstaged but kept
---hard  → HEAD moves, files erased completely
-```
-
-⚠️ Never use `reset` on shared branches — rewrite history causes problems for teammates.
-
-</details>
-
----
-
-<details>
-<summary><strong>5. Reflog – Recovering Lost Work</strong></summary>
-
-`git reflog` records every update to HEAD — even commits unreachable by normal history.
-Your **black box recorder** — tracks every move.
-
-### When to use
-
-- Lost commits after a reset
-- Branch deleted by mistake
-- Need to go back to an exact state
-
-### View reflog
+`reflog` is Git's flight recorder. It records every time HEAD moved — every commit, every checkout, every reset, every merge. Even after a `--hard` reset, even after deleting a branch, the commits still exist in Git's object store for 90 days. `reflog` is how you find them.
 
 ```bash
 git reflog
+
+# Output:
+# e56ba1f HEAD@{0}: commit: revert bad feature
+# d4e8f21 HEAD@{1}: commit: add pagination
+# 9a9add8 HEAD@{2}: reset: moving to HEAD~1
+# c8d21fa HEAD@{3}: commit: update nginx config
+# b71e3a2 HEAD@{4}: commit: initialize project
 ```
 
-Example:
-```
-e56ba1f HEAD@{0}: commit: revert bad feature
-52418f7 HEAD@{1}: commit: update webstore config
-9a9add8 HEAD@{2}: reset: moving to HEAD~1
-```
+Each line is an action. `HEAD@{n}` is shorthand for the state HEAD was in n steps ago.
 
-### Recover lost commits
+**Recover commits lost after a hard reset:**
 
 ```bash
-git reset --hard HEAD@{2}
-# or
-git checkout 9a9add8
+# You ran git reset --hard and lost commits d4e8f21 and e56ba1f
+git reflog
+# Find the hash of the commit you want to recover — e.g. d4e8f21
+
+# Move HEAD back to it
+git reset --hard d4e8f21
+# Your commits are back
 ```
 
-### Restore a deleted branch
+**Recover a deleted branch:**
 
 ```bash
-git branch recovered-branch 9a9add8
+# You deleted feature/webstore-pagination before merging
+git branch -D feature/webstore-pagination
+
+# Find the last commit that was on that branch
+git reflog
+# 3f8c2a1 HEAD@{2}: commit: feat: add pagination query params
+
+# Recreate the branch at that commit
+git branch feature/webstore-pagination 3f8c2a1
+git switch feature/webstore-pagination
+# Branch is back with all its commits
 ```
 
-### Key notes
-
-- Reflog is **local only** — not synced to remote
-- Expires after 90 days by default
-- Always push branches you want to keep permanently
-
-</details>
+**The key insight about reflog:** Git almost never truly deletes commits. When you `reset --hard` or delete a branch, the commits are still in the object store — they just have no reference pointing to them. Reflog gives you those references back. As long as you act within 90 days, recovery is almost always possible.
 
 ---
 
-<details>
-<summary><strong>6. Best Practices & Guardrails</strong></summary>
+## 6. The Decision Table
 
-| Situation | Use | Avoid |
+| Situation | Right tool | Wrong tool |
 |---|---|---|
-| Fix local commit before push | `git commit --amend` | After pushing to shared repo |
-| Undo a pushed commit safely | `git revert` | `git reset --hard` on shared branch |
-| Undo multiple local commits | `git reset --soft` | On shared branches |
-| Lost commit recovery | `git reflog` + `git checkout` | Panicking before checking reflog |
+| Typo in last commit message, not pushed | `git commit --amend` | `git revert` — creates an unnecessary new commit |
+| Forgot to stage a file, last commit not pushed | `git add <file>` + `git commit --amend --no-edit` | Creating a new commit for a tiny fix |
+| Bad commit already pushed, others may have pulled | `git revert <hash>` | `git reset --hard` + force push — rewrites shared history |
+| Several bad local commits, not pushed, keep the changes | `git reset --soft HEAD~N` | `git reset --hard` — would erase the work |
+| Several bad local commits, not pushed, discard everything | `git reset --hard HEAD~N` | `git revert` — unnecessary when history is not shared |
+| Lost commits after reset | `git reflog` + `git reset --hard <hash>` | Panicking — reflog almost always has it |
+| Accidentally deleted a branch | `git reflog` + `git branch <n> <hash>` | Accepting the loss |
 
-**Golden rule:**
-Revert for shared safety. Reset for private cleanup.
+**The golden rule:**
+Revert for shared history. Reset for local cleanup. Reflog for recovery.
 
-</details>
+---
+
+## 7. Quick Reference
+
+| Command | What it does |
+|---|---|
+| `git restore <file>` | Discard changes in working directory |
+| `git restore --staged <file>` | Unstage a file |
+| `git commit --amend -m "new message"` | Fix last commit message (not pushed only) |
+| `git commit --amend --no-edit` | Add staged changes to last commit (not pushed only) |
+| `git revert <hash>` | Create new commit that undoes a specific commit — safe for pushed |
+| `git revert HEAD` | Revert the most recent commit |
+| `git reset --soft HEAD~N` | Undo N commits, keep changes staged |
+| `git reset --mixed HEAD~N` | Undo N commits, keep changes unstaged |
+| `git reset --hard HEAD~N` | Undo N commits, erase all changes |
+| `git reflog` | Show full history of HEAD movements |
+| `git reset --hard HEAD@{n}` | Restore HEAD to any reflog position |
+| `git branch <n> <hash>` | Recreate a deleted branch from a reflog hash |
+
+---
 
 → Ready to practice? [Go to Lab 05](../git-labs/05-undo-recovery-lab.md)
 
@@ -4977,17 +5361,49 @@ Revert for shared safety. Reset for private cleanup.
 
 # Git Labs
 
-Hands-on sessions for every topic in the Git notes.
+Hands-on sessions for every phase in the Git notes.
 
 Do them in order. Do not move to the next lab until the checklist at the bottom is fully checked.
 
-| Lab | Topics | Notes |
+---
+
+## The Project Thread
+
+These five labs are not isolated exercises. They are five stages in the life of the webstore project — the same project you built in Linux — as it gains version control, a public presence on GitHub, and the collaborative workflow a real team uses.
+
+By the time you finish Lab 05 you will have a versioned webstore on GitHub with a clean commit history, a tagged release, feature branches, a merged pull request, and the confidence to recover from any Git mistake. That is the state Docker picks up from — a project with history worth tracking before containerization.
+
+| Lab | Where the webstore is | What you do |
 |---|---|---|
-| [Lab 01](./01-foundations-lab.md) | Init, config, staging, commits, .gitignore, push | [01-foundations](../01-foundations/README.md) |
-| [Lab 02](./02-stash-tags-lab.md) | Stash work in progress, create and push tags | [02-stash-tags](../02-stash-tags/README.md) |
-| [Lab 03](./03-history-branching-lab.md) | Read history, branches, merge, conflict resolution, rebase | [03-history-branching](../03-history-branching/README.md) |
-| [Lab 04](./04-contribute-lab.md) | Feature branch PRs, fork workflow, remotes | [04-contribute](../04-contribute/README.md) |
-| [Lab 05](./05-undo-recovery-lab.md) | Amend, revert, reset, reflog, recover deleted branch | [05-undo-recovery](../05-undo-recovery/README.md) |
+| [Lab 01](./01-foundations-lab.md) | Files on disk, no version control | Initialize the repo, make the first commits, push to GitHub — the project becomes trackable |
+| [Lab 02](./02-stash-tags-lab.md) | On GitHub, active development | Interrupt yourself mid-work, stash, fix a bug, restore — then tag v1.0 as the first stable release |
+| [Lab 03](./03-history-branching-lab.md) | v1.0 tagged, new features needed | Build features in isolation on branches, merge them, resolve conflicts, keep history linear with rebase |
+| [Lab 04](./04-contribute-lab.md) | Active team, features being built | Practice the full PR workflow — feature branch, push, review, merge — then the open-source fork workflow |
+| [Lab 05](./05-undo-recovery-lab.md) | Something went wrong | Fix every category of Git mistake — wrong message, bad commit, accidental reset, deleted branch |
+
+---
+
+## Labs
+
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 01](./01-foundations-lab.md) | Foundations | Init repo, configure identity, .gitignore, first commits, push to GitHub |
+| [Lab 02](./02-stash-tags-lab.md) | Stash & Tags | Stash mid-work, restore, tag the first release, push tags |
+| [Lab 03](./03-history-branching-lab.md) | History & Branching | Read history, fast-forward merge, 3-way merge, conflict resolution, rebase |
+| [Lab 04](./04-contribute-lab.md) | Contribute | Feature branch PR workflow, fork, upstream remote, sync fork |
+| [Lab 05](./05-undo-recovery-lab.md) | Undo & Recovery | Amend commits, revert bad commits, reset, recover with reflog |
+
+---
+
+## How to Use These Labs
+
+Read the notes for each phase before opening a terminal. Every lab assumes you have read the corresponding notes file first.
+
+Write every command from scratch. Do not copy-paste. Typing forces your brain to process each flag and each decision.
+
+Every lab has a "Break It on Purpose" section. Do not skip it. These are the failure states you will actually hit — seeing the error yourself and fixing it is the point.
+
+Do not move to the next lab until every box in the checklist is checked. If you cannot check a box honestly, go back and do it properly.
 
 ---
 # TOOL: 03. Networking – Foundations | FILE: 01-foundation-and-the-big-picture
@@ -5810,6 +6226,11 @@ Every step follows the same principles:
 **Everything else is details.**
 
 ---
+
+## What This Means for the Webstore
+
+The webstore is three processes on a Linux server — nginx on port 80, the API on port 8080, and postgres on port 5432. When a browser requests the webstore homepage, it sends a packet. That packet has a header at every layer: application (HTTP GET /), transport (TCP, destination port 80), network (the server's IP address), data link (MAC address of the next router hop). Each layer does exactly one job and hands off to the next. The webstore receives the request, nginx processes it, and the response travels back through the same stack in reverse. Everything in this series explains one piece of that journey.
+
 ---
 # TOOL: 03. Networking – Foundations | FILE: 02-addressing-fundamentals
 ---
@@ -6896,6 +7317,12 @@ ARP = Looking up "Who's driving truck to this address?"
 ✅ Know that MAC changes at each hop, IP doesn't  
 
 ---
+
+---
+
+## What This Means for the Webstore
+
+The webstore server has one IP address. Every service on that server shares it. What separates them is ports: nginx answers on port 80, the API on port 8080, postgres on port 5432. When the webstore-api connects to postgres, it connects to the server's own IP at port 5432 — not necessarily `localhost`, because postgres is configured with `listen_addresses` that controls which interfaces it binds to. When postgres is set to `127.0.0.1` only, the API can reach it from the same machine. When postgres is set to `0.0.0.0`, it is reachable from any interface including external ones. Reading an IP binding tells you immediately whether a service is reachable from outside or locked to the machine.
 
 ---
 # TOOL: 03. Networking – Foundations | FILE: 03-ip-deep-dive
@@ -8027,6 +8454,13 @@ DHCP Reservation = Reserved hotel room
 ✅ Understand localhost (127.0.0.1)  
 
 ---
+
+---
+
+## What This Means for the Webstore
+
+Postgres on the webstore server is configured with `listen_addresses` in `postgresql.conf`. If it is set to `localhost`, only processes on the same machine can connect — correct for a production server where the API runs locally. If it is set to `*` or the server's IP, processes on other machines can connect — necessary when the API and database run on separate servers. This is not a code change. It is an IP binding decision. Understanding that `127.0.0.1` means this machine only and `0.0.0.0` means all interfaces is what lets you read a database config file and immediately know whether it is reachable from outside. The webstore's nginx is bound to `0.0.0.0:80` — it must be, to serve browsers. Postgres is bound to `127.0.0.1:5432` — it must be, to block direct external access.
+
 → Ready to practice? [Go to Lab 01](../networking-labs/01-foundation-addressing-ip-lab.md)
 
 ---
@@ -9135,6 +9569,14 @@ Default Gateway = Building exit
 ---
 
 ---
+
+## What This Means for the Webstore
+
+The webstore server sits behind a router. When a request arrives from a browser in another city, it has been forwarded by 10-20 routers on the way — each one reading only the destination IP, making a routing decision, and passing the packet to the next hop. The MAC address on the packet changed at every single one of those hops. The destination IP never changed. When you run `traceroute` to the webstore server, you are watching those router hops and their latencies in real time. A latency spike at hop 8 means that is where the delay is introduced — not at your server, not in your application code.
+
+→ Ready to practice? [Go to Lab 02](../networking-labs/02-devices-subnets-lab.md)
+
+---
 # TOOL: 03. Networking – Foundations | FILE: 05-subnets-cidr
 ---
 
@@ -9837,6 +10279,13 @@ How?
 ✅ Plan for growth and future expansion  
 
 ---
+
+---
+
+## What This Means for the Webstore
+
+When you deploy the webstore to a server environment, you decide what subnet it lives in. A single server on a `/24` subnet shares that network with 253 other possible addresses. When you need to separate webstore-api from webstore-db for security — putting the database in a private subnet with no internet route — you need two subnets: one public (`10.0.1.0/24`) for the frontend and API tier, one private (`10.0.2.0/24`) for the database. Postgres lives on `10.0.2.50`. A browser on the internet cannot reach postgres directly — not because of a firewall rule, but because there is no route to that subnet from outside. This is the network design pattern AWS VPC implements, and you will lay it out exactly this way when you get there.
+
 → Ready to practice? [Go to Lab 02](../networking-labs/02-devices-subnets-lab.md)
 
 ---
@@ -11111,6 +11560,15 @@ Mail delivery needs both:
 ✅ Map Docker container ports  
 
 ---
+
+---
+
+## What This Means for the Webstore
+
+Three services, one server, three ports. nginx on 80, webstore-api on 8080, postgres on 5432. When a connection arrives at the server's IP, the OS reads the destination port and delivers it to the right process. When you check `ss -tlnp` on the webstore server, you will see `0.0.0.0:80` for nginx (listening on all interfaces), `0.0.0.0:8080` for the API, and `127.0.0.1:5432` for postgres (loopback only). That single difference in binding address tells you everything about what is and is not reachable from outside. Reading `ss` output is how you verify a service is actually listening before you debug anything else.
+
+→ Ready to practice? [Go to Lab 03](../networking-labs/03-ports-transport-nat-lab.md)
+
 ---
 # TOOL: 03. Networking – Foundations | FILE: 07-nat
 ---
@@ -11818,6 +12276,13 @@ Router = Translator:
 ✅ Debug NAT-related connectivity issues  
 
 ---
+
+---
+
+## What This Means for the Webstore
+
+The webstore server has a private IP on the network — `10.0.1.45` or similar. When it receives a request from a browser on the internet, that request arrived at the public IP of the router, which NAT-translated it inbound to `10.0.1.45`. The browser never knew the server's private IP. When the server responds, the router translates the source IP back to public before sending it out. This NAT process is invisible in both directions. When you later configure `docker run -p 8080:80`, Docker is creating a DNAT rule in iptables — the exact same mechanism described in this file, applied at the container level. The concept is identical. The scope is smaller.
+
 → Ready to practice? [Go to Lab 03](../networking-labs/03-ports-transport-nat-lab.md)
 
 ---
@@ -12717,6 +13182,14 @@ Expires after TTL
 ---
 
 ---
+
+## What This Means for the Webstore
+
+When you register `webstore.example.com` and create an A record pointing to the server's public IP, every browser goes through the full DNS resolution chain before it can connect. The TTL on that A record controls how long DNS caches the answer. If you move the webstore to a new server, old DNS caches will keep sending traffic to the old IP until the TTL expires — this is why DNS changes always require a propagation wait. On the server itself, adding an entry like `10.0.1.50 webstore-db` to `/etc/hosts` lets the API connect to the database by hostname without a real DNS server. The OS resolves it locally, the query never goes to a DNS server, and the connection works.
+
+→ Ready to practice? [Go to Lab 04](../networking-labs/04-dns-firewalls-lab.md)
+
+---
 # TOOL: 03. Networking – Foundations | FILE: 09-firewalls
 ---
 
@@ -13545,6 +14018,13 @@ Use stateless only when you need explicit DENY rules.
 ✅ Apply principle of least privilege  
 
 ---
+
+---
+
+## What This Means for the Webstore
+
+The webstore server needs exactly three inbound rules: allow port 80 (nginx), allow port 8080 (API), allow port 22 (SSH). Everything else is dropped by default. Postgres on port 5432 should never be reachable directly from outside — it accepts connections only from `127.0.0.1` or the server's local interface. A missing DROP rule on port 5432 means anyone on the internet can attempt to connect to the webstore database directly. The iptables setup from Linux Lab 05 enforces this: HTTP open to the world, SSH restricted to your IP, postgres not reachable from outside at all. This same logic is what AWS Security Groups enforce at the cloud level — different syntax, identical concept.
+
 → Ready to practice? [Go to Lab 04](../networking-labs/04-dns-firewalls-lab.md)
 
 ---
@@ -15247,13 +15727,47 @@ Hands-on sessions for every topic in the Networking notes.
 
 Do them in order. Do not move to the next lab until the checklist at the bottom is fully checked.
 
+---
+
+## The Project Thread
+
+These five labs are not isolated drills. They are five stages in understanding the network layer that every request to the webstore passes through.
+
+The webstore server is running nginx on port 80, the API on port 8080, and postgres on port 5432. A browser somewhere types `webstore.example.com` and presses Enter. By Lab 05 you can trace every single step that request takes to reach the server and come back — and you can debug it when something goes wrong.
+
+No Docker. No AWS. Just the network underneath both of them.
+
+| Lab | What you are learning to see | Why it matters for the webstore |
+|---|---|---|
+| [Lab 01](./01-foundation-addressing-ip-lab.md) | Interfaces, MAC, IP, ARP, localhost | The webstore server has an IP — this is how it gets one and what it means |
+| [Lab 02](./02-devices-subnets-lab.md) | Routing table, traceroute, CIDR, subnet design | Requests are routed to the webstore server — this is how routers decide where to send them |
+| [Lab 03](./03-ports-transport-nat-lab.md) | ss, TCP handshake, NAT, iptables DNAT | nginx on 80, API on 8080, postgres on 5432 — ports are what separate them |
+| [Lab 04](./04-dns-firewalls-lab.md) | dig, record types, TTL, iptables rules, stateful vs stateless | webstore.example.com resolves to an IP — firewalls decide what can reach it |
+| [Lab 05](./05-complete-journey-lab.md) | Full end-to-end trace, production debugging | Put every layer together — trace a request and fix it when it breaks |
+
+---
+
+## Labs
+
 | Lab | Topics | Notes |
 |---|---|---|
 | [Lab 01](./01-foundation-addressing-ip-lab.md) | Interfaces, MAC, IP, ARP, private ranges, localhost | [01](../01-foundation-and-the-big-picture/README.md) · [02](../02-addressing-fundamentals/README.md) · [03](../03-ip-deep-dive/README.md) |
 | [Lab 02](./02-devices-subnets-lab.md) | Routing table, traceroute, CIDR calculation, VPC design | [04](../04-network-devices/README.md) · [05](../05-subnets-cidr/README.md) |
-| [Lab 03](./03-ports-transport-nat-lab.md) | ss, netstat, TCP handshake, UDP, Docker NAT, ephemeral ports | [06](../06-ports-transport/README.md) · [07](../07-nat/README.md) |
-| [Lab 04](./04-dns-firewalls-lab.md) | dig trace, record types, TTL, Docker DNS, iptables, stateful vs stateless | [08](../08-dns/README.md) · [09](../09-firewalls/README.md) |
+| [Lab 03](./03-ports-transport-nat-lab.md) | ss, netstat, TCP handshake, UDP, iptables DNAT | [06](../06-ports-transport/README.md) · [07](../07-nat/README.md) |
+| [Lab 04](./04-dns-firewalls-lab.md) | dig trace, record types, TTL, iptables, stateful vs stateless | [08](../08-dns/README.md) · [09](../09-firewalls/README.md) |
 | [Lab 05](./05-complete-journey-lab.md) | Full end-to-end trace, production debugging, interview answer | [10](../10-complete-journey/README.md) |
+
+---
+
+## How to Use These Labs
+
+Read the notes for each phase before opening a terminal. Every lab assumes you have read the corresponding notes files first.
+
+Write every command from scratch. Do not copy-paste.
+
+Every lab has a "Break It on Purpose" section. Do not skip it. These are the failure states you will actually hit in production.
+
+Do not move to the next lab until every box in the checklist is checked.
 
 ---
 # TOOL: 04. Docker – Containerization | FILE: 01-history-and-motivation
@@ -15276,32 +15790,34 @@ Do them in order. Do not move to the next lab until the checklist at the bottom 
 # History and Motivation
 
 <!-- no toc -->
-  - [Why Docker Exists?](#why-docker-exists)
+  - [Why Docker Exists](#why-docker-exists)
   - [What is a container?](#what-is-a-container)
   - [History of virtualization](#history-of-virtualization)
     - [Bare Metal](#bare-metal)
     - [Virtual Machines](#virtual-machines)
     - [Containers](#containers)
     - [Tradeoffs](#tradeoffs)
+  - [What Containerizing the Webstore Gives You](#what-containerizing-the-webstore-gives-you)
 
 ---
-## Why Docker Exists?
 
-Before Docker, an app worked on your laptop because your machine already had the right setup. The same app often failed on testing or production machines, not because the code was wrong, but because the environment was different. Different OS packages, different runtime versions, or missing dependencies caused the break.  
-  
-Docker solves this environment problem.  
-  
-Instead of moving only the code, Docker packages the app together with everything it needs to run. That package behaves the same way on any machine that supports Docker. The goal is not speed or magic. The goal is consistency.  
-  
-Docker has two core parts. 
+## Why Docker Exists
+
+Before Docker, an app worked on your laptop because your machine already had the right setup. The same app often failed on testing or production machines, not because the code was wrong, but because the environment was different. Different OS packages, different runtime versions, or missing dependencies caused the break.
+
+Docker solves this environment problem.
+
+Instead of moving only the code, Docker packages the app together with everything it needs to run. That package behaves the same way on any machine that supports Docker. The goal is not speed or magic. The goal is consistency.
+
+Docker has two core parts.
 - A Docker **image** is a fixed definition of the environment. It describes what should exist, but it does not run.
-- A Docker **container** is a running copy of that image. Containers are created from images, run the app, and can be stopped and deleted anytime.  
-  
-Because containers are meant to be replaced, rebuilding them is normal. One image can create many identical containers. This makes it easy to run different apps or different versions on the same machine without conflicts.  
+- A Docker **container** is a running copy of that image. Containers are created from images, run the app, and can be stopped and deleted anytime.
 
-One important rule stays constant: containers run the application, but they should not store important data. Anything that must survive restarts or deletions should live outside the container.  
-  
-Everything else in Docker exists to support this idea.  
+Because containers are meant to be replaced, rebuilding them is normal. One image can create many identical containers. This makes it easy to run different apps or different versions on the same machine without conflicts.
+
+One important rule stays constant: containers run the application, but they should not store important data. Anything that must survive restarts or deletions should live outside the container.
+
+Everything else in Docker exists to support this idea.
 
 ## What is a container?
 
@@ -15311,62 +15827,62 @@ A Docker container image is a lightweight, standalone, executable package of sof
 
 ### Bare Metal
 
-**What this means?**  
+**What this means?**
 In a bare metal setup, applications run directly on the same operating system without strong separation. All applications share the same OS, system libraries, CPU, and memory. Because there are no clear boundaries, one application can directly affect others.
 
-**Why this is a problem?**  
+**Why this is a problem?**
 If one app installs or upgrades a library, it may break another app. If one app consumes too much CPU or memory, it can slow down the entire system. If one app crashes, the impact can spread beyond just that app. Over time, this makes systems fragile and hard to manage.
 
-**Simple analogy!**  
-Imagine multiple people cooking in the same kitchen with **one stove and one pantry**. Everyone uses the same ingredients and tools. If one person uses all the ingredients or burns the stove, everyone else is affected. There is no separation, so one person’s mistake becomes everyone’s problem.
+**Simple analogy!**
+Imagine multiple people cooking in the same kitchen with **one stove and one pantry**. Everyone uses the same ingredients and tools. If one person uses all the ingredients or burns the stove, everyone else is affected. There is no separation, so one person's mistake becomes everyone's problem.
 
 ![](./readme-assets/bare-metal.jpg)
 
 **Why the industry moved on:**
-- Apps break each other  
+- Apps break each other
 Different apps need different versions of the same software, so installing or updating one app can break another.
 
-- Machine resources are wasted  
+- Machine resources are wasted
 CPU and memory are not used well; one app may use too much while others sit idle.
 
-- One problem affects everything  
+- One problem affects everything
 If one app crashes or misbehaves, it can impact the whole system.
 
-- Starting and stopping is slow  
+- Starting and stopping is slow
 Services take minutes to start or stop.
 
-- Creating and removing systems is very slow  
+- Creating and removing systems is very slow
 Setting up or removing a machine takes hours or even days.
 
 ---
 
 ### Virtual Machines
 
-**What this means?**  
+**What this means?**
 In a virtual machine setup, applications do not run directly on the host OS.
 Instead, a hypervisor creates multiple virtual computers on one physical machine.
 Each virtual machine has its own operating system, libraries, CPU share, and memory.
 Because each VM is separated, one VM cannot directly mess with another.
 
-**Why this is better than bare metal?**  
+**Why this is better than bare metal?**
 Since every VM has its own OS and environment:
-- Apps don’t fight over libraries
+- Apps don't fight over libraries
 - Crashes usually stay inside one VM
 - Resources are more controlled
 
 This makes systems more stable and predictable than bare metal.
 
-**Simple analogy!**  
+**Simple analogy!**
 Imagine an apartment building.
 - Each family lives in their own apartment
 - Everyone has their own kitchen and bathroom
-- If one family burns food, it doesn’t destroy the whole building
+- If one family burns food, it doesn't destroy the whole building
 
 There is separation, but the building itself is still shared.
 
 ![](./readme-assets/virtual-machine.jpg)
 
-**What problems still exist?**.  
+**What problems still exist?**
 
 Even though VMs fix many bare-metal issues, they introduce new ones:
 
@@ -15383,15 +15899,15 @@ Even though VMs fix many bare-metal issues, they introduce new ones:
 - Lower density (fewer apps per machine)
 - Not ideal for fast development and scaling
 
-**Virtual machines solved isolation and stability, but they are still heavy, slow, and resource-hungry.**  
+**Virtual machines solved isolation and stability, but they are still heavy, slow, and resource-hungry.**
 That gap is exactly where containers come in next.
 
 ---
 
 ### Containers
 
-**What this means?**  
-In a container setup, applications do not get their own operating system. There is one operating system on the machine, and all containers use that same OS core (kernel). 
+**What this means?**
+In a container setup, applications do not get their own operating system. There is one operating system on the machine, and all containers use that same OS core (kernel).
 Each application runs inside its own container, which gives it:
 - its own files
 - its own settings
@@ -15399,7 +15915,7 @@ Each application runs inside its own container, which gives it:
 So even though apps share the same OS underneath, they cannot see or touch each other.
 This separation is created using built-in Linux features, not fake hardware and not extra operating systems.
 
-**Why this is an improvement?**  
+**Why this is an improvement?**
 Compared to virtual machines:
 - No extra OS to install
 - No OS to boot for every app
@@ -15407,7 +15923,7 @@ Compared to virtual machines:
 - Apps start almost instantly
 You can run many containers on one machine without wasting resources.
 
-**Simple analogy!**  
+**Simple analogy!**
 Imagine an apartment building. One building, One plumbing system, One power connection
 
 Each apartment:
@@ -15415,14 +15931,14 @@ Each apartment:
 - its own rooms
 - its own locks
 
-People inside one apartment cannot see or affect people in another apartment.  
-The building = host operating system  
-The apartments = containers  
+People inside one apartment cannot see or affect people in another apartment.
+The building = host operating system
+The apartments = containers
 Everyone shares the same building, but lives separately.
 
 ![](./readme-assets/container.jpg)
 
-**Why the industry moved here**. 
+**Why the industry moved here**
 
 - Apps no longer break each other
 - Resources are used more efficiently
@@ -15436,26 +15952,23 @@ Everyone shares the same building, but lives separately.
 
 ## VM vs Docker — Resource & Kernel Model
 
-**Virtual Machines:**  
+**Virtual Machines:**
 - Hardware virtualization
 - Guest OS per VM
 - Reserved CPU/RAM
 - Strong isolation
 - Slower, heavier
 
-**Docker Containers:**  
+**Docker Containers:**
 - OS-level virtualization
 - Shared host kernel
 - No reserved CPU/GPU
 - Process-level isolation
 - Fast, lightweight
 
-**Core Difference:**  
-VMs virtualize hardware.  
-Containers isolate processes.  
-
-
-
+**Core Difference:**
+VMs virtualize hardware.
+Containers isolate processes.
 
 ---
 
@@ -15463,7 +15976,39 @@ Containers isolate processes.
 
 ![](./readme-assets/tradeoffs.jpg)
 
-***Note:*** There is much more nuance to “performance” than this chart can capture. A VM or container doesn’t inherently sacrifice much performance relative to the bare metal it runs on, but being able to have more control over things like connected storage, physical proximity of the system relative to others it communicates with, specific hardware accelerators, etc… do enable performance tuning
+***Note:*** There is much more nuance to "performance" than this chart can capture. A VM or container doesn't inherently sacrifice much performance relative to the bare metal it runs on, but being able to have more control over things like connected storage, physical proximity of the system relative to others it communicates with, specific hardware accelerators, etc… do enable performance tuning
+
+---
+
+## What Containerizing the Webstore Gives You
+
+The webstore on a Linux server — nginx on port 80, the API on port 8080, postgres on port 5432 — works on your machine because your machine is set up correctly. The right postgres version is installed. The right nginx config is in place. The right environment variables are set.
+
+Now you want to deploy it. The production server is a fresh Ubuntu instance. It does not have postgres. It does not have the right nginx config. You SSH in, install dependencies manually, adjust configs, and hope you did not miss anything. This is the environment problem Docker solves.
+
+**What changes when you containerize the webstore:**
+
+The webstore-api image contains the application code, the runtime, and every dependency it needs — packaged together. When you run that image on the production server, the same container starts. Same runtime version. Same dependencies. No manual installation. No configuration drift between environments.
+
+```
+Without Docker:
+  Your laptop → "works on my machine"
+  Staging server → "missing postgres version mismatch"
+  Production server → "env var missing, nginx config wrong"
+
+With Docker:
+  Your laptop → docker compose up → webstore running
+  Staging server → docker compose up → same webstore
+  Production server → docker compose up → same webstore
+```
+
+**What each container gets:**
+- `webstore-frontend` — nginx:1.24 serving static files, same image in dev and prod
+- `webstore-api` — built from your Dockerfile, same image that passed CI
+- `webstore-db` — postgres:15, same version everywhere, data in a volume that survives container replacement
+
+**What you hand to Kubernetes after Docker:**
+A Kubernetes cluster does not know what your app is. It pulls container images from a registry and runs them. Everything you build in Docker — images, tags, environment variables, port mappings — is exactly what Kubernetes reads. Docker is not a stepping stone to Kubernetes. It is the prerequisite.
 
 ---
 # TOOL: 04. Docker – Containerization | FILE: 02-technology-overview
@@ -15822,7 +16367,7 @@ Clean → `stop → rm → rmi`
 [Registry](../09-docker-registry/README.md) |
 [Compose](../10-docker-compose/README.md)
 
-# 05. Docker Port Binding
+# Docker Port Binding
 
 ## **1) The Problem**
 * Containers are isolated.
@@ -15989,7 +16534,7 @@ This isolation is a feature, not a bug. It is what makes containers safe to run 
 | Your laptop terminal | Your laptop |
 | webstore-api container | webstore-api container only |
 | webstore-db container | webstore-db container only |
-| mongo-express container | mongo-express container only |
+| adminer container | adminer container only |
 
 Each container has its own network namespace. Its own localhost. Completely separate from every other container and from the host machine.
 
@@ -15998,12 +16543,14 @@ Each container has its own network namespace. Its own localhost. Completely sepa
 ```bash
 # Inside webstore-api container — this ALWAYS fails
 # Because localhost means webstore-api itself, not webstore-db
-MONGO_URL="mongodb://admin:secret@localhost:27017"
+DB_HOST="localhost"
+DB_PORT=5432
 ```
 
 ```bash
 # This works — using the container name as hostname
-MONGO_URL="mongodb://admin:secret@webstore-db:27017"
+DB_HOST="webstore-db"
+DB_PORT=5432
 ```
 
 **The fix:** containers talk to each other using **container names**, not localhost. Docker DNS translates the container name to its IP automatically. This is covered in Section 5.
@@ -16036,9 +16583,9 @@ When Docker installs, it creates a virtual network bridge on your host called `d
 │  │   (virtual cable)      (virtual cable)      (virtual cable)    │        │
 │  │        │                    │                    │             │        │
 │  │  ┌─────▼──────┐      ┌──────▼─────┐      ┌──────▼──────┐       │        │
-│  │  │webstore-api│      │webstore-db │      │mongo-express│       │        │
+│  │  │webstore-api│      │webstore-db │      │  adminer    │       │        │
 │  │  │172.18.0.2  │─────▶│172.18.0.3  │◀─────│172.18.0.4   │       │        │
-│  │  │  :8080     │ DNS  │  :27017    │ DNS  │   :8081     │       │        │
+│  │  │  :8080     │ DNS  │  :5432     │ DNS  │   :8080     │       │        │
 │  │  └────────────┘      └────────────┘      └─────────────┘       │        │
 │  └────────────────────────────────────────────────────────────────┘        │
 └────────────────────────────────────────────────────────────────────────────┘
@@ -16101,7 +16648,7 @@ When you create a custom Docker network, Docker starts an embedded DNS server fo
 ```
 webstore-api container
     │
-    │  "Connect to webstore-db:27017"
+    │  "Connect to webstore-db:5432"
     │
     ▼
 Docker DNS (127.0.0.11)
@@ -16110,7 +16657,7 @@ Docker DNS (127.0.0.11)
     │  Answer:  "172.18.0.3"
     │
     ▼
-webstore-api connects to 172.18.0.3:27017
+webstore-api connects to 172.18.0.3:5432
     │
     ▼
 webstore-db container receives the connection
@@ -16146,7 +16693,7 @@ Address: 172.18.0.3
 The default `bridge` network does not enable Docker DNS. Containers on it cannot resolve each other by name — only by IP. This is one of the main reasons you always create a named network for your app.
 
 **What happens when a container restarts:**
-When webstore-db restarts, it may get a different IP (e.g., `172.18.0.5` instead of `172.18.0.3`). Docker DNS updates automatically — webstore-api still connects to `webstore-db:27017` and gets the new IP without any configuration change. This is the same principle as Kubernetes labels and selectors — never hardcode IPs, always use names.
+When webstore-db restarts, it may get a different IP (e.g., `172.18.0.5` instead of `172.18.0.3`). Docker DNS updates automatically — webstore-api still connects to `webstore-db:5432` and gets the new IP without any configuration change. This is the same principle as Kubernetes labels and selectors — never hardcode IPs, always use names.
 
 ---
 
@@ -16179,7 +16726,7 @@ sudo iptables -t nat -L DOCKER -n
 Chain DOCKER (2 references)
 target  prot  opt  source    destination
 DNAT    tcp   --   0.0.0.0/0 0.0.0.0/0   tcp dpt:8080 to:172.18.0.2:8080
-DNAT    tcp   --   0.0.0.0/0 0.0.0.0/0   tcp dpt:8081 to:172.18.0.4:8081
+DNAT    tcp   --   0.0.0.0/0 0.0.0.0/0   tcp dpt:8080 to:172.18.0.4:8080
 ```
 
 **The port binding format:**
@@ -16221,13 +16768,14 @@ Docker lets you create multiple networks and control exactly which containers ca
 ┌─────────────────── webstore-network ──────────────────────┐
 │                                                           │
 │  webstore-frontend ──▶ webstore-api ──▶ webstore-db       │
-│  (nginx)                (app)            (mongo)          │
+│  (nginx:1.24)           (app)            (postgres:15)    │
 │                                                           │
 └───────────────────────────────────────────────────────────┘
 
 webstore-frontend: port 80 exposed to host (-p 80:80)
 webstore-api:      port 8080 exposed to host (-p 8080:8080)
 webstore-db:       NO port exposed — internal only
+adminer:           port 8080 exposed to host (-p 8081:8080) — dev only
 ```
 
 `webstore-db` has no `-p` flag. It is unreachable from your browser, from the internet, from any other Docker network. Only containers on `webstore-network` can connect to it. This is production-safe database isolation without any firewall rules.
@@ -16239,14 +16787,14 @@ docker network create frontend-network
 docker network create backend-network
 
 # webstore-frontend only on frontend
-docker run --network frontend-network --name webstore-frontend nginx
+docker run --network frontend-network --name webstore-frontend nginx:1.24
 
 # webstore-api on both — the bridge between the two tiers
-docker run --network frontend-network --name webstore-api node-app
+docker run --network frontend-network --name webstore-api webstore-api
 docker network connect backend-network webstore-api
 
 # webstore-db only on backend — invisible to frontend
-docker run --network backend-network --name webstore-db mongo
+docker run --network backend-network --name webstore-db postgres:15
 ```
 
 ```
@@ -16274,7 +16822,7 @@ This is the full webstore stack brought up manually. Every flag is explained.
 ```
 webstore-api    = client  (connects TO the database)
 webstore-db     = server  (waits for connections)
-mongo-express   = client  (connects TO the database for the UI)
+adminer         = client  (connects TO the database for the UI)
 ```
 
 **Step 1 — Create the network**
@@ -16289,30 +16837,28 @@ This creates a private bridge network with Docker DNS enabled. Every container t
 
 ```bash
 docker run -d \
-  -p 27017:27017 \
   --name webstore-db \
   --network webstore-network \
-  -e MONGO_INITDB_ROOT_USERNAME=admin \
-  -e MONGO_INITDB_ROOT_PASSWORD=secret \
-  mongo
+  -e POSTGRES_DB=webstore \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=secret \
+  -v webstore-db-data:/var/lib/postgresql/data \
+  postgres:15
 ```
 
 Start the server before the clients. webstore-api will fail to connect if the database is not ready when it starts.
 
-**Step 3 — Start mongo-express (database UI)**
+**Step 3 — Start adminer (database UI)**
 
 ```bash
 docker run -d \
-  -p 8081:8081 \
-  --name mongo-express \
+  -p 8081:8080 \
+  --name adminer \
   --network webstore-network \
-  -e ME_CONFIG_MONGODB_ADMINUSERNAME=admin \
-  -e ME_CONFIG_MONGODB_ADMINPASSWORD=secret \
-  -e ME_CONFIG_MONGODB_URL="mongodb://admin:secret@webstore-db:27017" \
-  mongo-express
+  adminer
 ```
 
-`webstore-db` in the connection URL is the container name — Docker DNS resolves it to the container's IP automatically.
+Adminer connects to any database using the connection form in the browser. Use `webstore-db` as the server hostname — Docker DNS resolves it automatically.
 
 **Step 4 — Build and start the API**
 
@@ -16323,99 +16869,70 @@ docker run -d \
   -p 8080:8080 \
   --name webstore-api \
   --network webstore-network \
-  -e MONGO_URL="mongodb://admin:secret@webstore-db:27017" \
+  -e DB_HOST=webstore-db \
+  -e DB_PORT=5432 \
+  -e DB_NAME=webstore \
+  -e DB_USER=admin \
+  -e DB_PASSWORD=secret \
   webstore-api
 ```
 
 **The final data flows:**
 
 ```
-App path:   Browser → localhost:8080 → webstore-api → webstore-db:27017
-Debug path: Browser → localhost:8081 → mongo-express → webstore-db:27017
-```
-
-**Verify everything is connected:**
-
-```bash
-# Check all containers are running
-docker ps
-
-# Check the network and which containers joined it
-docker network inspect webstore-network
-
-# Confirm DNS resolution from inside api container
-docker exec webstore-api nslookup webstore-db
-
-# Confirm api can reach db
-docker exec webstore-api curl -s webstore-db:27017
-```
-
-**Teardown:**
-
-```bash
-docker stop webstore-api mongo-express webstore-db
-docker rm webstore-api mongo-express webstore-db
-docker network rm webstore-network
+App path:   Browser → localhost:8080 → webstore-api → webstore-db:5432
+Debug path: Browser → localhost:8081 → adminer → webstore-db:5432
 ```
 
 ---
 
 ## 9. Debugging Docker Networking
 
-When containers cannot talk to each other, work through this checklist in order.
-
-**Step 1 — Are both containers on the same network?**
+**Symptom: container cannot reach another container**
 
 ```bash
-docker network inspect webstore-network
+# Step 1 — Are they on the same network?
+docker inspect webstore-api | grep -A 5 "Networks"
+docker inspect webstore-db | grep -A 5 "Networks"
 
-# Look for "Containers" section — both should appear
-# If a container is missing, it was not started with --network webstore-network
-```
-
-**Step 2 — Can Docker DNS resolve the name?**
-
-```bash
+# Step 2 — Can the container resolve the hostname?
 docker exec webstore-api nslookup webstore-db
 
-# If this fails — DNS is not working
-# Most likely cause: containers on different networks or using default bridge
+# Step 3 — Can the container reach the port?
+docker exec webstore-api nc -zv webstore-db 5432
+
+# Step 4 — Check what the container is actually trying to connect to
+docker logs webstore-api
 ```
 
-**Step 3 — Can the container reach the port?**
+**Symptom: browser cannot reach container**
 
 ```bash
-docker exec webstore-api nc -zv webstore-db 27017
+# Step 1 — Is the port binding active?
+docker ps | grep webstore-api
+# Look for: 0.0.0.0:8080->8080/tcp
 
-# Success: "Connection to webstore-db 27017 port [tcp] succeeded"
-# Failure: "Connection refused" = db not listening on that port
-#          Timeout = wrong network or firewall
-```
-
-**Step 4 — Is the target container actually running?**
-
-```bash
+# Step 2 — Is the container running?
 docker ps
-docker logs webstore-db
+
+# Step 3 — Is the app inside listening on the right port?
+docker exec webstore-api ss -tlnp
 ```
 
-**Step 5 — Check the connection string**
+**Symptom: containers on same network cannot find each other**
+
+Most common cause: using the default `bridge` network instead of a named network.
 
 ```bash
-docker exec webstore-api env | grep MONGO_URL
-# Confirm the URL uses the container name, not localhost or an IP
+# Wrong — default bridge, no DNS
+docker run --name webstore-api nginx
+docker run --name webstore-db postgres:15
+
+# Right — named network, DNS works
+docker network create webstore-network
+docker run --network webstore-network --name webstore-api nginx
+docker run --network webstore-network --name webstore-db postgres:15
 ```
-
-**Common errors and what they mean:**
-
-| Error | Meaning | Fix |
-|---|---|---|
-| `Connection refused` | Container running but nothing listening on that port | Check the port number, check container logs |
-| `Name resolution failure` | Docker DNS cannot find the container name | Check both containers are on the same named network |
-| `Connection timeout` | Network unreachable | Check both containers are on the same network |
-| `Authentication failed` | DNS worked, port open, but credentials wrong | Check env vars match between client and server |
-
-> **The Rule:** If two containers need to talk, they must be on the same Docker network. Same host is not enough. Same `docker run` command is not enough. Same network — explicitly set with `--network` — is the only thing that matters.
 
 → Ready to practice? [Go to Lab 02](../docker-labs/02-networking-volumes-lab.md)
 
@@ -16435,155 +16952,102 @@ docker exec webstore-api env | grep MONGO_URL
 [Registry](../09-docker-registry/README.md) |
 [Compose](../10-docker-compose/README.md)
 
-# 06. Docker Volumes
+# Docker Volumes
 
-This file teaches **how to manage persistent data in Docker**. If you can use everything here, you can safely store database data, handle application state, work with configuration files, and clean up volumes without losing important data.
+## What This File Is About
 
-1. [The Core Problem (Why Volumes Exist)](#1-the-core-problem-why-volumes-exist)
-2. [Proof: Data Dies With Containers](#2-proof-data-dies-with-containers)
-3. [Volume Types (Only Two)](#3-volume-types-only-two)
-4. [Named Volumes (Step-by-Step)](#4-named-volumes-step-by-step)
-5. [Bind Mounts (Step-by-Step)](#5-bind-mounts-step-by-step)
+Containers are ephemeral. When a container is deleted, everything written inside it is gone — including database rows, uploaded files, and logs. Volumes are Docker's answer to this problem. They store data outside the container so it survives container replacement, deletion, and rebuilds.
+
+---
+
+## Table of Contents
+
+1. [The Core Problem](#1-the-core-problem)
+2. [Types of Storage](#2-types-of-storage)
+3. [Named Volumes — Docker Managed](#3-named-volumes--docker-managed)
+4. [Bind Mounts — You Control the Path](#4-bind-mounts--you-control-the-path)
+5. [Bind Mount Workflow](#5-bind-mount-workflow)
 6. [Volume Management Commands](#6-volume-management-commands)
-7. [When to Use What (Decision Table)](#7-when-to-use-what-decision-table)
-8. [Real-World Database Example](#8-real-world-database-example)
-9. [Safe Delete Flow (Volumes Edition)](#9-safe-delete-flow-volumes-edition)  
-[Final Compression (Memorize)](#final-compression-memorize)
+7. [When to Use What](#7-when-to-use-what)
+8. [Real-World Database Example — webstore-db](#8-real-world-database-example--webstore-db)
+9. [Safe Delete Flow](#9-safe-delete-flow)
+[Final Compression](#final-compression-memorize)
 
 ---
 
-## 1. The Core Problem (Why Volumes Exist)
+## 1. The Core Problem
 
-**Situation:**
-- Containers are designed to be disposable
-- Containers can stop, be deleted, and be recreated anytime
-- Anything written **inside a container's filesystem** dies when the container is deleted
+A container is a running process with a temporary filesystem. Everything inside that filesystem lives only as long as the container lives.
 
-**Problem:**
-- Databases need to save data
-- Applications upload files
-- Logs need to persist
-- Configuration changes must survive
-
-**Solution:**
-Docker separates **compute** (containers) from **data** (volumes).
-
-**Mental model:**
 ```
-Container (temporary) ──> Volume (permanent)
-     ↓ dies                    ↓ survives
+docker run postgres:15          → database starts, stores data inside container
+docker stop webstore-db         → container stops
+docker rm webstore-db           → container deleted
+docker run postgres:15          → fresh container, ALL DATA IS GONE
 ```
+
+This is intentional — containers are designed to be replaceable. The solution is to store data in a volume that lives independently of any container.
 
 ---
 
-## 2. Proof: Data Dies With Containers
+## 2. Types of Storage
 
-### Experiment: Write data, delete container, check if data survives
-
-| Step | What you do | Command | Expected result |
-|---:|---|---|---|
-| 1 | Create container and enter it | `docker run -it --name test-container ubuntu:22.04` | You're inside container |
-| 2 | Create folder and write data | `mkdir /my-data`<br>`echo "hello" > /my-data/file.txt` | File created |
-| 3 | Verify file exists | `cat /my-data/file.txt` | Prints: `hello` |
-| 4 | Exit container | `exit` | Back to host terminal |
-| 5 | Restart same container | `docker start -i test-container` | You're inside again |
-| 6 | Check if file still exists | `cat /my-data/file.txt` | Prints: `hello` (still there) |
-| 7 | Exit again | `exit` | Back to host |
-| 8 | **Delete the container** | `docker rm test-container` | Container removed |
-| 9 | Create new container (same image) | `docker run -it --name test-container ubuntu:22.04` | Fresh container |
-| 10 | Try to read the file | `cat /my-data/file.txt` | **Error: file not found** |
-
-**Conclusion:**
-- Stopping a container → data survives
-- Deleting a container → data is destroyed
-- **This is why volumes exist**
+| Type | Who controls the path | Where data lives | Best for |
+|---|---|---|---|
+| **Named Volume** | Docker | Docker-managed location on host | Database data, critical persistent state |
+| **Bind Mount** | You | Exact path you specify on host | Development — edit code on host, see changes in container |
+| **tmpfs** | OS | RAM only, not on disk | Sensitive data that must not touch disk |
 
 ---
 
-## 3. Volume Types (Only Two)
+## 3. Named Volumes — Docker Managed
 
-### 1) Named Volumes (Recommended for most use cases)
-- Managed by Docker
-- Lives in Docker's storage area
-- Independent of your host file system
-- Best for: databases, production data, anything critical
-
-### 2) Bind Mounts (Developer convenience)
-- Direct link to a specific host directory
-- You control the exact location
-- Best for: source code, config files, local development
-
-**Mental model:**
-```
-Named Volume:    Docker manages storage location
-                 (You don't care where, Docker handles it)
-
-Bind Mount:      You specify exact host path
-                 (You control where files live on your laptop)
-```
-
-![](./readme-assets/volumes.jpg)
-
----
-
-## 4. Named Volumes (Step-by-Step)
-
-### Goal: Create persistent storage that survives container deletion
+Docker creates and manages the storage location. You give the volume a name and mount it to a path inside the container.
 
 | Step | What you do | Command format | Example you run |
 |---:|---|---|---|
-| 11 | Create a named volume | `docker volume create VOLUME_NAME` | `docker volume create my-data` |
-| 12 | List all volumes | `docker volume ls` | `docker volume ls` |
-| 13 | Inspect volume details | `docker volume inspect VOLUME_NAME` | `docker volume inspect my-data` |
-| 14 | Run container with volume attached | `docker run -it --rm -v VOLUME_NAME:/container/path IMAGE` | `docker run -it --rm -v my-data:/app/data ubuntu:22.04` |
+| 1 | Create a named volume | `docker volume create VOLUME_NAME` | `docker volume create webstore-db-data` |
+| 2 | Run container with named volume | `docker run -v VOLUME_NAME:/container/path IMAGE` | `docker run -v webstore-db-data:/var/lib/postgresql/data postgres:15` |
+| 3 | List all volumes | `docker volume ls` | `docker volume ls` |
+| 4 | Inspect a volume | `docker volume inspect VOLUME_NAME` | `docker volume inspect webstore-db-data` |
 
-### Workflow: Create volume, write data, verify persistence
+**What you observe:**
 
-| Step | What you do | Command | What happens |
-|---:|---|---|---|
-| 15 | Create volume | `docker volume create app-storage` | Volume created (empty) |
-| 16 | Run container with volume | `docker run -it --rm -v app-storage:/data ubuntu:22.04` | Container started, `/data` mapped to volume |
-| 17 | Write data inside container | `echo "persistent data" > /data/file.txt` | Data written to volume |
-| 18 | Verify data | `cat /data/file.txt` | Prints: `persistent data` |
-| 19 | Exit container | `exit` | Container deleted (because of `--rm`) |
-| 20 | Run NEW container with SAME volume | `docker run -it --rm -v app-storage:/data ubuntu:22.04` | Fresh container, same volume |
-| 21 | Check if data survived | `cat /data/file.txt` | **Prints: `persistent data`** ✅ |
-
-**Key insight:**
-- Container A writes to volume → container deleted
-- Container B reads from same volume → **data is still there**
+The volume mounts the named volume to PostgreSQL's data directory. PostgreSQL writes to `/var/lib/postgresql/data`. The data actually goes to the `webstore-db-data` volume on the host. If you delete the container and run a new one with the same volume, all data survives.
 
 **Syntax breakdown:**
 ```bash
-docker run -v VOLUME_NAME:/container/path IMAGE
-           ↑              ↑
-         volume name    where it appears inside container
+docker run -v webstore-db-data:/var/lib/postgresql/data postgres:15
+           ↑                    ↑
+     volume name          path inside container
 ```
 
 ---
 
-## 5. Bind Mounts (Step-by-Step)
+## 4. Bind Mounts — You Control the Path
 
-### Goal: Link a host folder directly into a container
+You specify an absolute path on your host. That host directory is mounted directly into the container at the specified container path. Changes in either location are instantly visible in the other.
 
 | Step | What you do | Command format | Example you run |
 |---:|---|---|---|
-| 22 | Check your current location | `pwd` | `pwd` (note the output) |
-| 23 | Create a folder on host | `mkdir host-data` | `mkdir host-data` |
-| 24 | Run container with bind mount | `docker run -it --rm -v /absolute/host/path:/container/path IMAGE` | `docker run -it --rm -v $(pwd)/host-data:/data ubuntu:22.04` |
+| 5 | Check your current location | `pwd` | `pwd` (note the output) |
+| 6 | Create a folder on host | `mkdir host-data` | `mkdir host-data` |
+| 7 | Run container with bind mount | `docker run -it --rm -v /absolute/host/path:/container/path IMAGE` | `docker run -it --rm -v $(pwd)/host-data:/data ubuntu:22.04` |
 
-### Workflow: Bind mount, write data, verify on host
+---
+
+## 5. Bind Mount Workflow
 
 | Step | What you do | Command | What happens |
 |---:|---|---|---|
-| 25 | Create folder on host | `mkdir ~/my-app-data` | Folder created on your laptop |
-| 26 | Run container with bind mount | `docker run -it --rm -v ~/my-app-data:/data ubuntu:22.04` | `/data` inside container = `~/my-app-data` on host |
-| 27 | Write file inside container | `echo "from container" > /data/test.txt` | File written |
-| 28 | Exit container | `exit` | Container deleted |
-| 29 | Check file on host | `cat ~/my-app-data/test.txt` | **Prints: `from container`** ✅ |
-| 30 | Edit file on host | `echo "from host" >> ~/my-app-data/test.txt` | Modified on laptop |
-| 31 | Run new container with same mount | `docker run -it --rm -v ~/my-app-data:/data ubuntu:22.04` | Fresh container |
-| 32 | Read file inside container | `cat /data/test.txt` | Sees both lines (changes from host appear immediately) |
+| 8 | Create folder on host | `mkdir ~/my-app-data` | Folder created on your laptop |
+| 9 | Run container with bind mount | `docker run -it --rm -v ~/my-app-data:/data ubuntu:22.04` | `/data` inside container = `~/my-app-data` on host |
+| 10 | Write file inside container | `echo "from container" > /data/test.txt` | File written |
+| 11 | Exit container | `exit` | Container deleted |
+| 12 | Check file on host | `cat ~/my-app-data/test.txt` | **Prints: `from container`** ✅ |
+| 13 | Edit file on host | `echo "from host" >> ~/my-app-data/test.txt` | Modified on laptop |
+| 14 | Run new container with same mount | `docker run -it --rm -v ~/my-app-data:/data ubuntu:22.04` | Fresh container |
+| 15 | Read file inside container | `cat /data/test.txt` | Sees both lines (changes from host appear immediately) |
 
 **Key insight:**
 - Changes in container → visible on host immediately
@@ -16604,11 +17068,11 @@ docker run -v /host/path:/container/path IMAGE
 
 | Step | What you do | Command format | Example you run |
 |---:|---|---|---|
-| 33 | List all volumes | `docker volume ls` | `docker volume ls` |
-| 34 | Inspect a volume (see location, driver, etc.) | `docker volume inspect VOLUME_NAME` | `docker volume inspect app-storage` |
-| 35 | Delete a specific volume | `docker volume rm VOLUME_NAME` | `docker volume rm app-storage` |
-| 36 | Delete all unused volumes | `docker volume prune` | `docker volume prune` |
-| 37 | Force delete all unused volumes (no confirmation) | `docker volume prune -f` | `docker volume prune -f` |
+| 16 | List all volumes | `docker volume ls` | `docker volume ls` |
+| 17 | Inspect a volume (see location, driver, etc.) | `docker volume inspect VOLUME_NAME` | `docker volume inspect webstore-db-data` |
+| 18 | Delete a specific volume | `docker volume rm VOLUME_NAME` | `docker volume rm webstore-db-data` |
+| 19 | Delete all unused volumes | `docker volume prune` | `docker volume prune` |
+| 20 | Force delete all unused volumes (no confirmation) | `docker volume prune -f` | `docker volume prune -f` |
 
 **Important rule:**
 - You cannot delete a volume that is currently being used by a container
@@ -16616,11 +17080,11 @@ docker run -v /host/path:/container/path IMAGE
 
 ---
 
-## 7. When to Use What (Decision Table)
+## 7. When to Use What
 
 | Situation | Use | Why |
 |---|---|---|
-| Database data (MySQL, MongoDB, PostgreSQL) | Named Volume | Data must survive container replacement |
+| Database data (PostgreSQL, MySQL) | Named Volume | Data must survive container replacement |
 | Application uploads (user files, images) | Named Volume | Critical data, managed by Docker |
 | Production state, logs | Named Volume | Needs to persist across deployments |
 | Source code during development | Bind Mount | You edit files on laptop, changes appear in container immediately |
@@ -16635,43 +17099,42 @@ If you need to edit files frequently from host → Bind Mount
 
 ---
 
-## 8. Real-World Database Example
-
-### MongoDB with named volume
+## 8. Real-World Database Example — webstore-db
 
 **Problem:**
-- MongoDB stores data in `/data/db` inside the container
-- If container is deleted, database is lost
+- PostgreSQL stores data in `/var/lib/postgresql/data` inside the container
+- If the container is deleted, the webstore database is gone
 - We need data to survive container deletion
 
 **Solution:**
 ```bash
 docker run -d \
-  --name mongodb \
-  -p 27017:27017 \
-  -v mongodata:/data/db \
-  -e MONGO_INITDB_ROOT_USERNAME=admin \
-  -e MONGO_INITDB_ROOT_PASSWORD=secret \
-  mongo:6
+  --name webstore-db \
+  --network webstore-network \
+  -e POSTGRES_DB=webstore \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=secret \
+  -v webstore-db-data:/var/lib/postgresql/data \
+  postgres:15
 ```
 
 **What this does:**
-- `-v mongodata:/data/db` → creates volume `mongodata` and mounts it to MongoDB's data directory
-- MongoDB writes to `/data/db`
-- Data actually goes to the `mongodata` volume
+- `-v webstore-db-data:/var/lib/postgresql/data` → creates volume `webstore-db-data` and mounts it to PostgreSQL's data directory
+- PostgreSQL writes to `/var/lib/postgresql/data`
+- Data actually goes to the `webstore-db-data` volume
 - If you delete the container and create a new one with the same volume, **all data is still there**
 
 **Verification flow:**
 
 | Step | Command | What happens |
 |---:|---|---|
-| 1 | Run MongoDB with volume | `docker run -d --name mongodb -v mongodata:/data/db mongo:6` | Container starts, volume created |
-| 2 | Connect and create data | `docker exec -it mongodb mongosh` | Enter MongoDB shell |
-| 3 | Insert test data | `use testdb`<br>`db.users.insertOne({name: "Alice"})` | Data written |
-| 4 | Exit | `exit` | Back to host |
-| 5 | Stop and delete container | `docker stop mongodb`<br>`docker rm mongodb` | Container gone |
-| 6 | Start new container with same volume | `docker run -d --name mongodb -v mongodata:/data/db mongo:6` | Fresh container, same volume |
-| 7 | Check if data survived | `docker exec -it mongodb mongosh`<br>`use testdb`<br>`db.users.find()` | **Data still exists** ✅ |
+| 1 | Run webstore-db with volume | `docker run -d --name webstore-db -v webstore-db-data:/var/lib/postgresql/data -e POSTGRES_DB=webstore -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=secret postgres:15` | Container starts, volume created |
+| 2 | Connect and create data | `docker exec -it webstore-db psql -U admin -d webstore` | Enter PostgreSQL shell |
+| 3 | Insert test data | `CREATE TABLE products (id SERIAL, name TEXT);` then `INSERT INTO products (name) VALUES ('Widget');` | Data written |
+| 4 | Exit | `\q` | Back to host |
+| 5 | Stop and delete container | `docker stop webstore-db` then `docker rm webstore-db` | Container gone |
+| 6 | Start new container with same volume | `docker run -d --name webstore-db -v webstore-db-data:/var/lib/postgresql/data -e POSTGRES_DB=webstore -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=secret postgres:15` | Fresh container, same volume |
+| 7 | Check if data survived | `docker exec -it webstore-db psql -U admin -d webstore -c "SELECT * FROM products;"` | **Data still exists** ✅ |
 
 ---
 
@@ -16683,9 +17146,9 @@ docker run -d \
 
 | Step | What you do | Command format | Example |
 |---:|---|---|---|
-| 38 | Stop container (if running) | `docker stop CONTAINER_NAME` | `docker stop mongodb` |
-| 39 | Remove container | `docker rm CONTAINER_NAME` | `docker rm mongodb` |
-| 40 | **Only if you want to delete data:** Remove volume | `docker volume rm VOLUME_NAME` | `docker volume rm mongodata` |
+| 21 | Stop container (if running) | `docker stop CONTAINER_NAME` | `docker stop webstore-db` |
+| 22 | Remove container | `docker rm CONTAINER_NAME` | `docker rm webstore-db` |
+| 23 | **Only if you want to delete data:** Remove volume | `docker volume rm VOLUME_NAME` | `docker volume rm webstore-db-data` |
 
 **Critical safety rule:**
 - Removing a container does **NOT** delete its volumes
@@ -16719,8 +17182,8 @@ Volumes are permanent → data survives container deletion
 **Commands to memorize:**
 ```bash
 # Named volume
-docker volume create my-vol
-docker run -v my-vol:/data IMAGE
+docker volume create webstore-db-data
+docker run -v webstore-db-data:/var/lib/postgresql/data postgres:15
 
 # Bind mount
 docker run -v /host/path:/container/path IMAGE
@@ -16744,7 +17207,7 @@ Container (code runs here)  ──>  Volume (data lives here)
 3. (Optional) Remove volume
 
 **Never forget:**
-Data in containers = temporary  
+Data in containers = temporary
 Data in volumes = permanent
 
 → Ready to practice? [Go to Lab 02](../docker-labs/02-networking-volumes-lab.md)
@@ -16765,7 +17228,7 @@ Data in volumes = permanent
 [Registry](../09-docker-registry/README.md) |
 [Compose](../10-docker-compose/README.md)
 
-# 07. Docker Layers
+# Docker Layers
 
 ## What this file is about
 
@@ -17688,11 +18151,105 @@ EXPOSE <app-port>   # metadata only
 CMD ["<start-command>"]
 ```
 
-Later we use multi-stage builds to keep runtime images small (covered separately).
+---
+
+## 16) Multi-Stage Builds — Production Images
+
+A single-stage build puts everything into one image — build tools, compiler, test dependencies, and the runtime. This produces large images that contain code that should never run in production.
+
+Multi-stage builds solve this. You define multiple `FROM` stages in one Dockerfile. The final stage copies only what it needs from earlier stages. Build tools never make it into the production image.
+
+**Why this matters for the webstore-api:**
+
+```
+Single-stage build:
+  Base image (node:20)           ~900MB
+  + npm install (all deps)       ~200MB
+  + source code                  ~5MB
+  Total image size: ~1.1GB
+
+Multi-stage build:
+  Builder stage:  node:20 + all deps + source code (discarded)
+  Runtime stage:  node:20-alpine + production deps + compiled output only
+  Total image size: ~150MB
+```
+
+The runtime image is smaller, faster to pull, has fewer installed packages meaning fewer attack vectors, and contains nothing a developer would not want running in production.
+
+**Multi-stage Dockerfile for webstore-api:**
+
+```dockerfile
+# Stage 1 — Builder
+# This stage installs all dependencies and builds the app
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy dependency manifest first (cache this layer)
+COPY package.json package-lock.json ./
+
+# Install ALL dependencies including dev deps needed for build
+RUN npm ci
+
+# Copy source code and build
+COPY . .
+RUN npm run build
+
+# Stage 2 — Production runtime
+# This stage produces the final image — only what runs in production
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+# Copy only production dependency manifest
+COPY package.json package-lock.json ./
+
+# Install only production dependencies
+RUN npm ci --only=production
+
+# Copy built output from builder stage — not the source code
+COPY --from=builder /app/dist ./dist
+
+EXPOSE 8080
+
+CMD ["node", "dist/server.js"]
+```
+
+**Key lines explained:**
+
+```
+FROM node:20-alpine AS builder
+↑ Each FROM starts a new stage. AS builder names it.
+
+COPY --from=builder /app/dist ./dist
+↑ This is the multi-stage copy — pulling built output from the builder stage.
+  Only the compiled files come through. No node_modules from dev deps.
+  No source TypeScript. No test files.
+
+FROM node:20-alpine AS production
+↑ This is the final stage. When you docker build, this is what you get.
+  Everything from builder exists only during the build — it is discarded.
+```
+
+**Build and verify size reduction:**
+
+```bash
+# Build the multi-stage image
+docker build -t webstore-api:1.0 .
+
+# Check the image size
+docker images webstore-api
+
+# Confirm build tools are not in the final image
+docker run --rm webstore-api:1.0 which tsc
+# Should print nothing — TypeScript compiler not present
+```
+
+**The rule:** if your app has a build step — TypeScript compilation, webpack bundling, Go compilation — use multi-stage builds. The builder stage does the work. The runtime stage runs the result.
 
 ---
 
-## 16) The Ordering Law (Memorize This)
+## 17) The Ordering Law (Memorize This)
 
 > **Stable first. Volatile last.**
 
@@ -17711,7 +18268,7 @@ Reason:
 
 ---
 
-## 17) Instruction Laws (Quick Reference)
+## 18) Instruction Laws (Quick Reference)
 
 * `FROM` → starting filesystem + tools
 * `WORKDIR` → default folder (creates it)
@@ -17733,7 +18290,7 @@ OS package managers are Linux-specific.
 
 ---
 
-## 18) One-Line Truth
+## 19) One-Line Truth
 
 > A Dockerfile is a cached, ordered, Linux build recipe that separates build-time from run-time to create reproducible images.
 
@@ -17755,7 +18312,7 @@ OS package managers are Linux-specific.
 [Registry](../09-docker-registry/README.md) |
 [Compose](../10-docker-compose/README.md)
 
-# 09. Container Registries
+# Container Registries
 
 ## 1) What a Container Registry Is
 
@@ -17881,7 +18438,92 @@ You do not manage tokens manually at this stage.
 
 ---
 
-## 8) Publish webstore-api to Docker Hub (End-to-End Process)
+## 8) Tagging Strategy — How Real Teams Version Images
+
+Tags are not just labels. They are the mechanism CI/CD pipelines use to decide what to deploy. A poorly thought-out tagging strategy causes deployments to pull stale images, makes rollbacks difficult, and makes production incidents harder to debug.
+
+**The `latest` trap:**
+
+`latest` is the default tag when no tag is specified. It sounds useful but causes serious problems in real pipelines:
+
+```bash
+# This is what latest actually means:
+docker push myrepo/webstore-api:latest
+# "latest" = whatever was pushed most recently
+# NOT "the most stable version"
+# NOT "the version that passed QA"
+# NOT reproducible — tomorrow it may be a different image
+
+# Three weeks later on production:
+docker pull myrepo/webstore-api:latest
+# What did you just pull? Impossible to know without checking the registry.
+# If it breaks, what do you roll back to?
+```
+
+**The rule:** never deploy `latest` to production. Always deploy a specific, immutable tag.
+
+**Semantic versioning tags — the standard for releases:**
+
+```
+v1.0.0    ← major.minor.patch
+v1.1.0    ← new feature, backward compatible
+v1.1.1    ← bug fix
+v2.0.0    ← breaking change
+```
+
+```bash
+# Tag and push a release
+docker build -t webstore-api:v1.0.0 .
+docker tag webstore-api:v1.0.0 akhiltejadoosari/webstore-api:v1.0.0
+docker push akhiltejadoosari/webstore-api:v1.0.0
+```
+
+**Git SHA tags — the standard for CI/CD:**
+
+Every commit produces an image. Tag it with the Git commit SHA so you can trace any deployed image back to the exact commit that built it.
+
+```bash
+# In a CI pipeline:
+GIT_SHA=$(git rev-parse --short HEAD)
+docker build -t webstore-api:${GIT_SHA} .
+docker push akhiltejadoosari/webstore-api:${GIT_SHA}
+
+# Example output:
+# akhiltejadoosari/webstore-api:a3f92c1
+```
+
+When production has a bug, you check the deployed tag (`a3f92c1`), run `git show a3f92c1`, and see exactly what changed.
+
+**Environment tags — for promotion workflows:**
+
+Some teams tag images with the environment they are deployed to:
+
+```bash
+# Tag the same image for staging
+docker tag webstore-api:v1.0.0 akhiltejadoosari/webstore-api:staging
+
+# Promote to production after QA passes
+docker tag webstore-api:v1.0.0 akhiltejadoosari/webstore-api:production
+```
+
+The underlying image is identical — only the tag changes. This makes rollback trivial: retag the previous version as `production` and redeploy.
+
+**Tagging decision table:**
+
+| Context | Tag to use | Example |
+|---|---|---|
+| Every CI build | Git SHA | `webstore-api:a3f92c1` |
+| Versioned releases | Semantic version | `webstore-api:v1.0.0` |
+| Current stable dev | `latest` | Only for local development |
+| Production deploy | Specific SHA or semver | Never `latest` |
+| Environment tracking | Environment name | `webstore-api:staging` |
+
+**One-line rule:**
+In production, every image tag must be immutable and traceable — either a Git SHA or a semantic version. `latest` is for local development only.
+
+---
+
+## 9) Publish webstore-api to Docker Hub (End-to-End Process)
 
 Goal:
 - Take the local image you built in section 08 (`webstore-api:1.0`)
@@ -17958,12 +18600,6 @@ Logout first:
 ```bash
 docker logout
 ```
-
-Why logout/login helps:
-
-* it clears stale credentials in the credential store
-* avoids "pushing to the wrong account" mistakes
-* fixes "denied: requested access to the resource is denied" when the wrong user is cached
 
 Now login again:
 
@@ -18101,7 +18737,7 @@ A container registry is a remote store for container images so the same image ca
 [Registry](../09-docker-registry/README.md) |
 [Compose](../10-docker-compose/README.md)
 
-# 10. Docker Compose — Same System, Automated
+# Docker Compose — Same System, Automated
 
 ## 1) Mental Model First (What You Are About to Read)
 
@@ -18117,19 +18753,18 @@ version: "3.9"
 
 services:
   webstore-db:
-    image: mongo
+    image: postgres:15
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: secret
+      POSTGRES_DB: webstore
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - webstore-db-data:/var/lib/postgresql/data
 
-  mongo-express:
-    image: mongo-express
+  adminer:
+    image: adminer
     ports:
-      - "8081:8081"
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: secret
-      ME_CONFIG_MONGODB_URL: mongodb://admin:secret@webstore-db:27017
+      - "8081:8080"
     depends_on:
       - webstore-db
 
@@ -18138,17 +18773,25 @@ services:
     ports:
       - "8080:8080"
     environment:
-      MONGO_URL: mongodb://admin:secret@webstore-db:27017
+      DB_HOST: webstore-db
+      DB_PORT: 5432
+      DB_NAME: webstore
+      DB_USER: admin
+      DB_PASSWORD: secret
     depends_on:
       - webstore-db
+
+volumes:
+  webstore-db-data:
 ```
 
 What this shows at a glance:
 
 * Three containers
 * One private Docker network (created automatically)
-* Two ports exposed for human access (8080 for app, 8081 for DB UI)
+* Two ports exposed for human access (8080 for API, 8081 for DB UI)
 * One database accessed internally by hostname
+* One named volume for database persistence
 
 Everything below explains **this file**, line by line.
 
@@ -18166,6 +18809,7 @@ It automates:
 * DNS (service names)
 * port binding
 * startup order
+* volume creation
 
 ---
 
@@ -18198,76 +18842,74 @@ Meaning:
 * Used by other containers to connect
 
 ```yaml
-    image: mongo
+    image: postgres:15
 ```
 
 Meaning:
 
-* Use the official MongoDB image
+* Use PostgreSQL version 15 — pinned, not `latest`
 * Pulled automatically if missing
 
 ```yaml
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: secret
+      POSTGRES_DB: webstore
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
 ```
 
 Meaning:
 
 * Environment variables passed into the container
-* MongoDB uses them on first startup
-* Creates the initial admin user
+* PostgreSQL uses them on first startup to create the database and admin user
+
+```yaml
+    volumes:
+      - webstore-db-data:/var/lib/postgresql/data
+```
+
+Meaning:
+
+* Mount the named volume to PostgreSQL's data directory
+* Data survives `docker compose down` — it is not deleted unless you explicitly remove the volume
 
 Important:
 
 * No `ports` section
 * Database is internal-only
-* Not exposed to the host
+* Not reachable from your browser or the internet
 
 ---
 
-## 5) mongo-express Service (UI Client)
+## 5) adminer Service (Database UI)
 
 ```yaml
-  mongo-express:
+  adminer:
 ```
 
 Meaning:
 
-* UI tool container
-* Hostname becomes `mongo-express`
+* Lightweight database management UI
+* Supports PostgreSQL, MySQL, SQLite
+* No configuration needed — connects using the form in the browser
 
 ```yaml
-    image: mongo-express
+    image: adminer
 ```
 
 Meaning:
 
-* Uses the Mongo Express image
-* Provides a web interface for the database
+* Uses the official adminer image
 
 ```yaml
     ports:
-      - "8081:8081"
+      - "8081:8080"
 ```
 
 Meaning:
 
-* Host port `8081` forwards to container port `8081`
-* Required so the browser can access the DB UI
-
-```yaml
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: secret
-      ME_CONFIG_MONGODB_URL: mongodb://admin:secret@webstore-db:27017
-```
-
-Meaning:
-
-* Credentials for the database
-* Connection uses hostname `webstore-db`
-* DNS is provided automatically by Compose
+* adminer listens on port 8080 inside the container
+* Host port `8081` forwards to container port `8080`
+* Open `http://localhost:8081` in your browser to access the UI
 
 ```yaml
     depends_on:
@@ -18276,9 +18918,16 @@ Meaning:
 
 Meaning:
 
-* webstore-db container starts first
-* Controls start order only
-* Does not guarantee readiness
+* webstore-db container starts before adminer
+* Controls start order only — does not guarantee the database is ready to accept connections
+
+**How to use adminer:**
+1. Open `http://localhost:8081`
+2. System: PostgreSQL
+3. Server: `webstore-db` (Docker DNS resolves this)
+4. Username: `admin`
+5. Password: `secret`
+6. Database: `webstore`
 
 ---
 
@@ -18314,14 +18963,18 @@ Meaning:
 
 ```yaml
     environment:
-      MONGO_URL: mongodb://admin:secret@webstore-db:27017
+      DB_HOST: webstore-db
+      DB_PORT: 5432
+      DB_NAME: webstore
+      DB_USER: admin
+      DB_PASSWORD: secret
 ```
 
 Meaning:
 
-* Database connection string for the app
-* Uses service name `webstore-db`
-* Same rule as manual Docker networking — containers talk by name
+* Database connection details for the app
+* Uses service name `webstore-db` — same rule as manual Docker networking
+* Containers talk by name, never by IP
 
 ```yaml
     depends_on:
@@ -18332,11 +18985,27 @@ Meaning:
 
 * Starts webstore-db before the app
 * Prevents obvious startup failures
-* Not a health check
+* Not a health check — the app may still need retry logic for DB connections
 
 ---
 
-## 7) What Compose Creates Automatically
+## 7) Volumes Block
+
+```yaml
+volumes:
+  webstore-db-data:
+```
+
+Meaning:
+
+* Declares the named volume at the top level
+* Docker creates it if it does not exist
+* Survives `docker compose down`
+* Only deleted with `docker compose down -v` or `docker volume rm`
+
+---
+
+## 8) What Compose Creates Automatically
 
 When you run:
 
@@ -18346,15 +19015,16 @@ docker compose up
 
 Compose automatically creates:
 
-* one bridge network
+* one bridge network named `<project>_default`
 * DNS entries for each service
 * containers attached to that network
+* named volumes declared in the `volumes` block
 
 You do not need to define networks explicitly for this setup.
 
 ---
 
-## 8) Running the System
+## 9) Running the System
 
 Start everything:
 
@@ -18368,22 +19038,23 @@ Start in background:
 docker compose up -d
 ```
 
-Stop and clean up:
+Stop and clean up containers and network (volumes survive):
 
 ```bash
 docker compose down
 ```
 
-This removes:
+Stop and delete everything including volumes:
 
-* containers
-* Compose-created network
+```bash
+docker compose down -v
+```
 
-Images and volumes remain unchanged.
+**Warning:** `docker compose down -v` deletes the database volume. All data is gone. Use only when you want a completely clean reset.
 
 ---
 
-## 9) About the `-f` Flag
+## 10) About the `-f` Flag
 
 Default behavior:
 
@@ -18402,7 +19073,7 @@ If the file is named `docker-compose.yml` and you are in that folder, do not use
 
 ---
 
-## 10) Manual vs Compose
+## 11) Manual vs Compose
 
 ![](./readme-assets/docker-run-compose.jpeg)
 
@@ -18422,12 +19093,12 @@ Use Docker Compose when:
 
 App path:
 ```
-Browser → localhost:8080 → webstore-api → webstore-db:27017 → webstore-db
+Browser → localhost:8080 → webstore-api → webstore-db:5432 → webstore-db
 ```
 
 Debug path:
 ```
-Browser → localhost:8081 → mongo-express → webstore-db:27017 → webstore-db
+Browser → localhost:8081 → adminer → webstore-db:5432 → webstore-db
 ```
 
 One-line truth:
@@ -18455,6 +19126,23 @@ Hands-on sessions for every topic in the Docker notes.
 
 Each lab builds on the previous one. Do them in order.
 Do not move to the next lab until the checklist at the bottom is fully checked.
+
+---
+
+## The Project Thread
+
+These four labs containerize the webstore from scratch — the same project that ran on a Linux server and was versioned with Git. By Lab 04 you have the entire three-tier webstore running from a single `docker compose up` command, with the API image pushed to Docker Hub and ready for Kubernetes.
+
+| Lab | Where the webstore is | What you do |
+|---|---|---|
+| [Lab 01](./01-containers-portbinding-lab.md) | Not yet containerized | Pull images, run nginx as webstore-frontend, bind ports, debug containers |
+| [Lab 02](./02-networking-volumes-lab.md) | Frontend running | Wire webstore-api to webstore-db on a Docker network, persist postgres data in a volume |
+| [Lab 03](./03-build-layers-lab.md) | Network and storage wired | Build the webstore-api image from a Dockerfile, optimize layers, use multi-stage builds |
+| [Lab 04](./04-registry-compose-lab.md) | Image built | Push to Docker Hub, write docker-compose.yml, bring the full three-tier webstore up in one command |
+
+---
+
+## Labs
 
 | Lab | Topics | Notes |
 |---|---|---|
@@ -19661,9 +20349,7 @@ kubectl rollout history deploy/webstore-frontend
 [Lab 03.5](./03.5-networking-lab.md) |
 [Lab 04](./04-state-lab.md) |
 [Lab 05](./05-troubleshooting-lab.md) |
-[Lab 06](./06-cicd-lab.md) |
-[Lab 07](./07-observability-lab.md) |
-[Lab 08](./08-cloud-lab.md)
+[Lab 06](./06-cloud-lab.md)
 
 ---
 
@@ -19673,21 +20359,50 @@ Hands-on sessions for every phase in the K8s notes.
 
 Do them in order. Do not move to the next lab until the checklist at the bottom is fully checked.
 
-| Lab | Topics | Notes |
+---
+
+## The Project Thread
+
+These labs take the webstore from a Docker Compose stack on your laptop to a production deployment on AWS EKS. Each lab leaves the webstore in a better state than it found it.
+
+| Lab | Where the webstore is | What you do |
 |---|---|---|
-| [Lab 00](./00-setup-lab.md) | Environment setup + daily workflow | [00-setup](../00-setup/README.md) |
-| [Lab 01](./01-architecture-lab.md) | Live cluster inspection + control plane | [01-architecture](../01-architecture/README.md) |
-| [Lab 02](./02-yaml-pods-lab.md) | Write manifests, deploy pods, labels | [02-yaml-pods](../02-yaml-pods/README.md) |
-| [Lab 03](./03-deployments-lab.md) | Deployments, self-healing, rolling updates, rollbacks | [03-deployments](../03-deployments/README.md) |
-| [Lab 03.5](./03.5-networking-lab.md) | Services, sidecars, namespaces | [03.5-networking](../03.5-networking/README.md) |
-| [Lab 04](./04-state-lab.md) | PV, PVC, ConfigMaps, Secrets | [04-state](../04-state/README.md) |
-| [Lab 05](./05-troubleshooting-lab.md) | Probes, Jobs, DaemonSets, debug loop | [05-troubleshooting](../05-troubleshooting/README.md) |
-| [Lab 06](./06-cicd-lab.md) | GitHub Actions + ArgoCD | [06-cicd](../06-cicd/README.md) |
-| [Lab 07](./07-observability-lab.md) | Prometheus + Grafana | [07-observability](../07-observability/README.md) |
-| [Lab 08](./08-cloud-lab.md) | AWS EKS + production deploy | [08-cloud](../08-cloud/README.md) |
+| [Lab 00](./00-setup-lab.md) | Not yet on K8s | Verify every tool, run the cold start drill, build the K9s cockpit habit |
+| [Lab 01](./01-architecture-lab.md) | Not yet on K8s | Find every control plane component running live — map theory to reality |
+| [Lab 02](./02-yaml-pods-lab.md) | First Pod on the cluster | Write manifests from scratch, apply, inspect, run the full debug loop |
+| [Lab 03](./03-deployments-lab.md) | All 3 tiers as Deployments | Prove self-healing, trigger a rolling update, perform an emergency rollback, scale |
+| [Lab 03.5](./03.5-networking-lab.md) | Deployments running, not yet wired | Services connect the tiers, frontend exposed, namespace boundaries enforced |
+| [Lab 04](./04-state-lab.md) | Network complete, data not persisted | Postgres gets a PVC, credentials move into a Secret, config into a ConfigMap |
+| [Lab 05](./05-troubleshooting-lab.md) | Full stack running locally | Readiness probe gates traffic, CronJob backs up the DB, debug loop drilled |
+| [Lab 06](./06-cloud-lab.md) | Production-ready on Minikube | Same manifests, real cloud — eksctl creates the cluster, webstore deploys to EKS |
 
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 01-intro-aws
+
+## Labs
+
+| Lab | Topics | Notes |
+|---|---|---|
+| [Lab 00](./00-setup-lab.md) | Setup, daily workflow, cold start, K9s, yamllint | [00-setup](../00-setup/README.md) |
+| [Lab 01](./01-architecture-lab.md) | Live cluster inspection, control plane components | [01-architecture](../01-architecture/README.md) |
+| [Lab 02](./02-yaml-pods-lab.md) | Write manifests, deploy pods, labels, debug loop | [02-yaml-pods](../02-yaml-pods/README.md) |
+| [Lab 03](./03-deployments-lab.md) | Deployments, self-healing, rolling updates, rollbacks, scaling | [03-deployments](../03-deployments/README.md) |
+| [Lab 03.5](./03.5-networking-lab.md) | Services, kube-dns, Sidecar pattern, Namespaces | [03.5-networking](../03.5-networking/README.md) |
+| [Lab 04](./04-state-lab.md) | PersistentVolumes, PVCs, ConfigMaps, Secrets | [04-state](../04-state/README.md) |
+| [Lab 05](./05-troubleshooting-lab.md) | Probes, Jobs, CronJobs, DaemonSets, full debug loop | [05-troubleshooting](../05-troubleshooting/README.md) |
+| [Lab 06](./06-cloud-lab.md) | EKS, eksctl, EBS CSI driver, ECR, Ingress, HPA | [06-cloud](../06-cloud/README.md) |
+
+---
+
+## After Kubernetes
+
+CI-CD and Observability are their own tools in this runbook — not phases of Kubernetes. They live at the same level as every other tool because they are not Kubernetes features. They are disciplines that happen to use a Kubernetes cluster.
+
+→ [06. CI-CD – Pipelines & GitOps](../../06.%20CI-CD%20–%20Pipelines%20%26%20GitOps/README.md) — automate every `kubectl apply` you just ran manually
+
+→ [07. Observability – Monitoring & Logs](../../07.%20Observability%20–%20Monitoring%20%26%20Logs/README.md) — instrument what CI-CD deployed so you can see inside it
+
+---
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 01-intro-aws
 ---
 
 [Home](../README.md) | 
@@ -19988,7 +20703,7 @@ So when someone in India streams a movie, it’s served from the Mumbai Edge Loc
 
 ---
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 02-iam
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 02-iam
 ---
 
 [Home](../README.md) | 
@@ -20332,7 +21047,7 @@ You now have two properly configured IAM users —
 
 ---
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 03-vpc-subnet
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 03-vpc-subnet
 ---
 
 [Home](../README.md) |
@@ -21087,7 +21802,7 @@ Traffic flow:
 </details>
 
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 04-ebs
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 04-ebs
 ---
 
 [Home](../README.md) | 
@@ -21386,7 +22101,7 @@ Filesystem successfully expanded
 
 </details>
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 05-efs
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 05-efs
 ---
 
 [Home](../README.md) | 
@@ -21796,7 +22511,7 @@ Internet
 </details>
 ---
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 06-s3
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 06-s3
 ---
 
 [Home](../README.md) | 
@@ -22145,7 +22860,7 @@ aws s3 rm s3://webstore-media/old-promo.mp4
 S3 is not just “cloud storage” — it’s the backbone of the Internet’s data layer.
 While EC2 runs your applications, **S3 remembers everything** — safely, infinitely, and affordably.
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 07-ec2
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 07-ec2
 ---
 
 [Home](../README.md) | 
@@ -23059,7 +23774,7 @@ Min=2  Desired=2  Max=6
 
 </details>
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 08-rds
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 08-rds
 ---
 
 [Home](../README.md) | 
@@ -23504,7 +24219,7 @@ In short — RDS gives your application the confidence to scale, fail, recover, 
 
 </details>
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 09-Load-balancing-auto-scaling
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 09-Load-balancing-auto-scaling
 ---
 
 [Home](../README.md) | 
@@ -23837,7 +24552,7 @@ Together they build **resilient, self-adjusting AWS architectures.**
 
 </details>
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 10-cloudwatch-sns
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 10-cloudwatch-sns
 ---
 
 [Home](../README.md) | 
@@ -24181,7 +24896,7 @@ Version-control your alerts and topics alongside application code.
 
 ---
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 11-lambda
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 11-lambda
 ---
 
 [Home](../README.md) | 
@@ -24680,7 +25395,7 @@ Cost ↑
 > AWS shifts the billing model from *infrastructure ownership* → *platform usage* → *function execution*.
 ```
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 12-elastic-beanstalk
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 12-elastic-beanstalk
 ---
 
 [Home](../README.md) | 
@@ -24963,7 +25678,7 @@ giving you developer-speed with architect-level control.
 
 ---
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 13-route53
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 13-route53
 ---
 
 [Home](../README.md) | 
@@ -25257,7 +25972,7 @@ Every AWS architecture needs a dependable doorway.
 
 ---
 ---
-# TOOL: 06. AWS – Cloud Infrastructure | FILE: 14-cli-cloudformation
+# TOOL: 08. AWS – Cloud Infrastructure | FILE: 14-cli-cloudformation
 ---
 
 [Home](../README.md) | 

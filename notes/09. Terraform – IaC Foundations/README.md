@@ -6,72 +6,105 @@
 
 ---
 
-Infrastructure as code — define, version, and manage cloud resources across any provider with a single consistent workflow.
+Infrastructure as code — defining the AWS resources that run the webstore as `.tf` files instead of console clicks.
+
+---
+
+## Why Terraform — and Why Not CloudFormation or Pulumi
+
+Every AWS resource you created in the previous tool was done manually — console clicks, CLI commands, configuration spread across a browser and a terminal. That works once. It does not work when you need to recreate the same environment for staging, or when someone asks you to prove that production matches what was documented six months ago, or when you need to tear everything down and rebuild it cleanly.
+
+Terraform solves this by making infrastructure declarative. You write `.tf` files that describe what should exist. Terraform reads them, compares against what actually exists in AWS, and makes only the changes needed to reach that state. The entire webstore infrastructure — VPC, subnets, EKS cluster, RDS instance, security groups, IAM roles — becomes a set of files you can version control, review in a pull request, and apply in one command.
+
+CloudFormation is AWS-native and requires no additional tooling, but it is verbose, JSON/YAML-heavy, and locked to AWS. If you ever touch another cloud provider, CloudFormation does not help. Pulumi uses real programming languages (Python, TypeScript) which is powerful but adds the overhead of a runtime, dependency management, and language-specific tooling for what is fundamentally a configuration problem. Terraform's HCL is readable enough to be approachable and structured enough to be consistent. It is what the majority of DevOps job descriptions mean when they say IaC.
 
 ---
 
 ## Prerequisites
 
-**Complete first:** [06. AWS – Cloud Infrastructure](../06.%20AWS%20–%20Cloud%20Infrastructure/README.md)
+**Complete first:** [08. AWS – Cloud Infrastructure](../08.%20AWS%20–%20Cloud%20Infrastructure/README.md)
 
-Terraform manages cloud resources. You need to understand what those resources are — VPCs, EC2 instances, S3 buckets, IAM roles — before writing code to automate them. Terraform without AWS knowledge means writing code you don't understand.
+Terraform provisions AWS resources. If you do not understand what a VPC is, what an EKS cluster needs to run, or how IAM roles work — you cannot write correct Terraform. You need to have created these resources manually at least once before automating them.
 
 ---
 
 ## The Running Example
 
-Every topic uses the same webstore infrastructure as the practical example — building the VPC, EC2 instances, RDS, load balancer, and all supporting resources as Terraform code.
+Every file and every lab provisions infrastructure for the webstore app.
+
+| What you provision | AWS resource | Terraform resource |
+|---|---|---|
+| Network | VPC, subnets, route tables, IGW, NAT | `aws_vpc`, `aws_subnet`, `aws_route_table` |
+| Cluster | EKS cluster and node groups | `aws_eks_cluster`, `aws_eks_node_group` |
+| Database | RDS PostgreSQL | `aws_db_instance` |
+| Registry | ECR repository for webstore-api | `aws_ecr_repository` |
+| Access | IAM roles and policies | `aws_iam_role`, `aws_iam_policy` |
 
 ---
 
-## Topics
+## Where You Take the Webstore
 
-| # | File | What You Learn |
-|---|---|---|
-| 01 | [Foundations & Installation](./01-terraform-foundations/README.md) | What Terraform is, declarative vs imperative, IaC philosophy, installation |
-| 02 | [Terraform State & Core Engine](./02-terraform-state/README.md) | How state works, `terraform plan`, `apply`, `destroy`, the state file |
-| 03 | [Providers, Resources & Data Sources](./03-providers-resources/README.md) | AWS provider, resource blocks, data sources, HCL syntax |
-| 04 | [Variables, Outputs & Locals](./04-variables-outputs/README.md) | Input variables, output values, local values, variable types |
-| 05 | [Loops & Conditionals](./05-loops-conditionals/README.md) | `count`, `for_each`, `dynamic` blocks, conditional expressions |
-| 06 | [Modules](./06-modules/README.md) | Root module, child modules, registry modules, reusability |
-| 07 | [Workspaces & Environments](./07-workspaces/README.md) | Dev, staging, production environments, workspace management |
-| 08 | [Remote State & Backends](./08-remote-state/README.md) | S3 backend, DynamoDB state locking, team collaboration |
-| 09 | [Advanced Patterns & Lifecycle](./09-advanced-patterns/README.md) | `lifecycle` rules, `depends_on`, `ignore_changes`, `create_before_destroy` |
-| 10 | [Security, Validation & Best Practices](./10-security-best-practices/README.md) | Sensitive variables, validation rules, `tfsec`, production patterns |
-| 11 | [Real-World Projects](./11-real-world-projects/README.md) | Full webstore infrastructure from scratch in Terraform |
+You arrive at Terraform having built the webstore AWS infrastructure manually. It works, but it is not reproducible. If something goes wrong, rebuilding it from scratch means remembering every decision you made.
+
+You leave with the entire webstore AWS infrastructure defined as Terraform code. One `terraform apply` creates everything from a blank AWS account. One `terraform destroy` removes it cleanly. The infrastructure is version controlled, reviewable, and identical every time it is applied.
+
+---
+
+## Why This Order of Phases
+
+Core workflow first — so you understand what Terraform actually does before writing resource definitions. State before modules — so you understand what Terraform is tracking before you abstract it. Real-world project last — so every concept has been introduced before you use it together.
+
+---
+
+## Phases
+
+| # | Phase | Topics | Lab |
+|---|---|---|---|
+| 01 | [What is Terraform](./01-what-is-terraform/README.md) | IaC concept, declarative vs imperative, how Terraform fits the DevOps workflow | No lab |
+| 02 | [Core Workflow](./02-core-workflow/README.md) | `terraform init`, `plan`, `apply`, `destroy` — the four commands you use every day | [Lab 01](./terraform-labs/01-core-workflow-lab.md) |
+| 03 | [Providers & Resources](./03-providers-resources/README.md) | Provider block, resource block, data sources, resource dependencies | [Lab 01](./terraform-labs/01-core-workflow-lab.md) |
+| 04 | [Variables & Outputs](./04-variables-outputs/README.md) | Input variables, output values, locals, `.tfvars` files, variable types | [Lab 02](./terraform-labs/02-variables-state-lab.md) |
+| 05 | [State](./05-state/README.md) | The state file, what it tracks, remote state with S3 + DynamoDB locking | [Lab 02](./terraform-labs/02-variables-state-lab.md) |
+| 06 | [Modules](./06-modules/README.md) | Root module, child modules, the Terraform Registry, writing reusable modules | [Lab 03](./terraform-labs/03-modules-lab.md) |
+| 07 | [Loops & Conditionals](./07-loops-conditionals/README.md) | `count`, `for_each`, `dynamic` blocks, conditional expressions | [Lab 03](./terraform-labs/03-modules-lab.md) |
+| 08 | [Real-World Project](./08-real-world/README.md) | Full webstore AWS infrastructure in Terraform — VPC, EKS, RDS, ECR, IAM | [Lab 04](./terraform-labs/04-webstore-infra-lab.md) |
 
 ---
 
 ## Labs
 
-| Status | Coverage |
-|---|---|
-| 🚧 Planned | Labs to be built after notes are complete |
-
----
-
-## How to Use This
-
-Read topics in order — each one builds directly on the previous.  
-Do not skip state (file 02) — everything Terraform does depends on understanding the state file.  
-Do not skip modules (file 06) — production Terraform without modules is unmaintainable.
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 01](./terraform-labs/01-core-workflow-lab.md) | Core Workflow, Providers, Resources | Write your first provider block, create a real AWS resource, run init/plan/apply/destroy |
+| [Lab 02](./terraform-labs/02-variables-state-lab.md) | Variables, Outputs, State | Parameterise a configuration, add outputs, move state to S3 with DynamoDB locking |
+| [Lab 03](./terraform-labs/03-modules-lab.md) | Modules, Loops, Conditionals | Extract a VPC into a reusable module, use `for_each` to create multiple subnets |
+| [Lab 04](./terraform-labs/04-webstore-infra-lab.md) | Real-World Project | Provision the full webstore AWS infrastructure — VPC, EKS, RDS, ECR — in one `terraform apply` |
 
 ---
 
 ## What You Can Do After This
 
-- Write Terraform code to provision any AWS resource
-- Manage state correctly across a team using remote backends
-- Structure code with modules for reuse across environments
-- Use variables to manage dev, staging, and production from one codebase
-- Import existing infrastructure into Terraform state
-- Safely plan and apply changes with zero-downtime patterns
-- Apply security best practices and validation to your code
+- Explain what Terraform state is and why it exists
+- Run `terraform init`, `plan`, `apply`, and `destroy` confidently
+- Write provider and resource blocks for common AWS services
+- Use variables, outputs, and locals to make configurations reusable
+- Store Terraform state remotely in S3 with DynamoDB locking
+- Write a reusable module and call it from a root module
+- Use `count` and `for_each` to avoid repetition
+- Provision a complete multi-tier AWS environment from scratch
+
+---
+
+## How to Use This
+
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
 
 ---
 
 ## What Comes Next
 
-→ [08. Bash – Shell Scripting Essentials](../08.%20Bash%20–%20Shell%20Scripting%20Essentials/README.md)
+→ [10. Ansible – Configuration Management](../10.%20Ansible%20–%20Configuration%20Management/README.md)
 
-Terraform handles infrastructure. Bash handles everything in between — deployment scripts, cron jobs, log processing, and the glue that connects tools together in CI/CD pipelines.
+Terraform provisions the infrastructure. Ansible configures what runs on it. Once EC2 instances are running, Ansible connects over SSH and installs packages, manages services, pushes config files, and enforces the state of every server — without touching them manually.

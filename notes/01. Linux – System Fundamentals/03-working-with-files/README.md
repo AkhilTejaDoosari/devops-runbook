@@ -37,7 +37,7 @@ On a Linux server, everything is a file. Config files, log files, scripts, socke
 
 `file` examines the actual contents of a file and reports what type it is — not based on the extension, but based on the bytes inside. Linux does not care about extensions. A file called `server.conf` could contain anything — `file` tells you what it actually is.
 
-`stat` shows the full metadata of a file: exact size in bytes, all three timestamps (accessed, modified, changed), permissions in both numeric and symbolic form, and the inode number. When a deployment goes wrong and you need to know exactly when a config file was last changed, `stat` gives you the answer down to the second.
+`stat` shows the full metadata **(status)** of a file: exact size in bytes, all three timestamps (accessed, modified, changed), permissions in both numeric and symbolic form, and the inode number. When a deployment goes wrong and you need to know exactly when a config file was last changed, `stat` gives you the answer down to the second.
 
 | Command | What it does | When you reach for it |
 |---|---|---|
@@ -61,66 +61,127 @@ Three timestamps — Access (last read), Modify (last content change), Change (l
 
 ---
 
-## 2. Writing Content into Files
-
-Before you can work with file contents you need to know how to write them from the terminal. Two operators handle this — `>` and `>>`. Getting them mixed up is one of the most common ways to accidentally destroy a config file.
-
-`>` redirects output into a file and **overwrites** everything already there. If the file does not exist it creates it. If it does exist, everything in it is gone.
-
-`>>` appends output to the end of a file. Existing content is untouched.
-
-```bash
-# Create webstore.conf from scratch — safe because the file is new
-echo "db_host=webstore-db" > ~/webstore/config/webstore.conf
-echo "db_port=5432" >> ~/webstore/config/webstore.conf
-echo "api_port=8080" >> ~/webstore/config/webstore.conf
-```
-
-The first line uses `>` to create the file and write the first entry. Every line after uses `>>` to append. If you accidentally used `>` on the second line, the first entry would be gone.
-
-To write multiple lines at once without running echo repeatedly, use a heredoc:
-
-```bash
-cat > ~/webstore/config/webstore.conf << 'EOF'
-db_host=webstore-db
-db_port=5432
-api_port=8080
-api_host=webstore-api
-frontend_port=80
-EOF
-```
-
-Everything between `<< 'EOF'` and `EOF` goes into the file as-is. This is how you write config files from scripts without opening an editor.
-
----
-
-## 3. Copying and Moving Files
+ ## 3. Copying and Moving Files
 
 `cp` copies a file or directory. `mv` moves or renames one. They look similar but behave differently in one important way — `cp` leaves the original in place, `mv` does not.
 
-**Copying files:**
+---
 
-| Command | What it does | When you reach for it |
-|---|---|---|
-| `cp <src> <dest>` | Copy a file | `cp webstore.conf webstore.conf.bak` — backup before editing |
-| `cp -i <src> <dest>` | Prompt before overwriting an existing file | When you are not sure if the destination already exists |
-| `cp -v <src> <dest>` | Show each file as it copies | Confirming the copy happened, especially useful in scripts |
-| `cp -r <src> <dest>` | Copy a directory and all its contents recursively | `cp -r ~/webstore ~/webstore-backup` — full project backup |
-| `cp -rv <src> <dest>` | Recursive copy with a live log of every file copied | Watching a large directory copy complete in real time |
+### Copying Files — `cp`
 
-**Moving and renaming:**
+| Command | What it does |
+|---|---|
+| `cp <src> <dest>` | Copy a file to a new location or name |
+| `cp -r <src> <dest>` | Copy a directory and everything inside it (recursive) |
+| `cp -i <src> <dest>` | Ask before overwriting — prints a prompt if the destination already exists |
+| `cp -v <src> <dest>` | Print each file name as it is copied — confirms the operation happened |
+| `cp -rv <src> <dest>` | Recursive copy with a live log of every file being copied |
 
-`mv` is used for both moving a file to a new location and renaming it — they are the same operation. Moving `webstore.conf` to `/etc/webstore/webstore.conf` and renaming `webstore.conf` to `webstore.conf.old` both use `mv`.
+**`-i` — Interactive (overwrite protection)**
 
-| Command | What it does | When you reach for it |
-|---|---|---|
-| `mv <src> <dest>` | Move or rename a file or directory | `mv webstore.conf.bak webstore.conf.backup` — rename a backup file |
-| `mv -i <src> <dest>` | Prompt before overwriting | Safe default when moving config files in production |
-| `mv -v <src> <dest>` | Show what was moved | Confirming the move in scripts or long sessions |
+Without `-i`, `cp` silently overwrites the destination if it already exists. You get no warning and no undo.
+```bash
+# Without -i — silently overwrites webstore.conf if it already exists
+cp webstore.conf /etc/webstore/webstore.conf
 
-Use `mv` instead of `cp` followed by `rm` when you want to relocate a file. `mv` preserves all metadata including timestamps. `cp` + `rm` does not.
+# With -i — pauses and asks you first
+cp -i webstore.conf /etc/webstore/webstore.conf
+# cp: overwrite '/etc/webstore/webstore.conf'?
+# Type y to confirm, n to cancel
+```
+
+Use `-i` any time you are copying into a directory where a file of the same name might already exist — especially config files in `/etc/`.
+
+**`-v` — Verbose (confirm it actually ran)**
+
+Without `-v`, a successful `cp` prints nothing. You run it and get your prompt back with no feedback. With `-v`, you see every file that was copied.
+```bash
+# Without -v — no output, no confirmation
+cp -r ~/webstore ~/webstore-backup
+
+# With -v — prints each file as it copies
+cp -rv ~/webstore ~/webstore-backup
+# ~/webstore -> ~/webstore-backup
+# ~/webstore/config/webstore.conf -> ~/webstore-backup/config/webstore.conf
+# ~/webstore/logs/access.log -> ~/webstore-backup/logs/access.log
+```
+
+Use `-v` in scripts or when copying large directories so you can see exactly what moved and catch anything unexpected.
+
+**Gold standard:**
+- Directories — `cp -riv <src> <dest>`
+- Files — `cp -iv <src> <dest>`
+```bash
+# Full project backup before a deployment
+cp -riv ~/webstore ~/webstore-backup
+```
+
+- `-r` — handles directories
+- `-i` — won't silently overwrite
+- `-v` — shows every file as it copies
+
+This is your default for any directory backup or config copy in production. You get safety and visibility in one command.
 
 ---
+
+### Moving and Renaming Files — `mv`
+
+`mv` handles both moving and renaming — they are the same operation under the hood. If the destination is a different path, the file moves. If the destination is just a new name in the same directory, the file is renamed.
+```bash
+# Move — relocate the file to a new directory
+mv webstore.conf /etc/webstore/webstore.conf
+
+# Rename — same directory, new name
+mv webstore.conf webstore.conf.old
+```
+
+| Command | What it does |
+|---|---|
+| `mv <src> <dest>` | Move or rename a file or directory |
+| `mv -i <src> <dest>` | Ask before overwriting the destination |
+| `mv -v <src> <dest>` | Print what was moved and where it landed |
+
+**`-i` and `-v` work the same way as in `cp`:**
+```bash
+# -i — prompts before overwriting
+mv -i webstore.conf /etc/webstore/webstore.conf
+# mv: overwrite '/etc/webstore/webstore.conf'?
+
+# -v — confirms the move happened
+mv -v webstore.conf.bak webstore.conf.backup
+# 'webstore.conf.bak' -> 'webstore.conf.backup'
+```
+
+**Gold standard: `mv -iv <src> <dest>`**
+```bash
+# Safely rename a config before replacing it
+mv -iv webstore.conf.bak webstore.conf.backup
+# 'webstore.conf.bak' -> 'webstore.conf.backup'
+```
+
+- `-i` — prompts before overwriting
+- `-v` — confirms exactly what moved and where
+
+`mv` has no `-r` because it already handles directories natively — no flag needed.
+
+---
+
+> **`mv` vs `cp` + `rm`**    
+* When relocating a file, always use `mv` instead of copying then deleting.    
+  `mv` preserves all metadata including timestamps and ownership.   
+* `cp` + `rm` creates a new file and loses the original metadata.   
+
+---
+
+**Gold standard combinations at a glance:**
+
+| Situation | Command |
+|---|---|
+| Backing up a directory | `cp -riv <src> <dest>` |
+| Copying a single file safely | `cp -iv <src> <dest>` |
+| Moving or renaming anything | `mv -iv <src> <dest>` |
+
+`-i` and `-v` together are always worth it on a server. The prompt from `-i` has saved config files. The output from `-v` has caught wrong paths. Neither adds meaningful time to the command.
 
 ## 4. Deleting Files
 
@@ -157,7 +218,12 @@ Reading file contents from the terminal is something you do constantly — check
 less ~/webstore/logs/access.log
 ```
 
-Inside `less`: `Space` to scroll down one page, `b` to scroll back up, `/pattern` to search, `n` to jump to the next match, `q` to exit.
+Inside `less`:    
+`Space` to scroll down one page  
+`b` to scroll back up   
+`/pattern` to search   
+`n` to jump to the next match   
+`q` to exit.
 
 ---
 

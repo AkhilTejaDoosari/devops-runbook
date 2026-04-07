@@ -81,48 +81,43 @@ cat /etc/default/grub
 pwd
 ```
 
-2. List files with full details
+2. List files with full details including hidden files, human-readable sizes, sorted oldest-to-newest
 ```bash
-ls -lh
+ls -lahtr
 ```
 
-3. List including hidden files
-```bash
-ls -la
-```
+**What to observe:** files starting with `.` are hidden — `.bashrc`, `.profile`, `.ssh/`. These are real config files that affect your environment. The output shows you owner, group, size, and timestamp for every file at once.
 
-**What to observe:** files starting with `.` are hidden — `.bashrc`, `.profile`, `.ssh/`. These are real config files that affect your environment.
-
-4. Show who is logged in
+3. Show who is logged in
 ```bash
 whoami
 who
 ```
 
-5. Check system uptime and load
+4. Check system uptime and load
 ```bash
 uptime
 ```
 
 **What to observe:** three load average numbers — 1 minute, 5 minute, 15 minute CPU demand. Numbers below your core count mean the system is healthy.
 
-6. Navigate to the root of the filesystem and explore
+5. Navigate to the root of the filesystem and explore
 ```bash
 cd /
-ls -lh
+ls -lahtr
 ```
 
 **What to observe:** every directory under `/` serves a specific purpose — `/etc` for config, `/var` for variable data, `/home` for user directories, `/boot` for the kernel.
 
-7. Navigate to /var/log and list what is there
+6. Navigate to /var/log and list what is there
 ```bash
 cd /var/log
-ls -lh
+ls -lahtr
 ```
 
 **What to observe:** this is where system services write their logs. Your webstore will write here too once nginx is running.
 
-8. Go home
+7. Go home
 ```bash
 cd ~
 pwd
@@ -141,7 +136,7 @@ mkdir -p ~/webstore/{frontend,api,db,logs,config,backup}
 
 2. Confirm the structure
 ```bash
-ls -lh ~/webstore/
+ls -lahtr ~/webstore/
 ```
 
 3. Navigate into it and confirm your location
@@ -170,8 +165,8 @@ touch config/webstore.conf
 
 5. List the full structure
 ```bash
-ls -lh ~/webstore/
-ls -lh ~/webstore/logs/
+ls -lahtr ~/webstore/
+ls -lahtr ~/webstore/logs/
 ```
 
 ---
@@ -246,29 +241,34 @@ stat ~/webstore/config/webstore.conf
 
 **What to observe in `stat` output:** three timestamps — Access, Modify, Change. Modify tells you when the content last changed. Change tells you when permissions or ownership last changed. These are different things.
 
-10. Copy the config to backup before any changes
+10. Copy the config to backup before any changes — always use `-iv` for files
 ```bash
-cp ~/webstore/config/webstore.conf ~/webstore/backup/webstore.conf.bak
-ls -lh ~/webstore/backup/
+cp -iv ~/webstore/config/webstore.conf ~/webstore/backup/webstore.conf.bak
 ```
 
-11. Rename the backup to include a date marker
+**What to observe:** `-v` confirms the copy happened and shows you exactly where it landed. `-i` would have prompted you if a backup already existed — protecting you from silently overwriting a previous snapshot.
 ```bash
-mv ~/webstore/backup/webstore.conf.bak ~/webstore/backup/webstore.conf.backup
-ls -lh ~/webstore/backup/
+ls -lahtr ~/webstore/backup/
 ```
+
+11. Rename the backup to include a date marker — always use `-iv` for moves
+```bash
+mv -iv ~/webstore/backup/webstore.conf.bak ~/webstore/backup/webstore.conf.backup
+ls -lahtr ~/webstore/backup/
+```
+
+**What to observe:** the terminal confirms `'webstore.conf.bak' -> 'webstore.conf.backup'` — you can see exactly what moved and where it landed.
 
 ---
 
 ## Section 5 — Break It on Purpose
 
 ### Break 1 — Delete a non-empty directory without -r
-
 ```bash
 rm ~/webstore/backup
 ```
 
-**What to observe:** `cannot remove: Is a directory` — `rm` alone cannot delete directories
+**What to observe:** `cannot remove: Is a directory` — `rm` alone cannot delete directories.
 
 Fix it:
 ```bash
@@ -277,7 +277,6 @@ mkdir ~/webstore/backup
 ```
 
 ### Break 2 — Navigate to a path that does not exist
-
 ```bash
 cd ~/webstore/nonexistent
 ```
@@ -285,7 +284,6 @@ cd ~/webstore/nonexistent
 **What to observe:** `No such file or directory`
 
 ### Break 3 — Overwrite a file accidentally with >
-
 ```bash
 echo "overwritten" > ~/webstore/config/webstore.conf
 cat ~/webstore/config/webstore.conf
@@ -293,14 +291,15 @@ cat ~/webstore/config/webstore.conf
 
 **What to observe:** the entire config is gone — replaced with one word. `>` overwrites. `>>` appends. This is one of the most common accidental data losses on Linux servers.
 
-Fix it — restore from backup:
+Fix it — restore from backup using the gold standard so `-v` confirms the file landed correctly:
 ```bash
-cp ~/webstore/backup/webstore.conf.backup ~/webstore/config/webstore.conf
+cp -iv ~/webstore/backup/webstore.conf.backup ~/webstore/config/webstore.conf
 cat ~/webstore/config/webstore.conf
 ```
 
-### Break 4 — tail -f the wrong file
+**What to observe:** `-i` prompts you before overwriting the damaged file — you confirm with `y`. `-v` then shows you the copy completed. You just did what a real restore looks like on a server.
 
+### Break 4 — tail -f the wrong file
 ```bash
 tail -f ~/webstore/logs/error.log
 ```
@@ -345,11 +344,12 @@ Do not move to Lab 02 until every box is checked.
 - [ ] I ran `uname -r` and `dmesg | less` and saw real kernel boot output
 - [ ] I used `systemctl list-units --type=service --state=running` and identified at least 3 running services
 - [ ] I navigated to `/`, `/var/log`, and back to `~` without using the GUI
+- [ ] I used `ls -lahtr` as my default listing command throughout the entire lab
 - [ ] I created the full `~/webstore/` directory structure with one `mkdir -p` command and explained why each folder exists
 - [ ] I wrote the webstore config using `>` for the first line and `>>` for every line after — and understand why
 - [ ] I used `head`, `tail`, `cat -n`, and `less` on the same file
 - [ ] I used `tail -f` to watch a file update in real time
 - [ ] I read `stat` output and identified all three timestamps — Access, Modify, Change
-- [ ] I copied the config to backup, then accidentally overwrote the original with `>`, then restored it from backup
-- [ ] I copied, renamed, and deleted a file using `cp`, `mv`, and `rm`
+- [ ] I used `cp -iv` to back up the config and `mv -iv` to rename it — not the bare versions
+- [ ] I accidentally overwrote the config with `>` and restored it from backup using `cp -iv`
 - [ ] I tried to `rm` a directory without `-r` and read the error

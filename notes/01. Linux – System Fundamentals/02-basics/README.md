@@ -41,46 +41,60 @@ The shell always operates inside some directory — called the **current working
 - Relative starts from your CWD: if you are in `/home/akhil`, then `cd webstore` takes you to `/home/akhil/webstore`
 - `..` means parent directory — `cd ..` moves you up one level
 
+Every session on a Linux server starts here. Before you touch anything, you need to know where you are, where things live, and how to move between them without getting lost.
+
 | Command | What it does | When you reach for it |
 |---|---|---|
-| `pwd` | Print the full path of where you currently are | First thing after SSHing into any server |
-| `cd <dir>` | Move into a directory | Navigating into the webstore project folder |
+| `pwd` | (Print Working Directory) Print the full path of your current location | First thing after SSHing into any server — confirms exactly where the shell dropped you |
+| `cd <dir>` | (Change Directory) Move into a directory | `cd ~/webstore/api` — navigating into a specific project folder |
 | `cd ..` | Move up one directory level | Going from `~/webstore/logs` back to `~/webstore` |
-| `cd ~` | Jump directly to your home directory | Getting back to a known starting point fast |
-| `mkdir <dir>` | Create a new directory | Creating `~/webstore/logs` for the first time |
-| `mkdir -p <path>` | Create nested directories in one shot — no error if they exist | `mkdir -p ~/webstore/{frontend,api,db,logs,config,backup}` — builds the full webstore structure in one command |
-| `rmdir <dir>` | Remove an empty directory | Cleaning up a folder you created by mistake — only works if empty |
-| `rm -rf <dir>` | Force delete a directory and everything inside it | Wiping a directory with no confirmation and no undo — use with full attention |
+| `cd ~` | (~ = home directory) Jump directly to your home directory | Getting back to a known starting point fast — `~` is your user's home, not root (`/`) |
+| `mkdir <dir>` | (Make Directory) Create a new directory | `mkdir ~/webstore/logs` — creating the logs folder for the first time |
+| `mkdir -p <path>` | Create nested directories in one shot — no error if they already exist | `mkdir -p ~/webstore/{frontend,api,db,logs,config,backup}` — builds the full project structure in one command |
+| `rmdir <dir>` | (Remove Directory) Delete an **empty** directory | Cleaning up a folder you created by mistake — silently fails if the directory has contents |
+| `rm -rf <dir>` | (Remove -- Recursive --Force) Force delete a directory and everything inside it | Wiping a directory and all its contents with no confirmation and no undo — always verify the path first |
 
-> `rm -rf` has no confirmation prompt and no undo. On a server, this means permanent. The habit to build: always run `ls` on the path first to confirm what you are about to delete.
+> **`rm -rf` has no confirmation prompt and no undo.** On a production server, a wrong path means permanent data loss. Build this habit now: always run `ls <path>` first to confirm exactly what you are about to delete before running `rm -rf` on it.
 
 ---
 
 ## 2. Listing Directory Contents
 
-`ls` is the command you run more than any other on a Linux server. By default it lists filenames only — clean but minimal. The flags give you everything else you need: who owns the file, how large it is, when it was last modified, and whether it is hidden. Every one of these details matters when you are debugging a live system.
+`ls` is the command you run more than any other on a Linux server. By default it shows filenames only — fast, but minimal. The flags give you everything else that matters during real work: who owns the file, how large it is, when it was last touched, and whether it is hidden. Every one of these details becomes critical when you are debugging a live system.
 
 | Command | What it shows | When you reach for it |
 |---|---|---|
-| `ls` | Filenames only | Quick glance at what is in a directory |
-| `ls -l` | Full details — permissions, owner, size, timestamp | Checking who owns the webstore config file and when it was last changed |
-| `ls -lh` | Same as `-l` but sizes in KB, MB, GB instead of bytes | When you need to know if a log file has grown to 2GB overnight |
-| `ls -la` | Full details including hidden files (`.` prefix) | Finding `.env` files or `.git` directories that are invisible by default |
-| `ls -lt` | Sorted by modification time, newest first | Finding which file in `~/webstore/logs` changed most recently during an incident |
-| `ls -ltr` | Sorted by modification time, oldest first | Seeing the full history of changes in chronological order |
-| `ls -ld <dir>` | Shows info about the directory itself, not its contents | Checking the permissions on `~/webstore/` without listing everything inside |
+| `ls` | (List) Filenames only | Quick glance at what is in a directory |
+| `ls -l` | (List --Long) Full details — permissions, owner, size, timestamp | Checking who owns the webstore config file and when it was last changed |
+| `ls -lh` | (List --Long --Human-readable) Same as `-l` but sizes shown in KB, MB, GB instead of raw bytes | Checking whether a log file has silently grown to 2 GB overnight |
+| `ls -la` | (List --Long --All) Full details including hidden files (`.` prefix) | Finding `.env` files or `.git` directories that are invisible by default |
+| `ls -lt` | (List --Long --Time) Sorted by modification time, newest first | Spotting which file in `~/webstore/logs` changed most recently during an incident |
+| `ls -ltr` | (List --Long --Time --Reverse) Sorted by modification time, oldest first | Seeing the full chronological history of changes in a directory |
+| `ls -ld <dir>` | (List --Long --Directory) Shows info about the directory itself, not its contents | Checking permissions on `~/webstore/` without listing everything inside |
 
-You can chain flags freely — `ls -lh`, `ls -ltr`, `ls -lath` all work. Order does not matter.
+You can chain flags freely — `ls -lh`, `ls -ltr`, `ls -lahtr` all work. Flag order does not matter.
 
-**What the output of `ls -lh` actually tells you:**
+**Gold standard: `ls -lahtr`** — long format, all files including hidden, human-readable sizes, sorted oldest-to-newest. Gives you the full picture of a directory at a glance.
+
+**What the output of `ls -lahtr` actually tells you:**
 
 ```
 -rw-r--r-- 1 akhil www-data 1.2K Apr 5 09:14 webstore.conf
 ```
 
-Reading left to right:  
-file type and permissions (`-rw-r--r--`), number of hard links (`1`), owner (`akhil`), group (`www-data`), size (`1.2K`), last modified (`Apr 5 09:14`), filename (`webstore.conf`).     
-When you see `www-data` as the group on a webstore config file, that tells you nginx has read access to it — which is exactly what you want.
+Reading left to right:
+
+| Field | Value | What it tells you |
+|---|---|---|
+| File type + permissions | `-rw-r--r--` | Regular file; owner can read/write, group and others can only read |
+| Hard links | `1` | One reference to this file in the filesystem |
+| Owner | `akhil` | The user who created or was assigned ownership of this file |
+| Group | `www-data` | Any process running as `www-data` inherits the group's read permission |
+| Size | `1.2K` | Human-readable because of the `-h` flag — without it this shows raw bytes |
+| Last modified | `Apr 5 09:14` | When the file was last written to — critical during incident triage |
+| Filename | `webstore.conf` | The file itself |
+
+When you see `www-data` as the group on a config file, it means any process running under that group — such as nginx on Debian/Ubuntu systems — can read it. That is intentional on a web server. If the group were `root` instead, nginx would be locked out and your site would fail to start.
 
 ---
 

@@ -5,19 +5,73 @@
 [Filters](../04-filter-commands/README.md) |
 [sed](../05-sed-stream-editor/README.md) |
 [awk](../06-awk/README.md) |
-[Editors](../07-text-editor/README.md) |
-[Users](../08-user-&-group-management/README.md) |
-[Permissions](../09-file-ownership-&-permissions/README.md) |
+[vim](../07-text-editor/README.md) |
+[Users](../08-user-and-group-management/README.md) |
+[Permissions](../09-file-ownership-and-permissions/README.md) |
 [Archive](../10-archiving-and-compression/README.md) |
 [Packages](../11-package-management/README.md) |
 [Services](../12-service-management/README.md) |
-[Networking](../13-networking/README.md)
+[Networking](../13-networking/README.md) |
+[Logs](../14-logs-and-debug/README.md) |
+[Interview](../99-interview-prep/README.md)
+
+---
 
 # Filter Commands
 
-A production server generates thousands of log lines every hour. You will never open them in a text editor. You will never scroll through them manually. Instead you use filter commands — tools that let you search, slice, count, sort, and chain operations against any file or stream from the terminal. This is how a DevOps engineer reads a system without a GUI.
+> **Layer:** L5 — Tools & Files
+> **Depends on:** [03 Working with Files](../03-working-with-files/README.md) — you need to be able to read and navigate files before filtering them
+> **Used in production when:** Something broke and you need to search thousands of log lines to find the one that matters — without opening a text editor
 
-The webstore access log used throughout this file:
+---
+
+## Table of Contents
+
+- [What this is](#what-this-is)
+- [How it fits the stack](#how-it-fits-the-stack)
+- [The webstore access log](#the-webstore-access-log)
+- [1. The Pipe — how everything connects](#1-the-pipe--how-everything-connects)
+- [2. grep — Search File Contents](#2-grep--search-file-contents)
+- [3. find — Search the Filesystem](#3-find--search-the-filesystem)
+- [4. locate — Fast Name Lookup](#4-locate--fast-name-lookup)
+- [5. wc — Count Lines, Words, Bytes](#5-wc--count-lines-words-bytes)
+- [6. cut — Extract Fields](#6-cut--extract-fields)
+- [7. sort — Order Lines](#7-sort--order-lines)
+- [8. uniq — Deduplicate Lines](#8-uniq--deduplicate-lines)
+- [9. tr — Translate Characters](#9-tr--translate-characters)
+- [10. tee — Split a Stream](#10-tee--split-a-stream)
+- [On the webstore](#on-the-webstore)
+- [What breaks](#what-breaks)
+- [Daily commands](#daily-commands)
+
+---
+
+## What this is
+
+A production server generates thousands of log lines every hour. You will never open them in a text editor. You will never scroll through them manually. Filter commands let you search, slice, count, sort, and chain operations against any file or stream directly from the terminal. The pipe `|` connects them into analysis chains that answer real questions in seconds. This is how a DevOps engineer reads a system without a GUI.
+
+---
+
+## How it fits the stack
+
+```
+  L6  You
+  L5  Tools & Files  ← this file lives here
+       grep · find · cut · sort · uniq · wc · tee · tr · pipe
+  L4  Config
+  L3  State & Debug   ← /var/log — the logs you filter live here
+  L2  Networking
+  L1  Process Manager
+  L0  Kernel & Hardware
+```
+
+The logs at L3 are the raw material. The filter commands at L5 are the tools that make sense of them. Every incident investigation you run in file 14 (Logs & Debug) uses the commands you learn here.
+
+---
+
+## The webstore access log
+
+Every example in this file uses this log. Save it to `~/webstore/logs/access.log` to follow along.
 
 ```
 192.168.1.10 GET /api/products 200
@@ -32,90 +86,48 @@ The webstore access log used throughout this file:
 192.168.1.14 POST /api/orders 500
 ```
 
----
-
-## Table of Contents
-
-- [1. find — Search the Filesystem](#1-find--search-the-filesystem)
-- [2. locate — Fast Name Lookup](#2-locate--fast-name-lookup)
-- [3. grep — Search File Contents](#3-grep--search-file-contents)
-- [4. wc — Count Lines, Words, Characters](#4-wc--count-lines-words-characters)
-- [5. The Pipe — Chaining Commands](#5-the-pipe--chaining-commands)
-- [6. cut — Extract Fields](#6-cut--extract-fields)
-- [7. sort — Order Lines](#7-sort--order-lines)
-- [8. uniq — Deduplicate Lines](#8-uniq--deduplicate-lines)
-- [9. tr — Translate Characters](#9-tr--translate-characters)
-- [10. tee — Split a Stream](#10-tee--split-a-stream)
-- [11. Real Incident Pipelines](#11-real-incident-pipelines)
+Fields: `IP  METHOD  PATH  STATUS`
 
 ---
 
-## 1. find — Search the Filesystem
+## 1. The Pipe — how everything connects
 
-`find` walks the directory tree in real time and returns every file that matches your criteria. Unlike `locate`, its results are always current because it reads the actual filesystem rather than a cached database. It is slower on very large trees but infinitely more flexible — you can filter by name, type, size, age, owner, permissions, and then execute a command on every match.
-
-| Option | What it does | Example |
-|---|---|---|
-| `-name "*.log"` | Match files by name using wildcards | `find ~/webstore/logs -name "*.log"` |
-| `-type f` | Regular files only | `find ~/webstore -type f` |
-| `-type d` | Directories only | `find ~/webstore -type d` |
-| `-mtime +7` | Modified more than 7 days ago | `find ~/webstore/logs -mtime +7` |
-| `-mtime -1` | Modified in the last 24 hours | `find ~/webstore/logs -mtime -1` |
-| `-size +1k` | Larger than 1 KB | `find ~/webstore/logs -size +1k` |
-| `-size -500c` | Smaller than 500 bytes | `find ~/webstore/logs -size -500c` |
-| `-exec <cmd> {} \;` | Run a command on every match | `find ~/webstore/logs -name "*.tmp" -exec rm {} \;` |
-
-**When you reach for `find`:**
-- Cleaning up old log files before a deploy: `find ~/webstore/logs -mtime +30 -exec rm {} \;`
-- Confirming a config file exists somewhere in the project: `find ~/webstore -name "webstore.conf"`
-- Deleting all `.tmp` files left behind by a crashed process: `find ~/webstore -name "*.tmp" -exec rm {} \;`
-
----
-
-## 2. locate — Fast Name Lookup
-
-`locate` searches a prebuilt database of filenames instead of walking the live filesystem. It returns results instantly but the database is only as fresh as the last time `updatedb` ran — usually once a day. Use it when you need to find a file quickly by name and do not need guaranteed freshness.
-
-| Option | What it does | Example |
-|---|---|---|
-| `locate <name>` | Find all paths containing this name | `locate webstore.conf` |
-| `-i` | Case-insensitive match | `locate -i ACCESS.LOG` |
-| `-l 5` | Limit results to 5 | `locate -l 5 access.log` |
-| `-c` | Count matches only | `locate -c "*.log"` |
-
-**find vs locate — when to use which:**
-
-| | find | locate |
-|---|---|---|
-| Results | Always current | Only as fresh as last `updatedb` |
-| Speed | Slower on large trees | Instant |
-| Filters | Name, type, size, age, owner | Name only |
-| Actions | Can run `-exec` on matches | Returns list only |
-| Use when | You need exact, current results | You just need to know where a file is |
-
-If a file was created in the last few hours and `locate` cannot find it, run `sudo updatedb` first to refresh the database.
-
----
-
-## 3. grep — Search File Contents
-
-`grep` searches inside files for lines matching a pattern. It is the single most-used command for reading logs and config files on a server. Every incident investigation starts with `grep`.
+The pipe `|` takes the output of one command and feeds it directly as input to the next. No temporary files. No intermediate steps. It turns single commands into analysis chains.
 
 ```
-grep [OPTIONS] <pattern> <file>
+command1 | command2 | command3
 ```
 
-| Flag | What it does | Example |
-|---|---|---|
-| `grep <pattern> <file>` | Find lines matching pattern — case sensitive | `grep '500' ~/webstore/logs/access.log` |
-| `-i` | Case-insensitive match | `grep -i 'error' access.log` |
-| `-n` | Show line numbers alongside matches | `grep -n '500' access.log` |
-| `-c` | Count matching lines instead of showing them | `grep -c '500' access.log` |
-| `-v` | Invert — show lines that do NOT match | `grep -v '200' access.log` |
-| `-w` | Match whole words only | `grep -w 'GET' access.log` |
-| `-r` | Search recursively through all files in a directory | `grep -r 'db_host' ~/webstore/config/` |
+Think of it as an assembly line. Each command does one job. The pipe passes the result to the next worker. The final output is the answer to your question.
 
-**What these look like against the webstore log:**
+```bash
+# Question: how many 500 errors are in the log?
+grep '500' ~/webstore/logs/access.log | wc -l
+# 2
+
+# Question: which IPs caused the 500 errors?
+grep '500' ~/webstore/logs/access.log | cut -d' ' -f1
+# 192.168.1.14
+# 192.168.1.14
+```
+
+Every section below is a tool you add to your pipeline vocabulary.
+
+---
+
+## 2. grep — Search File Contents
+
+`grep` (Global Regular Expression Print) searches inside files for lines matching a pattern. It is the most-used command in incident investigation. Every log analysis starts here.
+
+| Flag | Full form | What it does | Example |
+|---|---|---|---|
+| `grep <pat> <file>` | — | Find lines matching pattern — case sensitive | `grep '500' access.log` |
+| `-i` | --ignore-case | Case-insensitive match | `grep -i 'error' access.log` |
+| `-n` | --line-number | Show line numbers alongside matches | `grep -n '500' access.log` |
+| `-c` | --count | Count matching lines, do not print them | `grep -c '500' access.log` |
+| `-v` | --invert-match | Show lines that do NOT match | `grep -v '200' access.log` |
+| `-w` | --word-regexp | Match whole words only | `grep -w 'GET' access.log` |
+| `-r` | --recursive | Search all files in a directory | `grep -r 'db_host' ~/webstore/config/` |
 
 ```bash
 # Find all 500 errors
@@ -127,7 +139,7 @@ grep '500' ~/webstore/logs/access.log
 grep -c '500' ~/webstore/logs/access.log
 # 2
 
-# Find everything that is NOT a 200 OK — surface all problems at once
+# Surface every non-200 request — all problems at once
 grep -v '200' ~/webstore/logs/access.log
 # 192.168.1.12 POST /api/orders 201
 # 192.168.1.13 GET /api/users 404
@@ -135,87 +147,131 @@ grep -v '200' ~/webstore/logs/access.log
 # 192.168.1.15 DELETE /api/orders/7 403
 # 192.168.1.14 POST /api/orders 500
 
-# Find all errors across every log file in the logs directory
+# Search every log file in the directory
 grep -r '500' ~/webstore/logs/
+# access.log:192.168.1.14 POST /api/orders 500
+# access.log:192.168.1.14 POST /api/orders 500
 ```
 
-**When you reach for `grep`:**
-During an incident, `grep -v '200'` on the access log immediately surfaces every non-successful request. You do not scroll — you filter.
+`grep -v '200'` on any access log immediately surfaces every non-successful request. You do not scroll — you filter.
 
 ---
 
-## 4. wc — Count Lines, Words, Characters
+## 3. find — Search the Filesystem
 
-`wc` counts lines, words, and characters in a file or stream. On its own it tells you the size of a file in human terms. In a pipeline it tells you how many results a previous command produced.
+`find` walks the directory tree in real time and returns every file matching your criteria. Results are always current — it reads the live filesystem, not a cache.
 
-| Command | What it counts | When you reach for it |
+| Option | What it does | Example |
 |---|---|---|
-| `wc <file>` | Lines, words, and characters together | Quick file size check |
-| `wc -l <file>` | Lines only | How many entries are in the access log |
-| `wc -w <file>` | Words only | Rarely needed on log files |
-| `wc -c <file>` | Characters (bytes) only | Checking exact file size |
-
-**Most useful pattern — count grep results:**
+| `-name "*.log"` | Match by filename with wildcards | `find ~/webstore/logs -name "*.log"` |
+| `-type f` | Regular files only | `find ~/webstore -type f` |
+| `-type d` | Directories only | `find ~/webstore -type d` |
+| `-mtime +7` | Modified more than 7 days ago | `find ~/webstore/logs -mtime +7` |
+| `-mtime -1` | Modified in the last 24 hours | `find ~/webstore/logs -mtime -1` |
+| `-size +1M` | Larger than 1 megabyte | `find ~/webstore/logs -size +1M` |
+| `-exec <cmd> {} \;` | Run a command on every match | `find ~/webstore -name "*.tmp" -exec rm {} \;` |
 
 ```bash
+# Find the webstore config wherever it is
+find ~/webstore -name "webstore.conf"
+# /home/akhil/webstore/config/webstore.conf
+
+# Find log files modified in the last day
+find ~/webstore/logs -mtime -1 -name "*.log"
+# /home/akhil/webstore/logs/access.log
+
+# Find and delete all temp files left by a crashed process
+find ~/webstore -name "*.tmp" -exec rm {} \;
+
+# Find large log files consuming disk space
+find ~/webstore/logs -size +100M
+```
+
+---
+
+## 4. locate — Fast Name Lookup
+
+`locate` searches a prebuilt database of filenames. Results are instant but only as fresh as the last time `updatedb` ran — usually once a day.
+
+| Option | Full form | What it does |
+|---|---|---|
+| `locate <name>` | — | Find all paths containing this name |
+| `-i` | --ignore-case | Case-insensitive match |
+| `-l 5` | --limit | Limit results to 5 |
+| `-c` | --count | Count matches only |
+
+```bash
+locate webstore.conf
+# /home/akhil/webstore/config/webstore.conf
+
+# File created in the last hour and locate cannot find it?
+sudo updatedb && locate webstore.conf
+```
+
+**find vs locate — when to use which:**
+
+| | find | locate |
+|---|---|---|
+| Results | Always current | Only as fresh as last `updatedb` |
+| Speed | Slower on large trees | Instant |
+| Filters | Name, type, size, age, owner | Name only |
+| Use when | You need exact current results | You just need to know if a file exists |
+
+---
+
+## 5. wc — Count Lines, Words, Bytes
+
+`wc` (Word Count) counts lines, words, and bytes in a file or stream.
+
+| Flag | Full form | What it counts |
+|---|---|---|
+| `wc -l` | --lines | Lines only — most useful |
+| `wc -w` | --words | Words only |
+| `wc -c` | --bytes | Bytes only |
+
+```bash
+# How many lines in the access log?
+wc -l ~/webstore/logs/access.log
+# 10 /home/akhil/webstore/logs/access.log
+
+# How many 500 errors? (in a pipeline)
 grep '500' ~/webstore/logs/access.log | wc -l
 # 2
 ```
 
-This tells you exactly how many 500 errors occurred without printing every matching line. Combine with `-i` and a date pattern and you have a quick incident count.
-
----
-
-## 5. The Pipe — Chaining Commands
-
-The pipe `|` takes the output of one command and feeds it directly into the next as input. No temporary files. No intermediate steps. It is what turns single commands into powerful analysis chains.
-
-```
-command1 | command2 | command3
-```
-
-Think of it as an assembly line. Each command does one job. The pipe connects them. The final output is the result of the entire chain.
-
-```bash
-# Read the log, find 500 errors, count them
-cat ~/webstore/logs/access.log | grep '500' | wc -l
-# 2
-
-# Extract just the IP addresses from every 500 error
-grep '500' ~/webstore/logs/access.log | cut -d' ' -f1
-# 192.168.1.14
-# 192.168.1.14
-```
-
-Every section below builds on the pipe.
+`wc -l` at the end of any pipeline tells you how many results the previous command produced.
 
 ---
 
 ## 6. cut — Extract Fields
 
-`cut` extracts specific columns from structured text. Log files, CSVs, `/etc/passwd` — any file where fields are separated by a consistent delimiter. You tell it the delimiter with `-d` and which field(s) to keep with `-f`.
+`cut` extracts specific columns from structured text. You define the delimiter with `-d` and which field to keep with `-f`. Fields are numbered from 1.
 
-| Option | What it does | Example |
+| Option | Full form | What it does |
 |---|---|---|
-| `-d' ' -f1` | Split on space, take field 1 | `cut -d' ' -f1 access.log` — extracts IP addresses |
-| `-d' ' -f3` | Split on space, take field 3 | `cut -d' ' -f3 access.log` — extracts URL paths |
-| `-d' ' -f1,4` | Take fields 1 and 4 | `cut -d' ' -f1,4 access.log` — IP and status code |
-| `-d',' -f2` | Split on comma, take field 2 | `cut -d',' -f2 data.csv` |
-
-**Against the webstore log:**
+| `-d' ' -f1` | --delimiter --fields | Split on space, take field 1 |
+| `-d',' -f2` | --delimiter --fields | Split on comma, take field 2 |
+| `-d' ' -f1,4` | --delimiter --fields | Take fields 1 and 4 |
 
 ```bash
-# Extract all IP addresses (field 1)
+# Extract IP addresses (field 1 — space delimited)
 cut -d' ' -f1 ~/webstore/logs/access.log
 # 192.168.1.10
 # 192.168.1.11
+# 192.168.1.12
 # ...
 
-# Extract status codes only (field 4)
+# Extract status codes (field 4)
 cut -d' ' -f4 ~/webstore/logs/access.log
 # 200
 # 200
 # 201
+# ...
+
+# Extract IP and status code together
+cut -d' ' -f1,4 ~/webstore/logs/access.log
+# 192.168.1.10 200
+# 192.168.1.11 200
 # ...
 ```
 
@@ -223,18 +279,18 @@ cut -d' ' -f4 ~/webstore/logs/access.log
 
 ## 7. sort — Order Lines
 
-`sort` orders lines of text. By default it sorts alphabetically. Flags let you sort numerically, in reverse, by a specific field, or by month name. `sort` almost always appears before `uniq` in a pipeline — `uniq` only deduplicates consecutive identical lines, so you must sort first.
+`sort` orders lines of text. It almost always appears before `uniq` — `uniq` only removes adjacent duplicates, so you must sort first to bring identical lines together.
 
-| Flag | What it does | Example |
+| Flag | Full form | What it does |
 |---|---|---|
-| `sort <file>` | Alphabetical ascending | `sort access.log` |
-| `-r` | Reverse order | `sort -r access.log` |
-| `-n` | Numeric sort | `sort -n sizes.txt` |
-| `-k <N>` | Sort by field N | `sort -k4 access.log` — sort by status code |
-| `-t <delim>` | Use this delimiter to identify fields | `sort -t',' -k3 -n data.csv` |
+| `sort` | — | Alphabetical ascending |
+| `-r` | --reverse | Reverse order |
+| `-n` | --numeric-sort | Sort numerically, not alphabetically |
+| `-rn` | --reverse --numeric-sort | Largest numbers first |
+| `-k <N>` | --key | Sort by field N |
 
 ```bash
-# Sort the access log by status code (field 4)
+# Sort the log by status code (field 4)
 sort -k4 ~/webstore/logs/access.log
 # 192.168.1.12 POST /api/orders 201
 # 192.168.1.15 DELETE /api/orders/7 403
@@ -249,16 +305,16 @@ sort -k4 ~/webstore/logs/access.log
 
 ## 8. uniq — Deduplicate Lines
 
-`uniq` removes or counts duplicate consecutive lines. Because it only works on adjacent duplicates, you almost always run `sort` first to bring identical lines together.
+`uniq` removes or counts duplicate **consecutive** lines. Always run `sort` first.
 
-| Flag | What it does | Example |
+| Flag | Full form | What it does |
 |---|---|---|
-| `uniq` | Remove consecutive duplicate lines | `sort access.log \| uniq` |
-| `-c` | Prefix each line with how many times it appeared | `sort access.log \| uniq -c` |
-| `-d` | Show only lines that appeared more than once | `sort access.log \| uniq -d` |
-| `-u` | Show only lines that appeared exactly once | `sort access.log \| uniq -u` |
+| `uniq` | — | Remove consecutive duplicate lines |
+| `-c` | --count | Prefix each line with its occurrence count |
+| `-d` | --repeated | Show only lines that appeared more than once |
+| `-u` | --unique | Show only lines that appeared exactly once |
 
-**The classic combination — find the most active IPs:**
+**The classic combination — ranked hit count per IP:**
 
 ```bash
 cut -d' ' -f1 ~/webstore/logs/access.log | sort | uniq -c | sort -rn
@@ -270,76 +326,126 @@ cut -d' ' -f1 ~/webstore/logs/access.log | sort | uniq -c | sort -rn
 #   1 192.168.1.15
 ```
 
-Read this pipeline left to right: extract IP addresses → sort them so identical ones are adjacent → count and deduplicate → sort by count descending. Result: a ranked list of who is hitting the webstore API most.
+Read left to right: extract IPs → sort so identical IPs are adjacent → count and deduplicate → sort by count descending. Result: ranked list of who is hitting the API most. This same pattern works on any field — endpoints, status codes, methods.
 
 ---
 
 ## 9. tr — Translate Characters
 
-`tr` replaces or deletes characters in a stream. It reads from stdin — you feed it content with a pipe or redirect.
+`tr` (Translate) replaces or deletes characters in a stream. It reads from stdin — feed it with a pipe.
 
-| Option | What it does | Example |
+| Option | Full form | What it does |
 |---|---|---|
-| `tr 'a-z' 'A-Z'` | Uppercase everything | `cat access.log \| tr 'a-z' 'A-Z'` |
-| `-d '0-9'` | Delete all digits | `tr -d '0-9' < access.log` |
-| `-s ' '` | Squeeze repeated spaces into one | `tr -s ' ' < access.log` |
+| `tr 'a-z' 'A-Z'` | — | Uppercase all lowercase letters |
+| `-d '0-9'` | --delete | Delete all digits |
+| `-s ' '` | --squeeze-repeats | Collapse multiple spaces into one |
 
-`tr` is most useful in pipelines when you need to normalize text before passing it to another command — removing characters that break field splitting, or standardizing case before comparison.
+```bash
+# Uppercase the entire log for case-insensitive comparison
+cat ~/webstore/logs/access.log | tr 'a-z' 'A-Z'
+
+# Remove digits from a stream
+echo "error404" | tr -d '0-9'
+# error
+```
+
+Most useful in pipelines when you need to normalise text before passing it to another command.
 
 ---
 
 ## 10. tee — Split a Stream
 
-`tee` reads from stdin and writes to both stdout and a file simultaneously. It lets you see pipeline output on the terminal and save it to a file at the same time — without running the command twice.
+`tee` reads from stdin and writes to both stdout and a file simultaneously. You see the output on screen and it gets saved — without running the command twice.
 
-| Flag | What it does | Example |
+| Flag | Full form | What it does |
 |---|---|---|
-| `tee <file>` | Write to stdout and file | `grep '500' access.log \| tee errors.log` |
-| `-a` | Append to file instead of overwrite | `grep '500' access.log \| tee -a errors.log` |
+| `tee <file>` | — | Write to stdout and file, overwriting file |
+| `tee -a <file>` | --append | Write to stdout and append to file |
 
 ```bash
-# Save all 500 errors to a file AND still see them on screen
+# Save all 500 errors to a file AND see them on screen
 grep '500' ~/webstore/logs/access.log | tee ~/webstore/logs/errors.log
 # 192.168.1.14 POST /api/orders 500   ← printed to terminal
 # 192.168.1.14 POST /api/orders 500   ← also written to errors.log
 ```
 
+Use `tee` when you want a record of your investigation without losing the ability to keep piping.
+
 ---
 
-## 11. Real Incident Pipelines
+## On the webstore
 
-These are the chains you actually build during an incident. Each one is a question you need answered fast.
+These are the pipelines you actually run during a webstore incident.
+Each one answers a specific question you will be asked.
 
-**How many 500 errors hit the API in this log?**
 ```bash
+# Question 1 — how many errors hit the API in this log?
 grep '500' ~/webstore/logs/access.log | wc -l
-```
+# 2
 
-**Which IP address is generating all the 500 errors?**
-```bash
+# Question 2 — which IP is generating all the 500 errors?
 grep '500' ~/webstore/logs/access.log | cut -d' ' -f1 | sort | uniq -c | sort -rn
-```
+#   2 192.168.1.14
 
-**Which endpoints are being hit most often?**
-```bash
+# Question 3 — which endpoints are getting hit most?
 cut -d' ' -f3 ~/webstore/logs/access.log | sort | uniq -c | sort -rn
-```
+#   5 /api/products
+#   2 /api/orders
+#   1 /api/users
+#   1 /api/orders/7
 
-**Show me every request that is not a 200 OK, with line numbers:**
-```bash
+# Question 4 — show every non-200 request with line numbers
 grep -vn '200' ~/webstore/logs/access.log
-```
+# 3:192.168.1.12 POST /api/orders 201
+# 5:192.168.1.13 GET /api/users 404
+# 6:192.168.1.14 POST /api/orders 500
+# 8:192.168.1.15 DELETE /api/orders/7 403
+# 10:192.168.1.14 POST /api/orders 500
 
-**Find all log files modified in the last 24 hours and search them all for errors:**
-```bash
-find ~/webstore/logs -mtime -1 -name "*.log" -exec grep -l '500' {} \;
-```
-
-**Save all non-200 requests to a separate file for further analysis:**
-```bash
+# Question 5 — save all errors to a separate file for the team
 grep -v '200' ~/webstore/logs/access.log | tee ~/webstore/logs/non-200.log
+# (prints to screen and saves to file simultaneously)
+
+# Question 6 — find all log files changed in the last 24 hours
+find ~/webstore/logs -mtime -1 -name "*.log"
+# /home/akhil/webstore/logs/access.log
+
+# Question 7 — find which log files contain 500 errors
+find ~/webstore/logs -name "*.log" -exec grep -l '500' {} \;
+# /home/akhil/webstore/logs/access.log
 ```
 
 ---
 
-→ Ready to practice? [Go to Lab 02](../linux-labs/02-filters-sed-awk-lab.md)
+## What breaks
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `grep` returns nothing when you expected matches | Pattern is case-sensitive and case does not match | Add `-i` for case-insensitive matching |
+| `grep '500'` also matches `5000` or `15001` | Pattern matches anywhere in the line | Use `-w` for whole-word match or anchor with `\b500\b` |
+| `uniq -c` not deduplicating correctly | Identical lines are not adjacent | Run `sort` before `uniq` — always |
+| `cut` returns the wrong field | Fields are numbered from 1, not 0, and the delimiter may contain multiple spaces | Check the actual delimiter with `cat -A file` to see whitespace |
+| `find -exec` errors with `missing argument to -exec` | Missing `\;` at the end of the exec block | Always close `-exec <cmd> {} \;` with `\;` |
+| `locate` cannot find a file you just created | Database is stale — locate uses a cache | Run `sudo updatedb` then try again |
+| Pipeline produces no output | An early command in the chain matched nothing | Test each command individually before piping |
+
+---
+
+## Daily commands
+
+| Command | What it does |
+|---|---|
+| `grep '<pat>' <file>` | Find lines matching a pattern |
+| `grep -v '<pat>' <file>` | Find lines that do NOT match — surfaces all problems |
+| `grep -rn '<pat>' <dir>` | Search all files in a directory, show line numbers |
+| `find <dir> -name "<pat>"` | Find files by name in real time |
+| `find <dir> -mtime -1` | Find files modified in the last 24 hours |
+| `cut -d' ' -f<N> <file>` | Extract field N from space-delimited text |
+| `sort \| uniq -c \| sort -rn` | Count and rank occurrences — the core analysis pattern |
+| `wc -l` | Count lines — always useful at the end of a pipeline |
+| `tee <file>` | Save pipeline output to file while still seeing it on screen |
+| `cmd1 \| cmd2 \| cmd3` | Chain commands — each feeds the next |
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → Filter Commands](../99-interview-prep/README.md#filter-commands)

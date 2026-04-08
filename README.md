@@ -54,6 +54,39 @@ This is the thread. Each tool picks up exactly where the previous one left off.
 
 ---
 
+## The Production Stack
+
+Every tool maps to a layer. The layers connect.
+This is the system you are building toward.
+
+```
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  11  Bash                          automation glue                   │
+  ├──────────────────────────────────────────────────────────────────────┤
+  │  07  Observability                 metrics · logs · traces           │
+  ├──────────────────────────────────────────────────────────────────────┤
+  │  06  CI-CD                         build · test · deploy             │
+  ├──────────────────────────────────────────────────────────────────────┤
+  │  09  Terraform  ·  10  Ansible     infrastructure + configuration    │
+  ├──────────────────────────────────────────────────────────────────────┤
+  │  08  AWS                           cloud infrastructure              │
+  ├──────────────────────────────────────────────────────────────────────┤
+  │  05  Kubernetes                    container orchestration           │
+  ├──────────────────────────────────────────────────────────────────────┤
+  │  04  Docker                        containerization                  │
+  ├──────────────────────────────────────────────────────────────────────┤
+  │  02  Git                           version control                   │
+  ├──────────────────────────────────────────────────────────────────────┤
+  │  03  Networking                    how machines talk                 │
+  ├──────────────────────────────────────────────────────────────────────┤
+  │  01  Linux  L0 · L1 · L2 · L3 · L4 · L5 · L6     the foundation      │
+  └──────────────────────────────────────────────────────────────────────┘
+                    ↑
+                    everything above runs on Linux
+```
+
+---
+
 ## Why These Tools
 
 Every tool in this runbook was chosen deliberately. These are the reasons.
@@ -91,19 +124,49 @@ Terraform before Ansible — Terraform provisions the infrastructure, Ansible co
 
 ## Structure
 
-| # | Tool | Notes | Labs |
-|---|---|---|---|
-| 01 | [Linux – System Fundamentals](./notes/01.%20Linux%20–%20System%20Fundamentals/README.md) | ✅ Complete | ✅ Complete |
-| 02 | [Git & GitHub – Version Control](./notes/02.%20Git%20%26%20GitHub%20–%20Version%20Control/README.md) | ✅ Complete | ✅ Complete |
-| 03 | [Networking – Foundations](./notes/03.%20Networking%20–%20Foundations/README.md) | ✅ Complete | ✅ Complete |
-| 04 | [Docker – Containerization](./notes/04.%20Docker%20–%20Containerization/README.md) | ✅ Complete | ✅ Complete |
-| 05 | [Kubernetes – Orchestration](./notes/05.%20Kubernetes%20–%20Orchestration/README.md) | 🔄 In progress | 🔄 In progress |
-| 06 | [CI-CD – Pipelines & GitOps](./notes/06.%20CI-CD%20–%20Pipelines%20%26%20GitOps/README.md) | 🚧 Planned | 🚧 Planned |
-| 07 | [Observability – Monitoring & Logs](./notes/07.%20Observability%20–%20Monitoring%20%26%20Logs/README.md) | 🚧 Planned | 🚧 Planned |
-| 08 | [AWS – Cloud Infrastructure](./notes/08.%20AWS%20–%20Cloud%20Infrastructure/README.md) | 🔄 In progress | 🚧 Planned |
-| 09 | [Terraform – IaC Foundations](./notes/09.%20Terraform%20–%20IaC%20Foundations/README.md) | 🔄 In progress | 🚧 Planned |
-| 10 | [Ansible – Configuration Management](./notes/10.%20Ansible%20–%20Configuration%20Management/README.md) | 🚧 Planned | 🚧 Planned |
-| 11 | [Bash – Shell Scripting Essentials](./notes/11.%20Bash%20–%20Shell%20Scripting%20Essentials/README.md) | 🚧 Planned | 🚧 Planned |
+| # | Tool | Status |
+|---|---|---|
+| 01 | [Linux – System Fundamentals](./notes/01.%20Linux%20–%20System%20Fundamentals/README.md) | ✅ Complete |
+| 02 | [Git & GitHub – Version Control](./notes/02.%20Git%20%26%20GitHub%20–%20Version%20Control/README.md) | ✅ Complete |
+| 03 | [Networking – Foundations](./notes/03.%20Networking%20–%20Foundations/README.md) | ✅ Complete |
+| 04 | [Docker – Containerization](./notes/04.%20Docker%20–%20Containerization/README.md) | ✅ Complete |
+| 05 | [Kubernetes – Orchestration](./notes/05.%20Kubernetes%20–%20Orchestration/README.md) | 🔄 In progress |
+| 06 | [CI-CD – Pipelines & GitOps](./notes/06.%20CI-CD%20–%20Pipelines%20%26%20GitOps/README.md) | 🚧 Planned |
+| 07 | [Observability – Monitoring & Logs](./notes/07.%20Observability%20–%20Monitoring%20%26%20Logs/README.md) | 🚧 Planned |
+| 08 | [AWS – Cloud Infrastructure](./notes/08.%20AWS%20–%20Cloud%20Infrastructure/README.md) | 🔄 In progress |
+| 09 | [Terraform – IaC Foundations](./notes/09.%20Terraform%20–%20IaC%20Foundations/README.md) | 🔄 In progress |
+| 10 | [Ansible – Configuration Management](./notes/10.%20Ansible%20–%20Configuration%20Management/README.md) | 🚧 Planned |
+| 11 | [Bash – Shell Scripting Essentials](./notes/11.%20Bash%20–%20Shell%20Scripting%20Essentials/README.md) | 🚧 Planned |
+
+---
+
+## Every File Has the Same Structure
+
+Every file in every tool follows this exact template.
+Once you learn the shape, you can navigate any file instantly.
+
+```
+  WHERE IT FITS     layer · depends on · used when
+  ──────────────────────────────────────────────────────────
+  WHAT THIS IS      one paragraph — the idea before the commands
+  ──────────────────────────────────────────────────────────
+  HOW IT FITS       small stack diagram, this layer highlighted
+  ──────────────────────────────────────────────────────────
+  CONTENT           concept explained · flags shown inline
+                    every example uses webstore · output shown
+  ──────────────────────────────────────────────────────────
+  ON THE WEBSTORE   do the real work · every step leaves
+                    something working · verify it worked
+  ──────────────────────────────────────────────────────────
+  WHAT BREAKS       real error messages · first command to run
+  ──────────────────────────────────────────────────────────
+  DAILY COMMANDS    max 10 · flags explained · plain English
+  ──────────────────────────────────────────────────────────
+  INTERVIEW LINK    → tool-interview-prep · no duplication
+```
+
+**The rule:** mental model first, commands second.
+Commands without a model fade in a week. Model first — they stay.
 
 ---
 
@@ -115,14 +178,14 @@ The learning order is not random. Each tool builds directly on the previous one.
 **2. Read the notes before opening a terminal.**
 Every notes file starts with the mental model. Read it fully before touching a command. Understanding why something works is what lets you debug it when it breaks.
 
-**3. Do the labs from scratch.**
-Every lab says "write from scratch." This means it. Do not copy-paste commands. Typing them yourself forces your brain to process each flag and each decision. Speed comes later — understanding comes first.
+**3. Do the work on the webstore.**
+Every file has an "On the webstore" section. This is not optional practice — it is the lab, the project, and the proof that you can do it. By the time you finish a tool, the webstore is more complete than when you started.
 
 **4. Break things on purpose.**
-Every lab has a "Break It on Purpose" section. Do not skip it. These are the failure states you will actually hit in production. Reading about them is not the same as producing the error yourself and reading the output.
+Every file has a "What breaks" section. Do not skip it. These are the failure states you will actually hit in production. Seeing the error yourself and fixing it is the point.
 
-**5. Do not move on until the checklist is done.**
-Every lab ends with a checklist. Every box must be checked before moving to the next lab. If you cannot check a box honestly, go back and do it properly.
+**5. Do not move on until it works.**
+If the webstore is not in the state described at the end of the file, go back. Moving on without a working foundation means every file after it is built on sand.
 
 **6. When stuck — read the error first.**
 Before searching anything, read the full error message. Most errors tell you exactly what is wrong. The habit of reading errors carefully is more valuable than any specific command.

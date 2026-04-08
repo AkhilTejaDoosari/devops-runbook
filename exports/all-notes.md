@@ -1,6 +1,169 @@
+<p align="center">
+  <img src="./assets/banner.svg" alt="devops-runbook" width="100%"/>
+</p>
+
+<p align="center">
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License"/></a>
+  <a href="https://paypal.me/AkhilTejaDoosari"><img src="https://img.shields.io/badge/PayPal-Support%20this%20work-00457C?logo=paypal&logoColor=white" alt="PayPal"/></a>
+</p>
+
+A personal DevOps runbook — structured notes and labs built from fundamentals up, using one consistent application across every tool.
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: 01-boot-process
+
+## Why This Exists
+
+Most DevOps content teaches tools in isolation. Commands work but nothing connects.
+This runbook takes the opposite approach — every tool is learned in context, every concept links back to its foundation, and the same application runs through every layer.
+
+The goal is the kind of understanding that holds up under production pressure — not just knowing the command, but knowing what happens when you run it and why it was designed that way.
+
 ---
+
+## The Webstore App
+
+Every notes file and every lab uses the same 3-tier application as the running example. Nothing is abstract. The same app gets more complex as the tools advance — by the end it is running on AWS EKS with a full CI/CD pipeline, monitored with Prometheus and Grafana.
+
+| Service | Image | Port | Role |
+|---|---|---|---|
+| webstore-frontend | nginx:1.24 | 80 | Serves the store UI |
+| webstore-api | nginx:1.24 | 8080 | Handles products and orders |
+| webstore-db | postgres:15 | 5432 | Stores products, orders, users |
+
+This stack is locked. Every tool in this runbook operates on these three services.
+
+---
+
+## Where the Webstore Goes — Tool by Tool
+
+This is the thread. Each tool picks up exactly where the previous one left off.
+
+| Tool | What you do to the webstore | State of the app after |
+|---|---|---|
+| **Linux** | Create the project directory structure, write config files, set permissions, install nginx, manage it as a service, debug it over the network | Running on a Linux server, files organized, nginx serving the frontend, logs being written |
+| **Git** | Initialize a repo, commit the project history, create feature branches, tag the first release, push to GitHub | Version controlled, full commit history, v1.0 tagged, live on GitHub |
+| **Networking** | Trace every packet from browser to webstore-api — DNS resolution, IP routing, TCP handshake, port binding, response | You can explain and debug every network hop the app makes |
+| **Docker** | Containerize all three services, connect them on a Docker network, persist the database, build a custom image, push to registry, run the full stack with one Compose command | Fully containerized, portable, reproducible on any machine |
+| **Kubernetes** | Deploy on a local cluster, add self-healing, rolling updates, persistent storage for the database, config and secret management | Orchestrated, self-healing, running on Minikube with postgres on a PVC |
+| **CI-CD** | Write a GitHub Actions pipeline that builds and pushes the webstore-api image on every commit. Connect ArgoCD so every merge to main deploys automatically to the cluster | Code changes deploy themselves — no manual `kubectl apply` ever again |
+| **Observability** | Install Prometheus, Grafana, and Loki on the cluster. Scrape every pod. Build dashboards. Set alerts. Query logs when something breaks | You can answer "what is wrong and where" before anyone finishes writing the incident ticket |
+| **AWS** | Provision cloud infrastructure — EKS for the cluster, RDS PostgreSQL for the database, ALB for the load balancer, S3 for assets, CloudWatch for monitoring | Running in production on AWS |
+| **Terraform** | Define all AWS infrastructure as code — VPC, subnets, EKS cluster, RDS, IAM roles | Infrastructure is version controlled, reproducible, destroyable and rebuildable in minutes |
+| **Ansible** | Write playbooks that configure EC2 servers — install packages, manage services, push config files, enforce state across all nodes without touching them manually | Server configuration is automated, consistent, and repeatable across every environment |
+| **Bash** | Write scripts that automate deployments, health checks, log rotation, and backup — the glue that holds the pipeline together | Operational automation in place, manual toil eliminated |
+
+---
+
+## Why These Tools
+
+Every tool in this runbook was chosen deliberately. These are the reasons.
+
+| Tool | Why this one | Why not the alternative |
+|---|---|---|
+| **Linux (Ubuntu)** | Industry standard for servers. AWS EC2 default. All DevOps tooling assumes it. | Windows Server — not used for containerized workloads. CentOS — dying in enterprise. |
+| **Git + GitHub** | Git is non-negotiable for version control. GitHub is where the jobs, PRs, Actions, and open source ecosystem live. | GitLab and Bitbucket use the same Git — different UI, smaller ecosystem for CI/CD integrations. |
+| **Docker** | The container standard. Every Kubernetes node runs containers. Every CI pipeline builds images. | Podman — rootless but niche. containerd — runtime only, no build tooling for learning. |
+| **Kubernetes** | The orchestration standard. AWS EKS, Google GKE, Azure AKS are all managed Kubernetes. Interviewers expect it. | Docker Swarm — dead in enterprise. Nomad — niche, used mainly at HashiCorp shops. |
+| **GitHub Actions** | Built into the repo. No separate CI server to maintain. The standard for teams already on GitHub. | Jenkins — requires a dedicated server and ongoing maintenance. CircleCI — separate billing, separate ecosystem. |
+| **ArgoCD** | The GitOps standard. Pull-based — the cluster pulls desired state from Git, nothing pushes into it. Declarative, auditable, rollback is a git revert. | Flux — same GitOps model, smaller community. Spinnaker — enterprise-scale overkill for this stack. |
+| **Prometheus + Grafana + Loki** | The cloud-native observability stack. Ships as a single Helm chart. Every managed Kubernetes offering integrates with it. Grafana reads all three data sources in one UI. | Datadog — excellent but expensive. ELK stack — powerful for logs but heavy to run, separate from Prometheus. |
+| **AWS** | Largest cloud market share (~32%). Most job postings reference AWS. EKS, RDS, and EC2 are interview staples. | GCP — strong in data and ML, smaller DevOps job market. Azure — dominant in Microsoft enterprise shops, not where most DevOps roles are. |
+| **Terraform** | IaC standard. Cloud-agnostic. Declarative. Used in the majority of DevOps job descriptions. Massive community and module ecosystem. | Pulumi — code-based IaC, growing but niche. CloudFormation — AWS-only and verbose. |
+| **Ansible** | Agentless — no software needed on target servers. YAML-based playbooks — same syntax as Kubernetes manifests. Dominant in DevOps job postings for configuration management. | Chef and Puppet — require agents on every server, fading in enterprise. SaltStack — niche. |
+| **Bash** | Pre-installed on every Linux server and CI runner. The glue language of DevOps. What you reach for on a server at 2am when nothing else is available. | Python — better for complex scripting, but Bash is the first tool on every machine. Both matter, Bash comes first. |
+
+---
+
+## Learning Order
+
+```
+Linux → Git → Networking → Docker → Kubernetes → CI-CD → Observability → AWS → Terraform → Ansible → Bash
+```
+
+Networking before Docker — so Docker bridge, DNS, and NAT are not magic.
+Networking before AWS — so VPC, Security Groups, and NAT Gateway are not magic.
+Docker before Kubernetes — so Pods, Services, and image pulling are not magic.
+Kubernetes before CI-CD — so you have a cluster to deploy to before you write the pipeline.
+CI-CD before Observability — so you have a pipeline to observe before you instrument it.
+Terraform before Ansible — Terraform provisions the infrastructure, Ansible configures what runs on it.
+
+---
+
+## Structure
+
+| # | Tool | Notes | Labs |
+|---|---|---|---|
+| 01 | [Linux – System Fundamentals](./notes/01.%20Linux%20–%20System%20Fundamentals/README.md) | ✅ Complete | ✅ Complete |
+| 02 | [Git & GitHub – Version Control](./notes/02.%20Git%20%26%20GitHub%20–%20Version%20Control/README.md) | ✅ Complete | ✅ Complete |
+| 03 | [Networking – Foundations](./notes/03.%20Networking%20–%20Foundations/README.md) | ✅ Complete | ✅ Complete |
+| 04 | [Docker – Containerization](./notes/04.%20Docker%20–%20Containerization/README.md) | ✅ Complete | ✅ Complete |
+| 05 | [Kubernetes – Orchestration](./notes/05.%20Kubernetes%20–%20Orchestration/README.md) | 🔄 In progress | 🔄 In progress |
+| 06 | [CI-CD – Pipelines & GitOps](./notes/06.%20CI-CD%20–%20Pipelines%20%26%20GitOps/README.md) | 🚧 Planned | 🚧 Planned |
+| 07 | [Observability – Monitoring & Logs](./notes/07.%20Observability%20–%20Monitoring%20%26%20Logs/README.md) | 🚧 Planned | 🚧 Planned |
+| 08 | [AWS – Cloud Infrastructure](./notes/08.%20AWS%20–%20Cloud%20Infrastructure/README.md) | 🔄 In progress | 🚧 Planned |
+| 09 | [Terraform – IaC Foundations](./notes/09.%20Terraform%20–%20IaC%20Foundations/README.md) | 🔄 In progress | 🚧 Planned |
+| 10 | [Ansible – Configuration Management](./notes/10.%20Ansible%20–%20Configuration%20Management/README.md) | 🚧 Planned | 🚧 Planned |
+| 11 | [Bash – Shell Scripting Essentials](./notes/11.%20Bash%20–%20Shell%20Scripting%20Essentials/README.md) | 🚧 Planned | 🚧 Planned |
+
+---
+
+## How to Use This Runbook
+
+**1. Go in order.**
+The learning order is not random. Each tool builds directly on the previous one. Skipping Networking before Docker means Docker networking will feel like magic — and magic breaks in production without warning.
+
+**2. Read the notes before opening a terminal.**
+Every notes file starts with the mental model. Read it fully before touching a command. Understanding why something works is what lets you debug it when it breaks.
+
+**3. Do the labs from scratch.**
+Every lab says "write from scratch." This means it. Do not copy-paste commands. Typing them yourself forces your brain to process each flag and each decision. Speed comes later — understanding comes first.
+
+**4. Break things on purpose.**
+Every lab has a "Break It on Purpose" section. Do not skip it. These are the failure states you will actually hit in production. Reading about them is not the same as producing the error yourself and reading the output.
+
+**5. Do not move on until the checklist is done.**
+Every lab ends with a checklist. Every box must be checked before moving to the next lab. If you cannot check a box honestly, go back and do it properly.
+
+**6. When stuck — read the error first.**
+Before searching anything, read the full error message. Most errors tell you exactly what is wrong. The habit of reading errors carefully is more valuable than any specific command.
+
+**7. Use the Networking folder as a reference.**
+The networking notes are the foundation for Docker, Kubernetes, and AWS. Any time something feels abstract in those tools, go back to the Networking folder — the concept is explained there without tool-specific noise.
+
+---
+
+## Sources
+
+Notes in this repository are synthesized from multiple resources — YouTube channels, Udemy courses, private courses, and official documentation. No single source is followed exclusively. Where one explanation fell short, a better one was found elsewhere and the best version was kept.
+
+Credits to the DevOps and cloud community at large.
+
+---
+
+## License
+
+This repository is licensed under the [MIT License](./LICENSE).
+You are free to use, adapt, and share the content — just keep the copyright notice.
+
+---
+
+## Support
+
+If this runbook saved you time or helped something click, you can support it here.
+
+[![PayPal](https://img.shields.io/badge/PayPal-Support%20this%20work-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/AkhilTejaDoosari)
+
+---
+
+## Contact
+
+- Email: doosariakhilteja@gmail.com
+- LinkedIn: https://linkedin.com/in/akhiltejadoosari2001
+- GitHub: https://github.com/AkhilTejaDoosari
+
+
+---
+# SOURCE: ./notes/01. Linux – System Fundamentals/01-boot-process/README.md
 
 [Home](../README.md) |
 [Boot](../01-boot-process/README.md) |
@@ -269,9 +432,383 @@ shutdown -h now
 - Service missing after reboot → `systemctl list-units --type=service`
 - Changed GRUB timeout or default OS → `sudo update-grub` to apply it
 
+````
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║            L I N U X   —   C O M P L E T E   S Y S T E M   M A P             ║
+║                                                                              ║
+║   Read: BOTTOM → UP   (hardware is the foundation, you live at the top)      ║
+║   Each layer cannot exist without everything below it.                       ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+  NAVIGATION
+  ──────────
+  [ENTRY]      ← where YOU land when you open a terminal
+  [YOU ARE]    ← your current position in the map
+  [WARNING]    ← do not touch without knowing what you are doing
+  [VIRTUAL]    ← not real files on disk, kernel generates them live
+  [RAM]        ← lives in memory, wiped on every reboot
+  [PRIORITY]   ← order matters, higher number = lower priority
+  ───────────────────────────────────────────────────────────────────────────
+
+
+███████████████████████████████████████████████████████████████████████████████
+  PART 5 — USER SPACE     (where humans work)
+███████████████████████████████████████████████████████████████████████████████
+
+  [ENTRY] ─── when you open a terminal you land here ──────────────────────────
+  │
+  │   ~ (tilde)  =  shorthand for YOUR home directory
+  │                 shell replaces ~ with /home/<your-username>
+  │                 $HOME variable holds the same value
+  │
+  └── /home/                          one folder per user account
+      │
+      ├── akhil/           [YOU ARE]  regular user
+      ├── charan/                     regular user
+      ├── pramod/                     regular user
+      │
+      ├── navya/                      regular user
+      └── indhu/                      regular user
+
+  ─────────────────────────────────────────────────────────────────────────────
+  INSIDE /home/akhil/   (same structure for every user)
+  ─────────────────────────────────────────────────────────────────────────────
+
+  /home/akhil/
+  │
+  ├── Desktop/
+  ├── Downloads/
+  ├── Documents/
+  ├── Pictures/
+  ├── Videos/
+  ├── Music/
+  │
+  ├── .bashrc                  your shell config, aliases, custom prompt
+  ├── .bash_profile            runs once at login  (sets PATH, env vars)
+  ├── .bash_history            every command you have typed
+  │
+  ├── .ssh/                    SSH keys  [WARNING — private keys never share]
+  │   ├── id_ed25519           private key
+  │   ├── id_ed25519.pub       public key
+  │   ├── known_hosts          servers you connected to before
+  │   └── config               per-host SSH shortcuts
+  │
+  ├── .config/                 per-app config (modern standard)
+  │   ├── nvim/
+  │   ├── htop/
+  │   └── Code/
+  │
+  ├── .local/
+  │   ├── bin/                 your personal commands  (add to PATH)
+  │   └── share/               your app data
+  │
+  └── .gnupg/                  GPG encryption keys
+
+  ─────────────────────────────────────────────────────────────────────────────
+  USERS & GROUPS    ← managed in /etc, shown here for context
+  ─────────────────────────────────────────────────────────────────────────────
+
+  USERS:
+  akhil   uid=1000   /home/akhil    primary user (first created = 1000)
+  charan  uid=1001   /home/charan
+  pramod  uid=1002   /home/pramod
+  navya   uid=1003   /home/navya
+  indhu   uid=1004   /home/indhu
+
+  GROUPS (example setup):
+  developers    akhil  charan  pramod     can write to project files
+  designers     navya  indhu              can write to design assets
+  docker        akhil  charan  pramod     can run Docker without sudo
+  sudo          akhil                     only akhil can sudo on this machine
+
+  How groups work:
+  /etc/passwd   ← list of users
+  /etc/shadow   ← their hashed passwords  (root only)
+  /etc/group    ← list of groups and members
+
+  /home/akhil/    owned by akhil:akhil     chmod 700   (only akhil sees inside)
+  /home/charan/   owned by charan:charan   chmod 700
+  shared project folder example:
+  /srv/project/   owned by root:developers  chmod 775  (developers can write)
+
+
+███████████████████████████████████████████████████████████████████████████████
+  PART 4 — FILESYSTEM TREE     (the full / hierarchy)
+███████████████████████████████████████████████████████████████████████████████
+
+  /                               root directory  [WARNING — never delete anything here]
+  │                               NOT the root user. The top of ALL paths.
+  │
+  ├── home/                       ↑ covered in Part 5 above
+  │
+  ├── root/                       home for the ROOT USER  (not same as /)
+  │                               root user = superuser, uid=0
+  │                               separate from /home on purpose
+  │
+  ├── etc/                        system-wide config  [WARNING — text files only, no binaries]
+  │   │
+  │   ├── ── USERS & SECURITY ──
+  │   ├── passwd                  all user accounts  (not passwords despite name)
+  │   ├── shadow                  hashed passwords    [WARNING — root eyes only]
+  │   ├── group                   groups and members
+  │   ├── sudoers                 who can sudo  [WARNING — edit only with: visudo]
+  │   │
+  │   ├── ── NETWORK ──
+  │   ├── hostname                this machine's name
+  │   ├── hosts                   IP → name map, checked BEFORE dns
+  │   ├── resolv.conf             which DNS servers to use
+  │   ├── netplan/                network config  (Ubuntu 18.04+)
+  │   ├── network/interfaces      network config  (older Debian)
+  │   ├── NetworkManager/         network config  (most desktops)
+  │   │
+  │   ├── ── FILESYSTEM & BOOT ──
+  │   ├── fstab                   which disks mount at boot and where  [WARNING — wrong entry = no boot]
+  │   ├── crypttab                encrypted volumes to unlock at boot
+  │   ├── default/grub            GRUB settings  ← edit this, then: update-grub
+  │   │
+  │   ├── ── SERVICES ──
+  │   ├── systemd/                systemd config  [PRIORITY 1 — your overrides win]
+  │   │   ├── system/             your unit files  *.service  *.timer  *.socket
+  │   │   ├── journald.conf       log settings
+  │   │   ├── logind.conf         login & session settings
+  │   │   ├── resolved.conf       DNS resolver settings
+  │   │   └── timesyncd.conf      time sync settings
+  │   ├── crontab                 system scheduled tasks
+  │   ├── cron.d/                 per-package scheduled tasks
+  │   ├── ssh/                    SSH server config & host keys
+  │   ├── nginx/                  nginx web server config
+  │   ├── apt/                    package manager config & sources
+  │   │
+  │   └── ── SHELL & ENV ──
+  │       ├── profile             login shell env for ALL users
+  │       ├── profile.d/          drop-in scripts sourced by profile
+  │       ├── bash.bashrc         interactive shell config for ALL users
+  │       ├── environment         system-wide environment variables
+  │       └── shells              list of valid login shells
+  │
+  ├── usr/                        installed software  (read-only at runtime)
+  │   ├── bin/                    user programs  ls git python3 curl vim ssh…
+  │   ├── sbin/                   admin programs  useradd iptables sshd fdisk…
+  │   ├── lib/                    shared libraries
+  │   │   ├── systemd/
+  │   │   │   ├── systemd         ← the systemd BINARY lives here
+  │   │   │   └── system/         vendor unit files  [PRIORITY 3 — never edit]
+  │   │   │       ├── nginx.service
+  │   │   │       ├── ssh.service
+  │   │   │       └── cron.service  …and hundreds more
+  │   │   ├── libc.so             C standard library
+  │   │   └── libssl.so           OpenSSL
+  │   ├── include/                C/C++ headers for compiling
+  │   ├── share/                  docs, fonts, icons, man pages, timezones
+  │   │   ├── man/                man page source  (man ls reads from here)
+  │   │   ├── doc/                package documentation
+  │   │   ├── fonts/
+  │   │   ├── icons/
+  │   │   └── zoneinfo/           timezone data
+  │   └── local/                  your manually compiled software  (apt never touches)
+  │       ├── bin/
+  │       ├── lib/
+  │       ├── etc/
+  │       └── share/
+  │
+  ├── opt/                        self-contained third-party apps
+  │   ├── google/chrome/          Chrome lives here
+  │   └── discord/                Discord lives here
+  │
+  ├── var/                        variable data — grows while system runs
+  │   ├── log/                    ALL system logs   ← check here when things break
+  │   │   ├── syslog              main system messages
+  │   │   ├── auth.log            logins  sudo  SSH  [WARNING — contains real access data]
+  │   │   ├── kern.log            kernel messages
+  │   │   ├── dpkg.log            package install history
+  │   │   ├── apt/
+  │   │   ├── nginx/
+  │   │   └── journal/            systemd binary journal  (read: journalctl)
+  │   ├── lib/                    persistent app state
+  │   │   ├── apt/lists/          cached package lists
+  │   │   ├── dpkg/               installed package database
+  │   │   ├── docker/             Docker images and volumes
+  │   │   └── mysql/              database files
+  │   ├── cache/                  safe-to-delete computed data
+  │   │   └── apt/archives/       downloaded .deb files  (clear: apt clean)
+  │   ├── spool/                  queues
+  │   │   ├── mail/               local user mail
+  │   │   ├── cron/               per-user crontab files
+  │   │   └── cups/               print jobs
+  │   └── tmp/                    temp files that survive reboot
+  │
+  ├── tmp/                        temp files  [RAM] wiped on reboot
+  │
+  ├── run/                        [RAM] runtime data since last boot
+  │   ├── *.pid                   process ID files
+  │   ├── *.sock                  unix sockets — inter-process comms
+  │   ├── systemd/system/         runtime unit files  [PRIORITY 2]
+  │   └── user/
+  │       ├── 1000/               akhil's runtime session dir
+  │       ├── 1001/               charan's runtime session dir
+  │       ├── 1002/               pramod's runtime session dir
+  │       ├── 1003/               navya's runtime session dir
+  │       └── 1004/               indhu's runtime session dir
+  │
+  ├── dev/                        [VIRTUAL] every device is a file
+  │   ├── sda  sda1  sda2         SATA disks and partitions
+  │   ├── nvme0n1                 NVMe SSD
+  │   ├── null                    the void  (discard anything written here)
+  │   ├── zero                    infinite zeros
+  │   ├── urandom                 random data
+  │   ├── tty                     current terminal
+  │   └── loop0                   loop device for mounting .iso files
+  │
+  ├── proc/                       [VIRTUAL] live window into kernel and processes
+  │   ├── 1/                      PID 1 = systemd
+  │   ├── <PID>/                  every running process has a folder here
+  │   │   ├── cmdline             what command started it
+  │   │   ├── status              memory, state, uid
+  │   │   └── fd/                 open files
+  │   ├── cpuinfo                 CPU model, cores, speed
+  │   ├── meminfo                 RAM total / used / free
+  │   ├── uptime                  seconds since boot
+  │   └── net/                    network stats
+  │
+  ├── sys/                        [VIRTUAL] live hardware and kernel tunables
+  │   ├── class/net/              network interfaces  (eth0, wlan0, lo)
+  │   ├── block/                  block devices  (sda, nvme0n1)
+  │   ├── bus/                    hardware buses  (PCI, USB)
+  │   └── power/                  suspend, hibernate controls
+  │
+  ├── boot/                       needed BEFORE / is mounted  [WARNING — do not delete]
+  │   ├── vmlinuz-*               the kernel image  ← this IS linux
+  │   ├── initrd.img-*            initial RAM disk for early boot
+  │   └── grub/
+  │       ├── grub.cfg            auto-generated  [WARNING — do not edit directly]
+  │       └── grub.d/             scripts that generate grub.cfg
+  │
+  ├── bin/   → /usr/bin           [SYMLINK] same thing on modern distros
+  ├── sbin/  → /usr/sbin          [SYMLINK]
+  ├── lib/   → /usr/lib           [SYMLINK]
+  ├── lib64/ → /usr/lib64         [SYMLINK]
+  │
+  ├── mnt/                        manual temporary mount point
+  ├── media/                      auto-mounted USB, DVD, external drives
+  ├── srv/                        data served by this host  (web, ftp roots)
+  └── lost+found/                 recovered file fragments after disk check
+
+
+███████████████████████████████████████████████████████████████████████████████
+  PART 3 — systemd    (the process manager)
+███████████████████████████████████████████████████████████████████████████████
+
+  systemd  (PID 1)
+  │   first process the kernel starts after boot
+  │   parent of EVERY other process on the system
+  │   manages services, mounts, timers, sockets, logging
+  │
+  │   BINARY:    /usr/lib/systemd/systemd
+  │
+  │   UNIT FILE LOCATIONS  (priority order — 1 wins over 3)
+  │
+  │   [PRIORITY 1]  /etc/systemd/system/          YOUR overrides  ← edit here
+  │   [PRIORITY 2]  /run/systemd/system/          runtime  (lost on reboot)
+  │   [PRIORITY 3]  /usr/lib/systemd/system/      vendor defaults  ← never edit
+  │
+  │   UNIT TYPES:
+  │   *.service    a program or daemon  (nginx, ssh, cron)
+  │   *.timer      scheduled task  (modern cron alternative)
+  │   *.socket     socket-activated service
+  │   *.mount      filesystem mount point
+  │   *.target     group of units  (like a runlevel)
+  │
+  └── PROCESSES it spawns:
+      akhil   (uid 1000)   session started when akhil logs in
+      charan  (uid 1001)   session started when charan logs in
+      pramod  (uid 1002)   session started when pramod logs in
+      navya   (uid 1003)   session started when navya logs in
+      indhu   (uid 1004)   session started when indhu logs in
+      nginx   (uid www-data)  web server service
+      sshd    (uid root)      SSH daemon
+      cron    (uid root)      task scheduler
+
+
+███████████████████████████████████████████████████████████████████████████████
+  PART 2 — LINUX KERNEL
+███████████████████████████████████████████████████████████████████████████████
+
+  Linux Kernel
+  │   the real boss — talks directly to hardware
+  │   everything above it is built on what it provides
+  │
+  │   BINARY:   /boot/vmlinuz-*
+  │
+  ├── process manager        decides which process runs on which CPU core
+  ├── memory manager         controls who gets RAM and how much
+  ├── VFS                    virtual filesystem — unifies all storage as files
+  ├── device drivers         speaks to disks, GPU, NIC, USB, audio…
+  ├── networking stack       TCP/IP built into the kernel
+  └── scheduler              keeps everything running fairly and fast
+
+
+███████████████████████████████████████████████████████████████████████████████
+  PART 1 — BOOT LAYER     (before the OS exists)
+███████████████████████████████████████████████████████████████████████████████
+
+  GRUB  (bootloader)
+  │   first software with a purpose that runs after BIOS hands over
+  │   reads the disk, finds the kernel, loads it into RAM, passes control
+  │
+  │   BINARY:   /boot/grub/
+  │   CONFIG:   /boot/grub/grub.cfg     auto-generated  [WARNING — do not edit]
+  │   SETTINGS: /etc/default/grub       ← edit this, then run: sudo update-grub
+  │
+  └── loads → kernel + initrd.img into RAM then hands over control
+
+
+███████████████████████████████████████████████████████████████████████████████
+  PART 0 — HARDWARE + FIRMWARE     (the physical foundation)
+███████████████████████████████████████████████████████████████████████████████
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                        BIOS / UEFI                                       │
+  │                motherboard firmware — always there                       │
+  │   powers on hardware → runs POST → finds bootable disk → hands to GRUB   │
+  └──────────────────────────────────────────────────────────────────────────┘
+                                   │
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                      YOUR PC HARDWARE                                    │
+  │                                                                          │
+  │     CPU          executes instructions                                   │
+  │     RAM          temporary fast memory  (everything running lives here)  │
+  │     DISK         permanent storage  (everything in / lives here)         │
+  │     NIC          network interface card                                  │
+  │     GPU          graphics                                                │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║   QUICK REFERENCE                                                            ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                                                                              ║
+║   where am i?              pwd                                               ║
+║   go home                  cd ~   or just   cd                               ║
+║   see hidden files         ls -la                                            ║
+║   see who i am             whoami                                            ║
+║   see all users            cat /etc/passwd                                   ║
+║   see all groups           cat /etc/group                                    ║
+║   see running processes    ps aux   or   top   or   htop                     ║
+║   see open ports           ss -tulnp                                         ║
+║   see network interfaces   ip addr                                           ║
+║   watch live logs          journalctl -f                                     ║
+║   see disk usage           df -h                                             ║
+║   see folder sizes         du -sh /*                                         ║
+║   see RAM usage            free -h                                           ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+````
+
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: 02-basics
----
+# SOURCE: ./notes/01. Linux – System Fundamentals/02-basics/README.md
 
 [Home](../README.md) |
 [Boot](../01-boot-process/README.md) |
@@ -316,46 +853,60 @@ The shell always operates inside some directory — called the **current working
 - Relative starts from your CWD: if you are in `/home/akhil`, then `cd webstore` takes you to `/home/akhil/webstore`
 - `..` means parent directory — `cd ..` moves you up one level
 
+Every session on a Linux server starts here. Before you touch anything, you need to know where you are, where things live, and how to move between them without getting lost.
+
 | Command | What it does | When you reach for it |
 |---|---|---|
-| `pwd` | Print the full path of where you currently are | First thing after SSHing into any server |
-| `cd <dir>` | Move into a directory | Navigating into the webstore project folder |
+| `pwd` | (Print Working Directory) Print the full path of your current location | First thing after SSHing into any server — confirms exactly where the shell dropped you |
+| `cd <dir>` | (Change Directory) Move into a directory | `cd ~/webstore/api` — navigating into a specific project folder |
 | `cd ..` | Move up one directory level | Going from `~/webstore/logs` back to `~/webstore` |
-| `cd ~` | Jump directly to your home directory | Getting back to a known starting point fast |
-| `mkdir <dir>` | Create a new directory | Creating `~/webstore/logs` for the first time |
-| `mkdir -p <path>` | Create nested directories in one shot — no error if they exist | `mkdir -p ~/webstore/{frontend,api,db,logs,config,backup}` — builds the full webstore structure in one command |
-| `rmdir <dir>` | Remove an empty directory | Cleaning up a folder you created by mistake — only works if empty |
-| `rm -rf <dir>` | Force delete a directory and everything inside it | Wiping a directory with no confirmation and no undo — use with full attention |
+| `cd ~` | (~ = home directory) Jump directly to your home directory | Getting back to a known starting point fast — `~` is your user's home, not root (`/`) |
+| `mkdir <dir>` | (Make Directory) Create a new directory | `mkdir ~/webstore/logs` — creating the logs folder for the first time |
+| `mkdir -p <path>` | Create nested directories in one shot — no error if they already exist | `mkdir -p ~/webstore/{frontend,api,db,logs,config,backup}` — builds the full project structure in one command |
+| `rmdir <dir>` | (Remove Directory) Delete an **empty** directory | Cleaning up a folder you created by mistake — silently fails if the directory has contents |
+| `rm -rf <dir>` | (Remove -- Recursive --Force) Force delete a directory and everything inside it | Wiping a directory and all its contents with no confirmation and no undo — always verify the path first |
 
-> `rm -rf` has no confirmation prompt and no undo. On a server, this means permanent. The habit to build: always run `ls` on the path first to confirm what you are about to delete.
+> **`rm -rf` has no confirmation prompt and no undo.** On a production server, a wrong path means permanent data loss. Build this habit now: always run `ls <path>` first to confirm exactly what you are about to delete before running `rm -rf` on it.
 
 ---
 
 ## 2. Listing Directory Contents
 
-`ls` is the command you run more than any other on a Linux server. By default it lists filenames only — clean but minimal. The flags give you everything else you need: who owns the file, how large it is, when it was last modified, and whether it is hidden. Every one of these details matters when you are debugging a live system.
+`ls` is the command you run more than any other on a Linux server. By default it shows filenames only — fast, but minimal. The flags give you everything else that matters during real work: who owns the file, how large it is, when it was last touched, and whether it is hidden. Every one of these details becomes critical when you are debugging a live system.
 
 | Command | What it shows | When you reach for it |
 |---|---|---|
-| `ls` | Filenames only | Quick glance at what is in a directory |
-| `ls -l` | Full details — permissions, owner, size, timestamp | Checking who owns the webstore config file and when it was last changed |
-| `ls -lh` | Same as `-l` but sizes in KB, MB, GB instead of bytes | When you need to know if a log file has grown to 2GB overnight |
-| `ls -la` | Full details including hidden files (`.` prefix) | Finding `.env` files or `.git` directories that are invisible by default |
-| `ls -lt` | Sorted by modification time, newest first | Finding which file in `~/webstore/logs` changed most recently during an incident |
-| `ls -ltr` | Sorted by modification time, oldest first | Seeing the full history of changes in chronological order |
-| `ls -ld <dir>` | Shows info about the directory itself, not its contents | Checking the permissions on `~/webstore/` without listing everything inside |
+| `ls` | (List) Filenames only | Quick glance at what is in a directory |
+| `ls -l` | (List --Long) Full details — permissions, owner, size, timestamp | Checking who owns the webstore config file and when it was last changed |
+| `ls -lh` | (List --Long --Human-readable) Same as `-l` but sizes shown in KB, MB, GB instead of raw bytes | Checking whether a log file has silently grown to 2 GB overnight |
+| `ls -la` | (List --Long --All) Full details including hidden files (`.` prefix) | Finding `.env` files or `.git` directories that are invisible by default |
+| `ls -lt` | (List --Long --Time) Sorted by modification time, newest first | Spotting which file in `~/webstore/logs` changed most recently during an incident |
+| `ls -ltr` | (List --Long --Time --Reverse) Sorted by modification time, oldest first | Seeing the full chronological history of changes in a directory |
+| `ls -ld <dir>` | (List --Long --Directory) Shows info about the directory itself, not its contents | Checking permissions on `~/webstore/` without listing everything inside |
 
-You can chain flags freely — `ls -lh`, `ls -ltr`, `ls -lath` all work. Order does not matter.
+You can chain flags freely — `ls -lh`, `ls -ltr`, `ls -lahtr` all work. Flag order does not matter.
 
-**What the output of `ls -lh` actually tells you:**
+**Gold standard: `ls -lahtr`** — long format, all files including hidden, human-readable sizes, sorted oldest-to-newest. Gives you the full picture of a directory at a glance.
+
+**What the output of `ls -lahtr` actually tells you:**
 
 ```
 -rw-r--r-- 1 akhil www-data 1.2K Apr 5 09:14 webstore.conf
 ```
 
-Reading left to right:  
-file type and permissions (`-rw-r--r--`), number of hard links (`1`), owner (`akhil`), group (`www-data`), size (`1.2K`), last modified (`Apr 5 09:14`), filename (`webstore.conf`).     
-When you see `www-data` as the group on a webstore config file, that tells you nginx has read access to it — which is exactly what you want.
+Reading left to right:
+
+| Field | Value | What it tells you |
+|---|---|---|
+| File type + permissions | `-rw-r--r--` | Regular file; owner can read/write, group and others can only read |
+| Hard links | `1` | One reference to this file in the filesystem |
+| Owner | `akhil` | The user who created or was assigned ownership of this file |
+| Group | `www-data` | Any process running as `www-data` inherits the group's read permission |
+| Size | `1.2K` | Human-readable because of the `-h` flag — without it this shows raw bytes |
+| Last modified | `Apr 5 09:14` | When the file was last written to — critical during incident triage |
+| Filename | `webstore.conf` | The file itself |
+
+When you see `www-data` as the group on a config file, it means any process running under that group — such as nginx on Debian/Ubuntu systems — can read it. That is intentional on a web server. If the group were `root` instead, nginx would be locked out and your site would fail to start.
 
 ---
 
@@ -443,9 +994,9 @@ Inside `man` pages: use `/` to search, `n` to jump to the next match, `q` to exi
 
 → Ready to practice? [Go to Lab 01](../linux-labs/01-boot-basics-files-lab.md)
 
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: 03-working-with-files
----
+# SOURCE: ./notes/01. Linux – System Fundamentals/03-working-with-files/README.md
 
 [Home](../README.md) |
 [Boot](../01-boot-process/README.md) |
@@ -486,7 +1037,7 @@ On a Linux server, everything is a file. Config files, log files, scripts, socke
 
 `file` examines the actual contents of a file and reports what type it is — not based on the extension, but based on the bytes inside. Linux does not care about extensions. A file called `server.conf` could contain anything — `file` tells you what it actually is.
 
-`stat` shows the full metadata of a file: exact size in bytes, all three timestamps (accessed, modified, changed), permissions in both numeric and symbolic form, and the inode number. When a deployment goes wrong and you need to know exactly when a config file was last changed, `stat` gives you the answer down to the second.
+`stat` shows the full metadata **(status)** of a file: exact size in bytes, all three timestamps (accessed, modified, changed), permissions in both numeric and symbolic form, and the inode number. When a deployment goes wrong and you need to know exactly when a config file was last changed, `stat` gives you the answer down to the second.
 
 | Command | What it does | When you reach for it |
 |---|---|---|
@@ -510,66 +1061,127 @@ Three timestamps — Access (last read), Modify (last content change), Change (l
 
 ---
 
-## 2. Writing Content into Files
-
-Before you can work with file contents you need to know how to write them from the terminal. Two operators handle this — `>` and `>>`. Getting them mixed up is one of the most common ways to accidentally destroy a config file.
-
-`>` redirects output into a file and **overwrites** everything already there. If the file does not exist it creates it. If it does exist, everything in it is gone.
-
-`>>` appends output to the end of a file. Existing content is untouched.
-
-```bash
-# Create webstore.conf from scratch — safe because the file is new
-echo "db_host=webstore-db" > ~/webstore/config/webstore.conf
-echo "db_port=5432" >> ~/webstore/config/webstore.conf
-echo "api_port=8080" >> ~/webstore/config/webstore.conf
-```
-
-The first line uses `>` to create the file and write the first entry. Every line after uses `>>` to append. If you accidentally used `>` on the second line, the first entry would be gone.
-
-To write multiple lines at once without running echo repeatedly, use a heredoc:
-
-```bash
-cat > ~/webstore/config/webstore.conf << 'EOF'
-db_host=webstore-db
-db_port=5432
-api_port=8080
-api_host=webstore-api
-frontend_port=80
-EOF
-```
-
-Everything between `<< 'EOF'` and `EOF` goes into the file as-is. This is how you write config files from scripts without opening an editor.
-
----
-
-## 3. Copying and Moving Files
+ ## 3. Copying and Moving Files
 
 `cp` copies a file or directory. `mv` moves or renames one. They look similar but behave differently in one important way — `cp` leaves the original in place, `mv` does not.
 
-**Copying files:**
+---
 
-| Command | What it does | When you reach for it |
-|---|---|---|
-| `cp <src> <dest>` | Copy a file | `cp webstore.conf webstore.conf.bak` — backup before editing |
-| `cp -i <src> <dest>` | Prompt before overwriting an existing file | When you are not sure if the destination already exists |
-| `cp -v <src> <dest>` | Show each file as it copies | Confirming the copy happened, especially useful in scripts |
-| `cp -r <src> <dest>` | Copy a directory and all its contents recursively | `cp -r ~/webstore ~/webstore-backup` — full project backup |
-| `cp -rv <src> <dest>` | Recursive copy with a live log of every file copied | Watching a large directory copy complete in real time |
+### Copying Files — `cp`
 
-**Moving and renaming:**
+| Command | What it does |
+|---|---|
+| `cp <src> <dest>` | Copy a file to a new location or name |
+| `cp -r <src> <dest>` | Copy a directory and everything inside it (recursive) |
+| `cp -i <src> <dest>` | Ask before overwriting — prints a prompt if the destination already exists |
+| `cp -v <src> <dest>` | Print each file name as it is copied — confirms the operation happened |
+| `cp -rv <src> <dest>` | Recursive copy with a live log of every file being copied |
 
-`mv` is used for both moving a file to a new location and renaming it — they are the same operation. Moving `webstore.conf` to `/etc/webstore/webstore.conf` and renaming `webstore.conf` to `webstore.conf.old` both use `mv`.
+**`-i` — Interactive (overwrite protection)**
 
-| Command | What it does | When you reach for it |
-|---|---|---|
-| `mv <src> <dest>` | Move or rename a file or directory | `mv webstore.conf.bak webstore.conf.backup` — rename a backup file |
-| `mv -i <src> <dest>` | Prompt before overwriting | Safe default when moving config files in production |
-| `mv -v <src> <dest>` | Show what was moved | Confirming the move in scripts or long sessions |
+Without `-i`, `cp` silently overwrites the destination if it already exists. You get no warning and no undo.
+```bash
+# Without -i — silently overwrites webstore.conf if it already exists
+cp webstore.conf /etc/webstore/webstore.conf
 
-Use `mv` instead of `cp` followed by `rm` when you want to relocate a file. `mv` preserves all metadata including timestamps. `cp` + `rm` does not.
+# With -i — pauses and asks you first
+cp -i webstore.conf /etc/webstore/webstore.conf
+# cp: overwrite '/etc/webstore/webstore.conf'?
+# Type y to confirm, n to cancel
+```
+
+Use `-i` any time you are copying into a directory where a file of the same name might already exist — especially config files in `/etc/`.
+
+**`-v` — Verbose (confirm it actually ran)**
+
+Without `-v`, a successful `cp` prints nothing. You run it and get your prompt back with no feedback. With `-v`, you see every file that was copied.
+```bash
+# Without -v — no output, no confirmation
+cp -r ~/webstore ~/webstore-backup
+
+# With -v — prints each file as it copies
+cp -rv ~/webstore ~/webstore-backup
+# ~/webstore -> ~/webstore-backup
+# ~/webstore/config/webstore.conf -> ~/webstore-backup/config/webstore.conf
+# ~/webstore/logs/access.log -> ~/webstore-backup/logs/access.log
+```
+
+Use `-v` in scripts or when copying large directories so you can see exactly what moved and catch anything unexpected.
+
+**Gold standard:**
+- Directories — `cp -riv <src> <dest>`
+- Files — `cp -iv <src> <dest>`
+```bash
+# Full project backup before a deployment
+cp -riv ~/webstore ~/webstore-backup
+```
+
+- `-r` — handles directories
+- `-i` — won't silently overwrite
+- `-v` — shows every file as it copies
+
+This is your default for any directory backup or config copy in production. You get safety and visibility in one command.
 
 ---
+
+### Moving and Renaming Files — `mv`
+
+`mv` handles both moving and renaming — they are the same operation under the hood. If the destination is a different path, the file moves. If the destination is just a new name in the same directory, the file is renamed.
+```bash
+# Move — relocate the file to a new directory
+mv webstore.conf /etc/webstore/webstore.conf
+
+# Rename — same directory, new name
+mv webstore.conf webstore.conf.old
+```
+
+| Command | What it does |
+|---|---|
+| `mv <src> <dest>` | Move or rename a file or directory |
+| `mv -i <src> <dest>` | Ask before overwriting the destination |
+| `mv -v <src> <dest>` | Print what was moved and where it landed |
+
+**`-i` and `-v` work the same way as in `cp`:**
+```bash
+# -i — prompts before overwriting
+mv -i webstore.conf /etc/webstore/webstore.conf
+# mv: overwrite '/etc/webstore/webstore.conf'?
+
+# -v — confirms the move happened
+mv -v webstore.conf.bak webstore.conf.backup
+# 'webstore.conf.bak' -> 'webstore.conf.backup'
+```
+
+**Gold standard: `mv -iv <src> <dest>`**
+```bash
+# Safely rename a config before replacing it
+mv -iv webstore.conf.bak webstore.conf.backup
+# 'webstore.conf.bak' -> 'webstore.conf.backup'
+```
+
+- `-i` — prompts before overwriting
+- `-v` — confirms exactly what moved and where
+
+`mv` has no `-r` because it already handles directories natively — no flag needed.
+
+---
+
+> **`mv` vs `cp` + `rm`**    
+* When relocating a file, always use `mv` instead of copying then deleting.    
+  `mv` preserves all metadata including timestamps and ownership.   
+* `cp` + `rm` creates a new file and loses the original metadata.   
+
+---
+
+**Gold standard combinations at a glance:**
+
+| Situation | Command |
+|---|---|
+| Backing up a directory | `cp -riv <src> <dest>` |
+| Copying a single file safely | `cp -iv <src> <dest>` |
+| Moving or renaming anything | `mv -iv <src> <dest>` |
+
+`-i` and `-v` together are always worth it on a server. The prompt from `-i` has saved config files. The output from `-v` has caught wrong paths. Neither adds meaningful time to the command.
 
 ## 4. Deleting Files
 
@@ -606,7 +1218,12 @@ Reading file contents from the terminal is something you do constantly — check
 less ~/webstore/logs/access.log
 ```
 
-Inside `less`: `Space` to scroll down one page, `b` to scroll back up, `/pattern` to search, `n` to jump to the next match, `q` to exit.
+Inside `less`:    
+`Space` to scroll down one page  
+`b` to scroll back up   
+`/pattern` to search   
+`n` to jump to the next match   
+`q` to exit.
 
 ---
 
@@ -649,9 +1266,9 @@ The `l` at the start and the `->` at the end both tell you this is a symlink, no
 
 → Ready to practice? [Go to Lab 01](../linux-labs/01-boot-basics-files-lab.md)
 
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: 04-filter-commands
----
+# SOURCE: ./notes/01. Linux – System Fundamentals/04-filter-commands/README.md
 
 [Home](../README.md) |
 [Boot](../01-boot-process/README.md) |
@@ -999,9 +1616,9 @@ grep -v '200' ~/webstore/logs/access.log | tee ~/webstore/logs/non-200.log
 
 → Ready to practice? [Go to Lab 02](../linux-labs/02-filters-sed-awk-lab.md)
 
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: 05-sed-stream-editor
----
+# SOURCE: ./notes/01. Linux – System Fundamentals/05-sed-stream-editor/README.md
 
 [Home](../README.md) |
 [Boot](../01-boot-process/README.md) |
@@ -1282,9 +1899,9 @@ This is cleaner than running sed twice and is faster on large files because the 
 
 → Ready to practice? [Go to Lab 02](../linux-labs/02-filters-sed-awk-lab.md)
 
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: 06-awk
----
+# SOURCE: ./notes/01. Linux – System Fundamentals/06-awk/README.md
 
 [Home](../README.md) |
 [Boot](../01-boot-process/README.md) |
@@ -1619,9 +2236,9 @@ awk '$4 != "200" { printf "%-18s %-8s %-25s %s\n", $1, $2, $3, $4 }' ~/webstore/
 
 → Ready to practice? [Go to Lab 02](../linux-labs/02-filters-sed-awk-lab.md)
 
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: 07-text-editor
----
+# SOURCE: ./notes/01. Linux – System Fundamentals/07-text-editor/README.md
 
 [Home](../README.md) |
 [Boot](../01-boot-process/README.md) |
@@ -1920,9 +2537,9 @@ vim ~/webstore/config/webstore.conf
 
 → Ready to practice? [Go to Lab 03](../linux-labs/03-vim-users-permissions-lab.md)
 
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: 08-user-&-group-management
----
+# SOURCE: ./notes/01. Linux – System Fundamentals/08-user-&-group-management/README.md
 
 [Home](../README.md) |
 [Boot](../01-boot-process/README.md) |
@@ -2158,9 +2775,9 @@ The webstore config file contains the database password. If nginx runs as root, 
 
 → Ready to practice? [Go to Lab 03](../linux-labs/03-vim-users-permissions-lab.md)
 
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: 09-file-ownership-&-permissions
----
+# SOURCE: ./notes/01. Linux – System Fundamentals/09-file-ownership-&-permissions/README.md
 
 [Home](../README.md) |
 [Boot](../01-boot-process/README.md) |
@@ -2527,9 +3144,9 @@ ls -lh ~/webstore/
 
 → Ready to practice? [Go to Lab 03](../linux-labs/03-vim-users-permissions-lab.md)
 
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: 10-archiving-and-compression
----
+# SOURCE: ./notes/01. Linux – System Fundamentals/10-archiving-and-compression/README.md
 
 [Home](../README.md) |
 [Boot](../01-boot-process/README.md) |
@@ -2790,9 +3407,9 @@ ls -lh ~/webstore/logs/
 
 → Ready to practice? [Go to Lab 04](../linux-labs/04-archive-packages-services-lab.md)
 
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: 11-package-management
----
+# SOURCE: ./notes/01. Linux – System Fundamentals/11-package-management/README.md
 
 [Home](../README.md) |
 [Boot](../01-boot-process/README.md) |
@@ -3020,9 +3637,9 @@ sudo apt autoremove
 
 → Ready to practice? [Go to Lab 04](../linux-labs/04-archive-packages-services-lab.md)
 
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: 12-service-management
----
+# SOURCE: ./notes/01. Linux – System Fundamentals/12-service-management/README.md
 
 [Home](../README.md) |
 [Boot](../01-boot-process/README.md) |
@@ -3356,9 +3973,9 @@ nginx config files live in `sites-available/` — all of them, enabled or not. `
 
 → Ready to practice? [Go to Lab 04](../linux-labs/04-archive-packages-services-lab.md)
 
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: 13-networking
----
+# SOURCE: ./notes/01. Linux – System Fundamentals/13-networking/README.md
 
 [Home](../README.md) |
 [Boot](../01-boot-process/README.md) |
@@ -3792,9 +4409,116 @@ Work through each step in order. Each command either confirms a layer is working
 
 → Ready to practice? [Go to Lab 05](../linux-labs/05-networking-lab.md)
 
+
 ---
-# TOOL: 01. Linux – System Fundamentals | FILE: linux-labs
+# SOURCE: ./notes/01. Linux – System Fundamentals/README.md
+
+<p align="center">
+  <img src="../../assets/linux-banner.svg" alt="linux" width="100%"/>
+</p>
+
+[← devops-runbook](../../README.md)
+
 ---
+
+A production-focused Linux guide built around one running example.
+No certification fluff. No desktop Linux. Only what you actually use on servers.
+
+---
+
+## Why Linux — and Why Ubuntu
+
+Every server you will ever SSH into in a DevOps role runs Linux. AWS EC2 instances run Linux. Docker containers run Linux. Kubernetes nodes run Linux. The CI runners that build your images run Linux. Learning Linux is not optional in this stack — it is the ground everything else stands on.
+
+Ubuntu is the distribution this runbook uses because it is the default for AWS EC2, the most common choice in DevOps job environments, and the distribution all tooling in this series assumes. The concepts transfer directly to any other Linux distribution — the package manager and a few paths change, nothing fundamental does.
+
+---
+
+## Prerequisites
+
+None. This is the first folder in the series.
+All you need is a Linux terminal — a VM, WSL, or an EC2 instance works fine.
+
+---
+
+## The Running Example
+
+Every note and every lab uses the same webstore project on disk. This is the same app that gets containerized in Docker, orchestrated in Kubernetes, and deployed to AWS. It starts here as a directory on a Linux server.
+
+```
+~/webstore/
+├── frontend/       ← static files nginx will serve
+├── api/            ← application code
+├── db/             ← database schemas
+├── logs/           ← access.log, error.log
+├── config/         ← webstore.conf
+└── backup/         ← archives before deploys
+```
+
+By the end of Linux you will have built this structure from scratch, written config files into it, searched its logs with grep and awk, set correct ownership and permissions on every folder, archived it with tar, installed nginx to serve the frontend, managed nginx as a systemd service, and debugged it live over the network with curl and tcpdump.
+
+---
+
+## Where You Take the Webstore
+
+You arrive at Linux with nothing — a blank server and a project idea. You leave with the webstore running on that server, files organized, permissions locked, nginx serving the frontend, logs being written, and the whole project archived and ready to hand off.
+
+That is the state Git picks up from. You do not start Git with a blank folder — you start it with a working server setup that already has history worth tracking.
+
+---
+
+## Phases
+
+| Phase | Topics | Lab |
+|---|---|---|
+| 0 — Foundation | [01 Boot Process](./01-boot-process/README.md) · [02 Basics](./02-basics/README.md) · [03 Files](./03-working-with-files/README.md) | [Lab 01](./linux-labs/01-boot-basics-files-lab.md) |
+| 1 — Text Processing | [04 Filters](./04-filter-commands/README.md) · [05 sed](./05-sed-stream-editor/README.md) · [06 awk](./06-awk/README.md) | [Lab 02](./linux-labs/02-filters-sed-awk-lab.md) |
+| 2 — System Admin | [07 Vim](./07-text-editor/README.md) · [08 Users](./08-user-&-group-management/README.md) · [09 Permissions](./09-file-ownership-&-permissions/README.md) | [Lab 03](./linux-labs/03-vim-users-permissions-lab.md) |
+| 3 — Operations | [10 Archive](./10-archiving-and-compression/README.md) · [11 Packages](./11-package-management/README.md) · [12 Services](./12-service-management/README.md) | [Lab 04](./linux-labs/04-archive-packages-services-lab.md) |
+| 4 — Networking | [13 Networking](./13-networking/README.md) | [Lab 05](./linux-labs/05-networking-lab.md) |
+
+---
+
+## Labs
+
+| Lab | Covers |
+|---|---|
+| [Lab 01](./linux-labs/01-boot-basics-files-lab.md) | Boot inspection, filesystem navigation, webstore directory setup, file operations |
+| [Lab 02](./linux-labs/02-filters-sed-awk-lab.md) | grep, find, cut, sort, uniq, sed, awk — all on webstore logs |
+| [Lab 03](./linux-labs/03-vim-users-permissions-lab.md) | vim editing, user/group creation, ownership and permission control |
+| [Lab 04](./linux-labs/04-archive-packages-services-lab.md) | tar/gzip backup, nginx install, systemctl full lifecycle, config management |
+| [Lab 05](./linux-labs/05-networking-lab.md) | ip, ping, traceroute, dig, curl, ss, tcpdump — all against the running nginx |
+
+---
+
+## What You Can Do After This
+
+- Navigate any Linux server confidently over SSH with no GUI
+- Search and analyze log files to debug real incidents
+- Create users and groups, set correct file ownership and permissions
+- Install software, manage services, and configure nginx
+- Use curl, dig, ss, and tcpdump to debug network issues live
+- Archive and restore directories for backups and deploys
+
+---
+
+## How to Use This
+
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
+
+---
+
+## What Comes Next
+
+→ [02. Git & GitHub – Version Control](../02.%20Git%20%26%20GitHub%20–%20Version%20Control/README.md)
+
+Linux gives you the server foundation. Git gives you the workflow foundation — version control, collaboration, and the habit of tracking every change you make to infrastructure and code. The webstore directory you built here becomes the first Git repository you initialize.
+
+
+---
+# SOURCE: ./notes/01. Linux – System Fundamentals/linux-labs/README.md
 
 [Home](../README.md) |
 [Labs Index](./README.md) |
@@ -3852,9 +4576,9 @@ Every lab has a "Break It on Purpose" section. Do not skip it. These are the fai
 
 Do not move to the next lab until every box in the checklist is checked. If you cannot check a box honestly, go back and do it properly.
 
+
 ---
-# TOOL: 02. Git & GitHub – Version Control | FILE: 01-foundations
----
+# SOURCE: ./notes/02. Git & GitHub – Version Control/01-foundations/README.md
 
 [Home](../README.md) |
 [Foundations](../01-foundations/README.md) |
@@ -4252,9 +4976,9 @@ git commit -m "config: add nginx worker process setting for production load"
 
 → Ready to practice? [Go to Lab 01](../git-labs/01-foundations-lab.md)
 
+
 ---
-# TOOL: 02. Git & GitHub – Version Control | FILE: 02-stash-tags
----
+# SOURCE: ./notes/02. Git & GitHub – Version Control/02-stash-tags/README.md
 
 [Home](../README.md) |
 [Foundations](../01-foundations/README.md) |
@@ -4462,9 +5186,9 @@ For the webstore journey:
 
 → Ready to practice? [Go to Lab 02](../git-labs/02-stash-tags-lab.md)
 
+
 ---
-# TOOL: 02. Git & GitHub – Version Control | FILE: 03-history-branching
----
+# SOURCE: ./notes/02. Git & GitHub – Version Control/03-history-branching/README.md
 
 [Home](../README.md) |
 [Foundations](../01-foundations/README.md) |
@@ -4830,9 +5554,9 @@ hotfix/fix-payment-crash
 
 → Ready to practice? [Go to Lab 03](../git-labs/03-history-branching-lab.md)
 
+
 ---
-# TOOL: 02. Git & GitHub – Version Control | FILE: 04-contribute
----
+# SOURCE: ./notes/02. Git & GitHub – Version Control/04-contribute/README.md
 
 [Home](../README.md) |
 [Foundations](../01-foundations/README.md) |
@@ -5078,9 +5802,9 @@ The single biggest lever for getting PRs approved quickly: keep them small. One 
 
 → Ready to practice? [Go to Lab 04](../git-labs/04-contribute-lab.md)
 
+
 ---
-# TOOL: 02. Git & GitHub – Version Control | FILE: 05-undo-recovery
----
+# SOURCE: ./notes/02. Git & GitHub – Version Control/05-undo-recovery/README.md
 
 [Home](../README.md) |
 [Foundations](../01-foundations/README.md) |
@@ -5345,9 +6069,114 @@ Revert for shared history. Reset for local cleanup. Reflog for recovery.
 
 → Ready to practice? [Go to Lab 05](../git-labs/05-undo-recovery-lab.md)
 
+
 ---
-# TOOL: 02. Git & GitHub – Version Control | FILE: git-labs
+# SOURCE: ./notes/02. Git & GitHub – Version Control/README.md
+
+<p align="center">
+  <img src="../../assets/git-banner.svg" alt="git and github" width="100%"/>
+</p>
+
+[← devops-runbook](../../README.md)
+
 ---
+
+Version control, branching, collaboration, and recovery — built around one real project from first commit to open-source contribution workflow.
+
+---
+
+## Why Git — and Why GitHub
+
+Git is not optional in this stack. Every other tool in this runbook depends on it. GitHub Actions triggers on Git commits. Docker images are tagged with Git commit SHAs. Terraform state is version controlled. ArgoCD watches a Git repo and deploys whatever is in it. Git is the source of truth that everything else reads from.
+
+GitHub is the platform because it is where the jobs are. GitHub Actions, pull requests, branch protection rules, and the open-source ecosystem all live here. GitLab and Bitbucket use the same Git — different UI, smaller footprint in DevOps hiring.
+
+---
+
+## Prerequisites
+
+**Complete first:** [01. Linux – System Fundamentals](../01.%20Linux%20–%20System%20Fundamentals/README.md)
+
+You need to be comfortable in the terminal — navigating directories, editing files with vim, and running commands — before Git will make sense as a tool. The webstore directory you built in Linux becomes the first Git repository you initialize here.
+
+---
+
+## The Running Example
+
+Every lab uses the same webstore project — the same app from Linux. You initialize it as a Git repository, build its commit history file by file, create feature branches, resolve conflicts, tag the first release, and push to GitHub. By the end the webstore has a complete, readable history that any engineer can clone and understand.
+
+---
+
+## Where You Take the Webstore
+
+You arrive at Git with the webstore living as files on a Linux server — organized, configured, permissions set. No history. No version control. If something breaks, there is no rollback.
+
+You leave Git with the webstore as a fully version-controlled project on GitHub — every change tracked, every decision recorded, the first release tagged as `v1.0`, and a contribution workflow in place so a second developer can work on it without stepping on your changes.
+
+That is the state Docker picks up from. You do not containerize an unversioned project — you containerize a project with a clean commit history and a tagged release.
+
+---
+
+## Why Git, Not Something Else
+
+There is no real alternative at this level. SVN is legacy. Mercurial is niche. Git won and the entire DevOps ecosystem is built around it. The question is not git vs something else — it is GitHub vs GitLab vs Bitbucket, and GitHub has the largest ecosystem, the most integrations, and the most job postings.
+
+---
+
+## Phases
+
+| Phase | Topics | Lab |
+|---|---|---|
+| 1 — Foundations | [01 Foundations](./01-foundations/README.md) | [Lab 01](./git-labs/01-foundations-lab.md) |
+| 2 — Stash & Tags | [02 Stash & Tags](./02-stash-tags/README.md) | [Lab 02](./git-labs/02-stash-tags-lab.md) |
+| 3 — History & Branching | [03 History & Branching](./03-history-branching/README.md) | [Lab 03](./git-labs/03-history-branching-lab.md) |
+| 4 — Contribute | [04 Contribute](./04-contribute/README.md) | [Lab 04](./git-labs/04-contribute-lab.md) |
+| 5 — Undo & Recovery | [05 Undo & Recovery](./05-undo-recovery/README.md) | [Lab 05](./git-labs/05-undo-recovery-lab.md) |
+
+---
+
+## Labs
+
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 01](./git-labs/01-foundations-lab.md) | Foundations | Init repo, configure identity, .gitignore, first commits, push to GitHub |
+| [Lab 02](./git-labs/02-stash-tags-lab.md) | Stash & Tags | Stash mid-work, restore, tag the first release, push tags |
+| [Lab 03](./git-labs/03-history-branching-lab.md) | History & Branching | Read history, fast-forward merge, 3-way merge, conflict resolution, rebase |
+| [Lab 04](./git-labs/04-contribute-lab.md) | Contribute | Feature branch PR workflow, fork, upstream remote, sync fork |
+| [Lab 05](./git-labs/05-undo-recovery-lab.md) | Undo & Recovery | Amend commits, revert bad commits, reset, recover with reflog |
+
+---
+
+## What You Can Do After This
+
+- Track and version any project with confidence
+- Write clean commit history that teammates can read
+- Create and merge branches without breaking anything
+- Resolve merge conflicts without panicking
+- Rebase feature branches to keep history linear
+- Recover from any mistake using reflog
+- Contribute to team repos and open-source projects via PRs
+- Tag releases that CI/CD pipelines can reference
+
+---
+
+## How to Use This
+
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
+
+---
+
+## What Comes Next
+
+→ [03. Networking – Foundations](../03.%20Networking%20–%20Foundations/README.md)
+
+Git gives you version control. Networking gives you the foundation to understand how Docker, Kubernetes, and AWS move data — before those tools make any of it look like magic.
+
+
+---
+# SOURCE: ./notes/02. Git & GitHub – Version Control/git-labs/README.md
 
 [Home](../README.md) |
 [Labs Index](./README.md) |
@@ -5405,9 +6234,9 @@ Every lab has a "Break It on Purpose" section. Do not skip it. These are the fai
 
 Do not move to the next lab until every box in the checklist is checked. If you cannot check a box honestly, go back and do it properly.
 
+
 ---
-# TOOL: 03. Networking – Foundations | FILE: 01-foundation-and-the-big-picture
----
+# SOURCE: ./notes/03. Networking – Foundations/01-foundation-and-the-big-picture/README.md
 
 # File 01: Foundation & The Big Picture
 
@@ -6231,9 +7060,9 @@ Every step follows the same principles:
 
 The webstore is three processes on a Linux server — nginx on port 80, the API on port 8080, and postgres on port 5432. When a browser requests the webstore homepage, it sends a packet. That packet has a header at every layer: application (HTTP GET /), transport (TCP, destination port 80), network (the server's IP address), data link (MAC address of the next router hop). Each layer does exactly one job and hands off to the next. The webstore receives the request, nginx processes it, and the response travels back through the same stack in reverse. Everything in this series explains one piece of that journey.
 
+
 ---
-# TOOL: 03. Networking – Foundations | FILE: 02-addressing-fundamentals
----
+# SOURCE: ./notes/03. Networking – Foundations/02-addressing-fundamentals/README.md
 
 # File 02: Addressing Fundamentals
 
@@ -7324,9 +8153,9 @@ ARP = Looking up "Who's driving truck to this address?"
 
 The webstore server has one IP address. Every service on that server shares it. What separates them is ports: nginx answers on port 80, the API on port 8080, postgres on port 5432. When the webstore-api connects to postgres, it connects to the server's own IP at port 5432 — not necessarily `localhost`, because postgres is configured with `listen_addresses` that controls which interfaces it binds to. When postgres is set to `127.0.0.1` only, the API can reach it from the same machine. When postgres is set to `0.0.0.0`, it is reachable from any interface including external ones. Reading an IP binding tells you immediately whether a service is reachable from outside or locked to the machine.
 
+
 ---
-# TOOL: 03. Networking – Foundations | FILE: 03-ip-deep-dive
----
+# SOURCE: ./notes/03. Networking – Foundations/03-ip-deep-dive/README.md
 
 # File 03: IP Deep Dive & Assignment
 
@@ -8463,9 +9292,9 @@ Postgres on the webstore server is configured with `listen_addresses` in `postgr
 
 → Ready to practice? [Go to Lab 01](../networking-labs/01-foundation-addressing-ip-lab.md)
 
+
 ---
-# TOOL: 03. Networking – Foundations | FILE: 04-network-devices
----
+# SOURCE: ./notes/03. Networking – Foundations/04-network-devices/README.md
 
 # File 04: Network Devices
 
@@ -9576,9 +10405,9 @@ The webstore server sits behind a router. When a request arrives from a browser 
 
 → Ready to practice? [Go to Lab 02](../networking-labs/02-devices-subnets-lab.md)
 
+
 ---
-# TOOL: 03. Networking – Foundations | FILE: 05-subnets-cidr
----
+# SOURCE: ./notes/03. Networking – Foundations/05-subnets-cidr/README.md
 
 # File 05: Network Segmentation (Subnets & CIDR)
 
@@ -10288,9 +11117,9 @@ When you deploy the webstore to a server environment, you decide what subnet it 
 
 → Ready to practice? [Go to Lab 02](../networking-labs/02-devices-subnets-lab.md)
 
+
 ---
-# TOOL: 03. Networking – Foundations | FILE: 06-ports-transport
----
+# SOURCE: ./notes/03. Networking – Foundations/06-ports-transport/README.md
 
 # File 06: Ports & Transport Layer
 
@@ -11569,9 +12398,9 @@ Three services, one server, three ports. nginx on 80, webstore-api on 8080, post
 
 → Ready to practice? [Go to Lab 03](../networking-labs/03-ports-transport-nat-lab.md)
 
+
 ---
-# TOOL: 03. Networking – Foundations | FILE: 07-nat
----
+# SOURCE: ./notes/03. Networking – Foundations/07-nat/README.md
 
 # File 07: NAT & Translation
 
@@ -12285,9 +13114,9 @@ The webstore server has a private IP on the network — `10.0.1.45` or similar. 
 
 → Ready to practice? [Go to Lab 03](../networking-labs/03-ports-transport-nat-lab.md)
 
+
 ---
-# TOOL: 03. Networking – Foundations | FILE: 08-dns
----
+# SOURCE: ./notes/03. Networking – Foundations/08-dns/README.md
 
 # File 08: DNS
 
@@ -13189,9 +14018,9 @@ When you register `webstore.example.com` and create an A record pointing to the 
 
 → Ready to practice? [Go to Lab 04](../networking-labs/04-dns-firewalls-lab.md)
 
+
 ---
-# TOOL: 03. Networking – Foundations | FILE: 09-firewalls
----
+# SOURCE: ./notes/03. Networking – Foundations/09-firewalls/README.md
 
 # File 09: Firewalls & Security
 
@@ -14027,9 +14856,9 @@ The webstore server needs exactly three inbound rules: allow port 80 (nginx), al
 
 → Ready to practice? [Go to Lab 04](../networking-labs/04-dns-firewalls-lab.md)
 
+
 ---
-# TOOL: 03. Networking – Foundations | FILE: 10-complete-journey
----
+# SOURCE: ./notes/03. Networking – Foundations/10-complete-journey/README.md
 
 # File 10: Complete Journey & OSI Deep Dive
 
@@ -15707,9 +16536,133 @@ From typing a URL to packets traveling the world, from Docker containers talking
 Everything else is just details.
 
 ---
+
 ---
-# TOOL: 03. Networking – Foundations | FILE: networking-labs
+# SOURCE: ./notes/03. Networking – Foundations/README.md
+
+<p align="center">
+  <img src="../../assets/networking-banner.svg" alt="networking" width="100%"/>
+</p>
+
+[← devops-runbook](../../README.md)
+
 ---
+
+A practical networking guide built for DevOps and cloud engineering roles.
+No CCNA fluff. Only what you actually use — and only what Docker and AWS build on top of.
+
+---
+
+## Why Networking Comes Before Docker and AWS
+
+Docker bridge networking, container DNS, and port binding are all networking concepts in a container wrapper. AWS VPC, Security Groups, NAT Gateway, and Route 53 are all networking concepts in a cloud wrapper.
+
+If you learn Docker or AWS before networking, those tools feel like magic. Magic breaks in production without warning. This folder removes the magic — everything Docker and AWS do with networking has its foundation explained here first.
+
+The networking notes teach the pure concepts using only what you have right now: a Linux server running nginx serving the webstore frontend. No containers. No cloud. Just a server, a network, and the tools to understand both.
+
+---
+
+## Prerequisites
+
+**Complete first:** [02. Git & GitHub – Version Control](../02.%20Git%20%26%20GitHub%20–%20Version%20Control/README.md)
+
+You need Git to version your lab work and notes as you go through this series.
+
+---
+
+## The Running Example
+
+Every scenario uses the same webstore application on a Linux server:
+
+```
+Linux server (running nginx)
+├── webstore-frontend  → nginx serving static files on port 80
+├── webstore-api       → application process on port 8080
+└── webstore-db        → postgres process on port 5432
+```
+
+The webstore server has an IP address. Its services run on ports. Its hostname resolves via DNS. Its traffic passes through NAT. Its ports are controlled by iptables. By file 10 you can trace every hop a request makes from a browser to the webstore and back.
+
+Docker and AWS apply all of these same concepts — but in their own context. That connection is made in the Docker and AWS notes, not here.
+
+---
+
+## Where You Take the Webstore
+
+You arrive at Networking with the webstore running on a Linux server — nginx serving the frontend, the API and database on their ports, everything on one machine. You leave with the ability to explain and debug every network layer that request passes through to reach that server.
+
+That understanding is what makes Docker networking click. When Docker says "bridge network", you already know what a bridge is. When Docker says "DNS at 127.0.0.11", you already know what DNS does. When Docker says "-p 8080:80 creates a DNAT rule", you have already seen a DNAT rule. The Docker notes explain how Docker uses these concepts — not what the concepts are.
+
+---
+
+## Phases
+
+| Phase | Topics | Lab |
+|---|---|---|
+| 1 — Foundation | [01 Foundation & Big Picture](./01-foundation-and-the-big-picture/README.md) · [02 Addressing](./02-addressing-fundamentals/README.md) · [03 IP Deep Dive](./03-ip-deep-dive/README.md) | [Lab 01](./networking-labs/01-foundation-addressing-ip-lab.md) |
+| 2 — Routing | [04 Network Devices](./04-network-devices/README.md) · [05 Subnets & CIDR](./05-subnets-cidr/README.md) | [Lab 02](./networking-labs/02-devices-subnets-lab.md) |
+| 3 — Transport & NAT | [06 Ports & Transport](./06-ports-transport/README.md) · [07 NAT & Translation](./07-nat/README.md) | [Lab 03](./networking-labs/03-ports-transport-nat-lab.md) |
+| 4 — DNS & Firewalls | [08 DNS](./08-dns/README.md) · [09 Firewalls & Security](./09-firewalls/README.md) | [Lab 04](./networking-labs/04-dns-firewalls-lab.md) |
+| 5 — Complete Journey | [10 Complete Journey](./10-complete-journey/README.md) | [Lab 05](./networking-labs/05-complete-journey-lab.md) |
+
+---
+
+## Labs
+
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 01](./networking-labs/01-foundation-addressing-ip-lab.md) | Foundation · Addressing · IP | ip addr, ARP table, MAC vs IP, private ranges, localhost |
+| [Lab 02](./networking-labs/02-devices-subnets-lab.md) | Network Devices · Subnets | Routing table, traceroute, CIDR calculation, subnet design |
+| [Lab 03](./networking-labs/03-ports-transport-nat-lab.md) | Ports · Transport · NAT | ss, TCP handshake, iptables DNAT proof |
+| [Lab 04](./networking-labs/04-dns-firewalls-lab.md) | DNS · Firewalls | dig +trace, nslookup, iptables rules, stateful vs stateless |
+| [Lab 05](./networking-labs/05-complete-journey-lab.md) | Complete Journey | Full end-to-end trace: DNS + routing + ports + firewalls |
+
+---
+
+## Reference
+
+[Networking Map](./00-networking-map/README.md) — single-page cheat sheet, use before interviews and when debugging
+
+---
+
+## Critical Concepts
+
+**The Big Three — understand these before moving on:**
+
+1. **MAC vs IP** — MAC changes at every router hop, IP never changes end to end
+2. **Stateful vs Stateless** — stateful firewalls auto-allow return traffic, stateless don't — this causes the most common AWS NACL failures
+3. **DNS TTL** — DNS changes do not propagate instantly, TTL controls the delay
+
+---
+
+## What You Can Do After This
+
+- Explain what happens at every layer when a browser opens a URL
+- Debug connectivity failures systematically — DNS → routing → ports → firewall → service
+- Read `ss`, `dig`, `traceroute`, `iptables` output and know what it means
+- Design a subnet layout for a multi-tier application
+- Understand why Docker bridge networking, container DNS, and port binding work the way they do — before you ever run a container
+
+---
+
+## How to Use This
+
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
+
+---
+
+## What Comes Next
+
+→ [04. Docker – Containerization](../04.%20Docker%20–%20Containerization/README.md)
+
+Docker runs every concept from this folder — bridges, routing, NAT, DNS — but in a container context. The Docker prerequisites section lists exactly which networking files you need before starting. Everything you learned here transfers directly.
+
+
+---
+# SOURCE: ./notes/03. Networking – Foundations/networking-labs/README.md
 
 [Home](../README.md) |
 [Labs Index](./README.md) |
@@ -15769,9 +16722,9 @@ Every lab has a "Break It on Purpose" section. Do not skip it. These are the fai
 
 Do not move to the next lab until every box in the checklist is checked.
 
+
 ---
-# TOOL: 04. Docker – Containerization | FILE: 01-history-and-motivation
----
+# SOURCE: ./notes/04. Docker – Containerization/01-history-and-motivation/README.md
 
 [Home](../README.md) |
 [History & Motivation](../01-history-and-motivation/README.md) |
@@ -16010,9 +16963,9 @@ With Docker:
 **What you hand to Kubernetes after Docker:**
 A Kubernetes cluster does not know what your app is. It pulls container images from a registry and runs them. Everything you build in Docker — images, tags, environment variables, port mappings — is exactly what Kubernetes reads. Docker is not a stepping stone to Kubernetes. It is the prerequisite.
 
+
 ---
-# TOOL: 04. Docker – Containerization | FILE: 02-technology-overview
----
+# SOURCE: ./notes/04. Docker – Containerization/02-technology-overview/README.md
 
 [Home](../README.md) |
 [History & Motivation](../01-history-and-motivation/README.md) |
@@ -16134,9 +17087,9 @@ Docker Desktop is just a wrapper. It provides a GUI, helpers, and a Linux VM so 
 
 **One-line lock:**
 Command goes in → Docker Engine runs containers → registry stores images.
+
 ---
-# TOOL: 04. Docker – Containerization | FILE: 03-docker-containers
----
+# SOURCE: ./notes/04. Docker – Containerization/03-docker-containers/README.md
 
 [Home](../README.md) |
 [History & Motivation](../01-history-and-motivation/README.md) |
@@ -16351,9 +17304,9 @@ Clean → `stop → rm → rmi`
 
 → Ready to practice? [Go to Lab 01](../docker-labs/01-containers-portbinding-lab.md)
 
+
 ---
-# TOOL: 04. Docker – Containerization | FILE: 04-docker-port-binding
----
+# SOURCE: ./notes/04. Docker – Containerization/04-docker-port-binding/README.md
 
 [Home](../README.md) |
 [History & Motivation](../01-history-and-motivation/README.md) |
@@ -16462,9 +17415,9 @@ Port binding maps a container’s internal port to a host machine port so the ap
 
 → Ready to practice? [Go to Lab 01](../docker-labs/01-containers-portbinding-lab.md)
 
+
 ---
-# TOOL: 04. Docker – Containerization | FILE: 05-docker-networking
----
+# SOURCE: ./notes/04. Docker – Containerization/05-docker-networking/README.md
 
 [Home](../README.md) |
 [History & Motivation](../01-history-and-motivation/README.md) |
@@ -16936,9 +17889,9 @@ docker run --network webstore-network --name webstore-db postgres:15
 
 → Ready to practice? [Go to Lab 02](../docker-labs/02-networking-volumes-lab.md)
 
+
 ---
-# TOOL: 04. Docker – Containerization | FILE: 06-docker-volumes
----
+# SOURCE: ./notes/04. Docker – Containerization/06-docker-volumes/README.md
 
 [Home](../README.md) |
 [History & Motivation](../01-history-and-motivation/README.md) |
@@ -17212,9 +18165,9 @@ Data in volumes = permanent
 
 → Ready to practice? [Go to Lab 02](../docker-labs/02-networking-volumes-lab.md)
 
+
 ---
-# TOOL: 04. Docker – Containerization | FILE: 07-docker-layers
----
+# SOURCE: ./notes/04. Docker – Containerization/07-docker-layers/README.md
 
 [Home](../README.md) |
 [History & Motivation](../01-history-and-motivation/README.md) |
@@ -17782,9 +18735,9 @@ Docker images are stacks of cached, read-only layers; changing one layer invalid
 
 → Ready to practice? [Go to Lab 03](../docker-labs/03-build-layers-lab.md)
 
+
 ---
-# TOOL: 04. Docker – Containerization | FILE: 08-docker-build-dockerfile
----
+# SOURCE: ./notes/04. Docker – Containerization/08-docker-build-dockerfile/README.md
 
 [Home](../README.md) |
 [History & Motivation](../01-history-and-motivation/README.md) |
@@ -18296,9 +19249,9 @@ OS package managers are Linux-specific.
 
 → Ready to practice? [Go to Lab 03](../docker-labs/03-build-layers-lab.md)
 
+
 ---
-# TOOL: 04. Docker – Containerization | FILE: 09-docker-registry
----
+# SOURCE: ./notes/04. Docker – Containerization/09-docker-registry/README.md
 
 [Home](../README.md) |
 [History & Motivation](../01-history-and-motivation/README.md) |
@@ -18721,9 +19674,9 @@ A container registry is a remote store for container images so the same image ca
 
 → Ready to practice? [Go to Lab 04](../docker-labs/04-registry-compose-lab.md)
 
+
 ---
-# TOOL: 04. Docker – Containerization | FILE: 10-docker-compose
----
+# SOURCE: ./notes/04. Docker – Containerization/10-docker-compose/README.md
 
 [Home](../README.md) |
 [History & Motivation](../01-history-and-motivation/README.md) |
@@ -19107,9 +20060,110 @@ Compose only automates the same configuration you already know.
 
 → Ready to practice? [Go to Lab 04](../docker-labs/04-registry-compose-lab.md)
 
+
 ---
-# TOOL: 04. Docker – Containerization | FILE: docker-labs
+# SOURCE: ./notes/04. Docker – Containerization/README.md
+
+<p align="center">
+  <img src="../../assets/docker-banner.svg" alt="docker" width="100%"/>
+</p>
+
+[← devops-runbook](../../README.md)
+
 ---
+
+A fundamentals-first learning path for Docker — containers, networking, volumes, images, and Compose — built around one real app with no tutorial noise.
+
+---
+
+## Prerequisites
+
+**Complete first:** [03. Networking – Foundations](../03.%20Networking%20–%20Foundations/README.md)
+
+Specifically, before starting Docker you should understand:
+- How bridges and routing work (file 04) — Docker bridge is a virtual switch
+- NAT and port forwarding (file 07) — Docker `-p` flag creates iptables DNAT rules
+- DNS resolution (file 08) — Docker has an embedded DNS server at `127.0.0.11`
+
+Without these, Docker networking will feel like magic. Magic breaks in production.
+
+---
+
+## The Running Example
+
+Every note, every lab, every command uses the same 3-tier app:
+
+| Service | Image | Port |
+|---|---|---|
+| webstore-frontend | nginx:1.24 | 80 |
+| webstore-api | nginx:1.24 (then custom) | 8080 |
+| webstore-db | postgres:15 | 5432 |
+| adminer | adminer | 8081 (dev only) |
+
+By the end, this app is containerized, networked, persisted, built from a Dockerfile, pushed to a registry, and running with a single Compose command.
+
+---
+
+## Where You Take the Webstore
+
+You arrive at Docker with the webstore running on a Linux server and version-controlled in Git. It works on your machine. It does not work anywhere else without manual setup.
+
+You leave Docker with the webstore as three container images — webstore-frontend, webstore-api, webstore-db — running from a single `docker compose up`. The API image is pushed to Docker Hub tagged as `v1.0`. That tag is what Kubernetes pulls when you get there.
+
+---
+
+## Phases
+
+| Phase | Topics | Lab |
+|---|---|---|
+| 0 — Foundation | [01 History & Motivation](./01-history-and-motivation/README.md) · [02 Technology Overview](./02-technology-overview/README.md) | No lab |
+| 1 — Running Containers | [03 Docker Containers](./03-docker-containers/README.md) · [04 Port Binding](./04-docker-port-binding/README.md) | [Lab 01](./docker-labs/01-containers-portbinding-lab.md) |
+| 2 — Data & Networks | [05 Networking](./05-docker-networking/README.md) · [06 Volumes](./06-docker-volumes/README.md) | [Lab 02](./docker-labs/02-networking-volumes-lab.md) |
+| 3 — Building Images | [07 Layers](./07-docker-layers/README.md) · [08 Build & Dockerfile](./08-docker-build-dockerfile/README.md) | [Lab 03](./docker-labs/03-build-layers-lab.md) |
+| 4 — Ship & Operate | [09 Registry](./09-docker-registry/README.md) · [10 Compose](./10-docker-compose/README.md) | [Lab 04](./docker-labs/04-registry-compose-lab.md) |
+
+---
+
+## Labs
+
+| Lab | Covers |
+|---|---|
+| [Lab 01](./docker-labs/01-containers-portbinding-lab.md) | Pull images, run containers, port binding, debug, safe delete |
+| [Lab 02](./docker-labs/02-networking-volumes-lab.md) | Docker networks, DNS between containers, iptables DNAT proof, named volumes, bind mounts |
+| [Lab 03](./docker-labs/03-build-layers-lab.md) | Layer inspection, cache behavior, Dockerfile ordering, .dockerignore, multi-stage builds |
+| [Lab 04](./docker-labs/04-registry-compose-lab.md) | Push to Docker Hub, tagging strategy, pull and verify, write and run docker-compose.yml |
+
+---
+
+## How to Use This
+
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
+
+---
+
+## What You Can Do After This
+
+- Run any containerized service on your laptop or a server
+- Wire multi-container apps together with Docker networks and DNS
+- Persist data correctly with named volumes
+- Write production-ready Dockerfiles with correct layer ordering
+- Build multi-stage images that are small and safe
+- Push images to a registry and pull them anywhere
+- Bring up the full webstore stack with one command
+
+---
+
+## What Comes Next
+
+→ [05. Kubernetes – Orchestration](../05.%20Kubernetes%20–%20Orchestration/README.md)
+
+Kubernetes orchestrates containers. Everything you built here — images, tags, port mappings, environment variables — is what Kubernetes reads from your manifests. Docker is the prerequisite, not a stepping stone.
+
+
+---
+# SOURCE: ./notes/04. Docker – Containerization/docker-labs/README.md
 
 [Home](../README.md) |
 [Labs Index](./README.md) |
@@ -19151,9 +20205,9 @@ These four labs containerize the webstore from scratch — the same project that
 | [Lab 03](./03-build-layers-lab.md) | Layers + Build + Dockerfile | [07](../07-docker-layers/README.md) · [08](../08-docker-build-dockerfile/README.md) |
 | [Lab 04](./04-registry-compose-lab.md) | Registry + Compose | [09](../09-docker-registry/README.md) · [10](../10-docker-compose/README.md) |
 
+
 ---
-# TOOL: 05. Kubernetes – Orchestration | FILE: 00-setup
----
+# SOURCE: ./notes/05. Kubernetes – Orchestration/00-setup/README.md
 
 [Home](../README.md) | [Setup](../00-setup/README.md) | [Architecture](../01-architecture/README.md) | [YAML & Pods](../02-yaml-pods/README.md) | [Deployments](../03-deployments/README.md) | [Networking](../03.5-networking/README.md) | [State & Config](../04-state/README.md) | [Troubleshooting](../05-troubleshooting/README.md) | [CI-CD](../06-cicd/README.md) | [Observability](../07-observability/README.md) | [Cloud & EKS](../08-cloud/README.md)
 
@@ -19291,9 +20345,9 @@ This wipes the cluster state completely and starts clean.
 
 → Ready to practice? [Go to Lab 00](../k8s-labs/00-setup-lab.md)
 
+
 ---
-# TOOL: 05. Kubernetes – Orchestration | FILE: 01-architecture
----
+# SOURCE: ./notes/05. Kubernetes – Orchestration/01-architecture/README.md
 
 [Home](../README.md) | [Setup](../00-setup/README.md) | [Architecture](../01-architecture/README.md) | [YAML & Pods](../02-yaml-pods/README.md) | [Deployments](../03-deployments/README.md) | [Networking](../03.5-networking/README.md) | [State & Config](../04-state/README.md) | [Troubleshooting](../05-troubleshooting/README.md) | [CI-CD](../06-cicd/README.md) | [Observability](../07-observability/README.md) | [Cloud & EKS](../08-cloud/README.md)
 
@@ -19542,9 +20596,9 @@ The second command is the key one — you will literally see `etcd`, `kube-apise
 
 → Ready to practice? [Go to Lab 01](../k8s-labs/01-architecture-lab.md)
 
+
 ---
-# TOOL: 05. Kubernetes – Orchestration | FILE: 02-yaml-pods
----
+# SOURCE: ./notes/05. Kubernetes – Orchestration/02-yaml-pods/README.md
 
 [Home](../README.md) | [Setup](../00-setup/README.md) | [Architecture](../01-architecture/README.md) | [YAML & Pods](../02-yaml-pods/README.md) | [Deployments](../03-deployments/README.md) | [Networking](../03.5-networking/README.md) | [State & Config](../04-state/README.md) | [Troubleshooting](../05-troubleshooting/README.md) | [CI-CD](../06-cicd/README.md) | [Observability](../07-observability/README.md) | [Cloud & EKS](../08-cloud/README.md)
 
@@ -19898,448 +20952,124 @@ If you see any of these, run `kubectl describe pod webstore-frontend` and scroll
 
 → Ready to practice? [Go to Lab 02](../k8s-labs/02-yaml-pods-lab.md)
 
----
-# TOOL: 05. Kubernetes – Orchestration | FILE: 03-deployments
----
-
-[Home](../README.md) | [Setup](../00-setup/README.md) | [Architecture](../01-architecture/README.md) | [YAML & Pods](../02-yaml-pods/README.md) | [Deployments](../03-deployments/README.md) | [Networking](../03.5-networking/README.md) | [State & Config](../04-state/README.md) | [Troubleshooting](../05-troubleshooting/README.md) | [CI-CD](../06-cicd/README.md) | [Observability](../07-observability/README.md) | [Cloud & EKS](../08-cloud/README.md)
 
 ---
+# SOURCE: ./notes/05. Kubernetes – Orchestration/README.md
 
-# 03 — Deployments, ReplicaSets & Pod Management
+<p align="center">
+  <img src="../../assets/kubernetes-banner.svg" alt="kubernetes" width="100%"/>
+</p>
 
-## What This File Is About
-
-In Phase 02 you deployed a naked Pod. You also proved it does not self-heal —
-delete it and it stays dead. That is not production. This phase covers how
-Kubernetes actually keeps applications alive, updates them without downtime,
-and scales them under load.
+[← devops-runbook](../../README.md)
 
 ---
 
-## Table of Contents
-
-1. [The Problem With Naked Pods](#1-the-problem-with-naked-pods)
-2. [ReplicaSets — The Guardian](#2-replicasets--the-guardian)
-3. [Deployments — The Manager](#3-deployments--the-manager)
-4. [The Anatomy of a Deployment Manifest](#4-the-anatomy-of-a-deployment-manifest)
-5. [Rolling Updates — Zero Downtime](#5-rolling-updates--zero-downtime)
-6. [Rollbacks — The Emergency Undo](#6-rollbacks--the-emergency-undo)
-7. [Scaling](#7-scaling)
-8. [The Full Debug Loop for Deployments](#8-the-full-debug-loop-for-deployments)
-
-> **Note on Sidecar Pattern:** Multi-container Pods and the Sidecar pattern are
-> covered in [Phase 3.5 — Networking](../03.5-networking/README.md). They live
-> there because Sidecars are fundamentally about a helper container handling
-> network traffic alongside your main app.
+A phase-by-phase learning path for Kubernetes — from local cluster to production on AWS EKS.
+Every tool and concept here transfers directly from a Minikube laptop to a 1,000-node cluster.
 
 ---
 
-## 1. The Problem With Naked Pods
+## Why Kubernetes — and Why Not Docker Swarm or Nomad
 
-In Phase 02 you ran this and watched the Pod disappear forever:
+Docker Compose runs multi-container apps on one machine. That is its ceiling. When the machine goes down, every container goes down with it. When traffic spikes, you scale manually. When you deploy a new version, there is downtime.
 
-```bash
-kubectl delete pod webstore-frontend
-kubectl get pods
-# No resources found — it is gone, nothing replaced it
-```
+Kubernetes solves all of this. It runs your containers across multiple machines, restarts them when they crash, rolls out new versions without dropping traffic, and scales up or down based on load — automatically, without intervention.
 
-A standalone Pod has no guardian. If it crashes at 3 AM, it stays crashed until
-someone manually recreates it. In production that means downtime.
-
-The solution is to never run naked Pods for anything that matters. Instead, you
-describe the desired state to a Controller and let Kubernetes enforce it 24/7.
+Docker Swarm ships with Docker and is simpler to learn, but it is not what the industry uses. Nomad is flexible, but its adoption is a fraction of Kubernetes. EKS, GKE, and AKS are all managed Kubernetes. Every DevOps job posting that mentions container orchestration means Kubernetes. Learning Swarm or Nomad first is a detour.
 
 ---
 
-## 2. ReplicaSets — The Guardian
+## Prerequisites
 
-A **ReplicaSet (RS)** has one job: ensure that a specified number of identical
-Pod replicas are running at all times.
+**Complete first:** [04. Docker – Containerization](../04.%20Docker%20–%20Containerization/README.md)
 
-**The Thermostat Analogy:**
-Think of a ReplicaSet as a smart thermostat. You set the temperature to 3 (your
-desired replica count). The thermostat watches the room constantly. If a Pod
-crashes and the count drops to 2, it immediately turns on the heat and creates a
-new Pod to bring it back to 3. If somehow 4 are running, it terminates one. It
-never stops watching. It never sleeps.
-
-```
-Desired State: replicas = 3
-Actual State:  running  = 2  (one crashed)
-
-ReplicaSet detects drift → creates 1 new Pod → Actual = 3 ✅
-```
-
-**RC vs RS — Why RS Won:**
-You may hear about Replication Controllers (RC) — the legacy version of RS.
-ReplicaSets replaced them because RS uses a more powerful selector (`matchLabels`)
-that allows it to adopt and manage even existing Pods that were not originally
-created by the ReplicaSet itself. RC is obsolete. Always use RS (via Deployments).
-
-**The Rule:**
-You almost never create a ReplicaSet directly. You create a Deployment, which
-creates and manages the ReplicaSet for you. The RS is an implementation detail
-that Kubernetes handles behind the scenes.
+Kubernetes orchestrates containers. If you do not understand what a container is, how images work, how Docker networking functions, and how a Dockerfile builds an image — Kubernetes will be confusing from the first YAML file. The concepts do not repeat here, they are assumed.
 
 ---
 
-## 3. Deployments — The Manager
+## The Running Example
 
-If a ReplicaSet is the thermostat that keeps the count right, a **Deployment**
-is the building manager that controls everything about the thermostat — including
-how to upgrade it, roll it back, and configure it safely.
+Every phase, every manifest, every command is built around the webstore app.
 
-**The Hierarchy:**
-
-```
-You (kubectl apply)
-        │
-        ▼
-┌───────────────────┐
-│    Deployment     │  ← You create this. It owns everything below.
-│  (The Manager)    │
-└────────┬──────────┘
-         │ creates and manages
-         ▼
-┌───────────────────┐
-│    ReplicaSet     │  ← Deployment creates this. Ensures Pod count.
-│  (The Guardian)   │
-└────────┬──────────┘
-         │ creates and manages
-         ▼
-┌──────────────────────────────┐
-│  Pod    Pod    Pod           │  ← RS creates these. Your app runs here.
-│ [C1]   [C1]   [C1]           │
-└──────────────────────────────┘
-```
-
-**Why Deployments Over Naked ReplicaSets:**
-
-| Feature | Naked Pod | ReplicaSet | Deployment |
-|---------|-----------|------------|------------|
-| Self-healing | ❌ | ✅ | ✅ |
-| Scaling | ❌ | ✅ | ✅ |
-| Rolling updates | ❌ | ❌ | ✅ |
-| Rollbacks | ❌ | ❌ | ✅ |
-| Update history | ❌ | ❌ | ✅ |
-
-A Deployment is what you use for every stateless application in production.
-Every time.
+| Service | Image | Port |
+|---|---|---|
+| webstore-frontend | nginx:1.24 | 80 |
+| webstore-api | nginx:1.24 (placeholder → custom) | 8080 |
+| webstore-db | postgres:15 | 5432 |
 
 ---
 
-## 4. The Anatomy of a Deployment Manifest
+## Where You Take the Webstore
 
-A Deployment manifest has the same 4 pillars as a Pod manifest — but the `spec`
-is more complex because it wraps a Pod template inside it.
+You arrive at Kubernetes with the webstore running as three Docker containers on your laptop, brought up with `docker compose up`.
 
-```yaml
-apiVersion: apps/v1         # PILLAR 1 — Deployments live in 'apps/v1' not 'v1'
-                            # This is different from Pods which use 'v1'
-                            # The API Server uses this to find the right rulebook
+You leave with the webstore running on a real cluster — self-healing Deployments for all three tiers, postgres persisted to a PersistentVolumeClaim, credentials stored in Secrets, non-sensitive config in ConfigMaps, readiness probes preventing traffic before the database is ready, and the full stack deployed to AWS EKS in the final phase.
 
-kind: Deployment            # PILLAR 2 — The type of object
-
-metadata:
-  name: webstore-frontend   # PILLAR 3 — The Deployment's identity
-  labels:
-    app: webstore
-    tier: frontend
-
-spec:                        # PILLAR 4 — The blueprint
-  replicas: 3                # How many Pod copies to keep running at all times
-
-  selector:                  # How this Deployment finds and owns its Pods
-    matchLabels:             # Must match the labels in the Pod template below
-      app: webstore          # ← This is the link between Deployment and its Pods
-      tier: frontend         # If this does not match, the Deployment owns nothing
-
-  template:                  # The Pod template — every Pod created uses this blueprint
-    metadata:
-      labels:
-        app: webstore        # ← Must match selector.matchLabels above exactly
-        tier: frontend       # One typo here and the Deployment cannot find its Pods
-    spec:
-      containers:
-        - name: frontend-container
-          image: nginx:1.24           # Pin to a specific version in production
-                                      # Never use 'latest' in a real Deployment —
-                                      # you cannot roll back 'latest' to 'latest'
-          ports:
-            - containerPort: 80
-```
-
-**The selector is the critical link.**
-The `selector.matchLabels` on the Deployment must exactly match the `labels` on
-the Pod template. This is how the Deployment knows which Pods it owns and is
-responsible for. One typo and the Deployment creates Pods it cannot manage.
-
-**`apps/v1` vs `v1`:**
-Pods use `apiVersion: v1` because they are core objects. Deployments use
-`apiVersion: apps/v1` because they were added later as part of the `apps` API
-group. Getting this wrong is the most common first mistake with Deployments —
-the API Server rejects the file immediately.
+The same manifests you write for Minikube deploy to EKS. That is the point of writing them correctly from the start.
 
 ---
 
-## 5. Rolling Updates — Zero Downtime
+## Phases
 
-**The Construction Analogy:**
-Imagine you need to renovate a 10-floor hotel without closing it. You cannot
-kick out all the guests at once. So you renovate floor by floor — move guests
-from floor 1 to a spare room, renovate floor 1, move guests back, then move to
-floor 2. At no point is the hotel fully closed. Guests always have somewhere
-to stay.
-
-Kubernetes does the exact same thing with your Pods during an update.
-
-**How it works:**
-
-```
-BEFORE UPDATE                    DURING UPDATE                   AFTER UPDATE
-webstore-frontend v1.24          New RS (v1.25) starts           Old RS scales to 0
-[Pod] [Pod] [Pod]                [Pod v1.25] starts healthy      [Pod v1.25]
-Old RS: replicas=3               [Pod v1.24] terminated          [Pod v1.25]
-New RS: replicas=0               Repeat for each Pod             [Pod v1.25]
-                                                                 New RS: replicas=3
-```
-
-At no point are all Pods down. Traffic keeps flowing throughout.
-
-**Trigger a rolling update:**
-```bash
-kubectl set image deploy/webstore-frontend \
-  frontend-container=nginx:1.25
-```
-
-**Watch it happen live — run this immediately after:**
-```bash
-kubectl rollout status deploy/webstore-frontend
-```
-
-Expected output while updating:
-```
-Waiting for deployment "webstore-frontend" rollout to finish:
-1 out of 3 new replicas have been updated...
-2 out of 3 new replicas have been updated...
-3 out of 3 new replicas have been updated...
-Waiting for 3 pods to be ready...
-deployment "webstore-frontend" successfully rolled out
-```
-
-**Check the ReplicaSet history after the update:**
-```bash
-kubectl get rs
-```
-
-Expected output:
-```
-NAME                          DESIRED   CURRENT   READY   AGE
-webstore-frontend-7d9f8b6c4   3         3         3       2m    ← new RS (v1.25)
-webstore-frontend-5c6b7a8d9   0         0         0       10m   ← old RS (v1.24) kept for rollback
-```
-
-**What the columns mean:**
-
-| Column | Meaning |
-|--------|---------|
-| `DESIRED` | How many Pods this RS wants to run |
-| `CURRENT` | How many Pods currently exist |
-| `READY` | How many Pods are passing their health checks |
-
-The old RS stays at `0` — Kubernetes keeps it so you can roll back instantly.
-
-**A stuck rolling update — what it looks like:**
-```bash
-kubectl rollout status deploy/webstore-frontend
-# Waiting for deployment "webstore-frontend" rollout to finish:
-# 1 out of 3 new replicas have been updated...
-# (hangs here — never progresses)
-```
-
-This means the new Pods are failing to start. Diagnose it:
-```bash
-kubectl get pods
-# webstore-frontend-7d9f8b6c4-xxx   0/1   ImagePullBackOff   0   2m
-
-kubectl describe pod webstore-frontend-7d9f8b6c4-xxx
-# Scroll to Events — find the exact error
-```
-
-Fix the image name, apply again, and the rollout resumes.
+| # | Phase | Topics | Lab |
+|---|---|---|---|
+| 00 | [Setup](./00-setup/README.md) | Job-legal toolkit — Minikube, kubectl, K9s, Helm, kubectx | [Lab 00](./k8s-labs/00-setup-lab.md) |
+| 01 | [Architecture](./01-architecture/README.md) | Control Plane, etcd, Scheduler, Controller Manager, Worker Nodes, request flow | [Lab 01](./k8s-labs/01-architecture-lab.md) |
+| 02 | [YAML & Pods](./02-yaml-pods/README.md) | YAML syntax, 4 pillars of a manifest, Pods, Labels, Selectors | [Lab 02](./k8s-labs/02-yaml-pods-lab.md) |
+| 03 | [Deployments](./03-deployments/README.md) | ReplicaSets, Deployments, rolling updates, rollbacks, scaling | [Lab 03](./k8s-labs/03-deployments-lab.md) |
+| 03.5 | [Networking](./03.5-networking/README.md) | Services (ClusterIP, NodePort, LoadBalancer), kube-dns, Sidecar pattern, Namespaces | [Lab 03.5](./k8s-labs/03.5-networking-lab.md) |
+| 04 | [State & Config](./04-state/README.md) | PersistentVolumes, PVCs, StorageClass, ConfigMaps, Secrets | [Lab 04](./k8s-labs/04-state-lab.md) |
+| 05 | [Troubleshooting](./05-troubleshooting/README.md) | Liveness, Readiness, Startup probes, Jobs, CronJobs, DaemonSets, full debug loop | [Lab 05](./k8s-labs/05-troubleshooting-lab.md) |
+| 06 | [Cloud & EKS](./06-cloud/README.md) | eksctl, EBS CSI driver, ECR, LoadBalancer Services on EKS, Ingress Controller, HPA | [Lab 06](./k8s-labs/06-cloud-lab.md) |
 
 ---
 
-## 6. Rollbacks — The Emergency Undo
+## Labs
 
-**Check the full update history:**
-```bash
-kubectl rollout history deploy/webstore-frontend
-```
-
-Expected output:
-```
-REVISION  CHANGE-CAUSE
-1         <none>
-2         <none>
-```
-
-**Add a change cause to your updates (professional habit):**
-```bash
-kubectl set image deploy/webstore-frontend \
-  frontend-container=nginx:1.25 \
-  --record
-```
-
-Now history shows what changed:
-```
-REVISION  CHANGE-CAUSE
-1         <none>
-2         kubectl set image deploy/webstore-frontend frontend-container=nginx:1.25
-```
-
-**Emergency rollback to previous version:**
-```bash
-kubectl rollout undo deploy/webstore-frontend
-```
-
-**Rollback to a specific revision:**
-```bash
-kubectl rollout undo deploy/webstore-frontend --to-revision=1
-```
-
-After a rollback, check the RS again:
-```bash
-kubectl get rs
-```
-
-The old RS (v1.24) will scale back up to 3. The new RS (v1.25) will scale down
-to 0. Kubernetes just swapped them — no new objects created.
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 00](./k8s-labs/00-setup-lab.md) | Setup | Verify every tool, cold start drill, K9s cockpit, yamllint habit |
+| [Lab 01](./k8s-labs/01-architecture-lab.md) | Architecture | Find every control plane component running live, map it to the theory |
+| [Lab 02](./k8s-labs/02-yaml-pods-lab.md) | YAML & Pods | Write manifests from scratch, apply, describe, debug the full loop |
+| [Lab 03](./k8s-labs/03-deployments-lab.md) | Deployments | All 3 webstore tiers as Deployments, self-healing proof, rolling update, rollback, scale |
+| [Lab 03.5](./k8s-labs/03.5-networking-lab.md) | Networking | Wire the tiers with Services, expose frontend, test kube-dns, enforce namespace isolation |
+| [Lab 04](./k8s-labs/04-state-lab.md) | State & Config | PVC for webstore-db, Secret for credentials, ConfigMap for non-sensitive config |
+| [Lab 05](./k8s-labs/05-troubleshooting-lab.md) | Troubleshooting | Readiness probe on webstore-api, CronJob DB backup, DaemonSet log collector, full debug drill |
+| [Lab 06](./k8s-labs/06-cloud-lab.md) | Cloud & EKS | Create EKS cluster with eksctl, migrate webstore manifests, LoadBalancer Service, ECR |
 
 ---
 
-## 7. Scaling
+## What You Can Do After This
 
-Scaling a Deployment means telling the ReplicaSet to run more or fewer Pods.
-The Deployment updates the RS desired count and the RS handles the rest.
-
-**Scale out (handle more traffic):**
-```bash
-kubectl scale deploy/webstore-frontend --replicas=5
-```
-
-**Scale in (reduce after traffic drops):**
-```bash
-kubectl scale deploy/webstore-frontend --replicas=3
-```
-
-When scaling in, Kubernetes uses LIFO (Last In, First Out) — the newest Pods
-are terminated first. This is intentional: newer Pods are more likely to be
-in the middle of a task than older, settled ones.
-
-**Watch the scale happen in real time:**
-```bash
-kubectl get pods -w
-```
-
-The `-w` flag watches for changes. You will see Pods appear and disappear live.
-Press `ctrl + c` to stop watching.
-
-**Check the Deployment status after scaling:**
-```bash
-kubectl get deploy
-```
-
-Expected output:
-```
-NAME                READY   UP-TO-DATE   AVAILABLE   AGE
-webstore-frontend   5/5     5            5           10m
-```
-
-| Column | Meaning |
-|--------|---------|
-| `READY` | Running Pods out of desired total |
-| `UP-TO-DATE` | Pods running the latest template version |
-| `AVAILABLE` | Pods passing health checks and ready for traffic |
+- Write production-quality Kubernetes manifests from scratch without documentation
+- Explain what happens inside the cluster when you run `kubectl apply`
+- Deploy, update, and roll back applications with zero downtime
+- Wire multi-tier applications together using Services and kube-dns
+- Persist database data correctly using PVCs and StorageClasses
+- Store credentials safely using Secrets and config using ConfigMaps
+- Gate traffic with readiness probes so broken Pods never receive requests
+- Debug any cluster issue using the full get → describe → logs → exec loop
+- Deploy a production workload to AWS EKS
 
 ---
 
-## 8. The Full Debug Loop for Deployments
+## How to Use This
 
-The same loop you built in Phase 02 — extended for Deployments.
-
-```bash
-# Step 1 — Lint before applying
-yamllint webstore-frontend-deployment.yaml
-
-# Step 2 — Apply
-kubectl apply -f webstore-frontend-deployment.yaml
-
-# Step 3 — Check Deployment health
-kubectl get deploy
-
-# Step 4 — Check the Pods it created
-kubectl get pods
-
-# Step 5 — Check the ReplicaSet
-kubectl get rs
-
-# Step 6 — Watch a rollout in progress
-kubectl rollout status deploy/webstore-frontend
-
-# Step 7 — Read the Deployment's event log
-kubectl describe deploy/webstore-frontend
-
-# Step 8 — Check rollout history
-kubectl rollout history deploy/webstore-frontend
-```
-
-**Quick reference — all Deployment commands:**
-
-| Command | When you use it |
-|---------|----------------|
-| `kubectl apply -f <file>` | Create or update a Deployment |
-| `kubectl get deploy` | Check all Deployments and their ready count |
-| `kubectl get rs` | See the ReplicaSets — old and new after updates |
-| `kubectl get pods` | See the individual Pods the RS created |
-| `kubectl describe deploy/<name>` | Full event log — errors appear here |
-| `kubectl rollout status deploy/<name>` | Watch a rolling update in real time |
-| `kubectl rollout history deploy/<name>` | See all previous revisions |
-| `kubectl rollout undo deploy/<name>` | Emergency rollback to previous version |
-| `kubectl set image deploy/<name> <c>=<image>` | Trigger a rolling update |
-| `kubectl scale deploy/<name> --replicas=N` | Scale up or down |
-| `kubectl get pods -w` | Watch Pod changes live |
-| `kubectl delete deploy/<name>` | Delete the Deployment and all its Pods |
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
 
 ---
 
-→ Ready to practice? [Go to Lab 03](../k8s-labs/03-deployments-lab.md)
+## What Comes Next
 
----
-# TOOL: 05. Kubernetes – Orchestration | FILE: 03.5-networking
----
+→ [06. CI-CD – Pipelines & GitOps](../06.%20CI-CD%20–%20Pipelines%20%26%20GitOps/README.md)
 
-
----
-# TOOL: 05. Kubernetes – Orchestration | FILE: 04-state
----
+Kubernetes gives you the cluster. CI-CD automates what you have been doing manually — building images, pushing them, applying manifests. Every `kubectl apply` you ran in these labs becomes a step in a pipeline that runs itself on every code push.
 
 
 ---
-# TOOL: 05. Kubernetes – Orchestration | FILE: 05-troubleshooting
----
-
-
----
-# TOOL: 05. Kubernetes – Orchestration | FILE: 06-cloud
----
-
-
----
-# TOOL: 05. Kubernetes – Orchestration | FILE: k8s-labs
----
+# SOURCE: ./notes/05. Kubernetes – Orchestration/k8s-labs/README.md
 
 [Home](../README.md) |
 [Lab 00](./00-setup-lab.md) |
@@ -20401,36 +21131,275 @@ CI-CD and Observability are their own tools in this runbook — not phases of Ku
 
 → [07. Observability – Monitoring & Logs](../../07.%20Observability%20–%20Monitoring%20%26%20Logs/README.md) — instrument what CI-CD deployed so you can see inside it
 
----
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 01-intro-aws
----
-
-[Home](../README.md) | 
-[Intro to AWS](../01-intro-aws/README.md) | 
-[IAM](../02-iam/README.md) | 
-[VPC & Subnet](../03-vpc-subnet/README.md) | 
-[EBS](../04-ebs/README.md) | 
-[EFS](../05-efs/README.md) | 
-[S3](../06-s3/README.md) | 
-[EC2](../07-ec2/README.md) | 
-[RDS](../08-rds/README.md) | 
-[Load Balancing & Auto Scaling](../09-Load-balancing-auto-scaling/README.md) | 
-[CloudWatch & SNS](../10-cloudwatch-sns/README.md) | 
-[Lambda](../11-lambda/README.md) | 
-[Elastic Beanstalk](../12-elastic-beanstalk/README.md) | 
-[Route 53](../13-route53/README.md) | 
-[CLI + CloudFormation](../14-cli-cloudformation/README.md)
 
 ---
+# SOURCE: ./notes/06. CI-CD – Pipelines & GitOps/README.md
+
+<p align="center">
+  <img src="../../assets/cicd-banner.svg" alt="ci-cd" width="100%"/>
+</p>
+
+[← devops-runbook](../../README.md)
+
+---
+
+Pipelines, automation, and GitOps — built around the webstore app that you containerized in Docker and orchestrated in Kubernetes.
+
+---
+
+## Why CI-CD — and Why GitHub Actions + ArgoCD
+
+Every `kubectl apply` you ran in Kubernetes was a manual step. You typed it, you watched it, you waited. In a real team that is not sustainable — deployments happen dozens of times a day, from multiple people, across multiple environments. One missed step, one wrong image tag, one manual mistake is enough to break production.
+
+CI-CD removes the human from the deployment loop. Code gets pushed, a pipeline runs, an image gets built and tagged, and the cluster updates itself — without anyone typing a single command.
+
+GitHub Actions is the CI layer. It is built into the repo. No separate server. No extra billing. It triggers on the events you define — a push to main, a pull request, a tag — and runs whatever steps you tell it to. For this runbook it builds the webstore-api image, tags it with the git commit SHA, and pushes it to the registry.
+
+ArgoCD is the CD layer. It watches a Git repository containing Kubernetes manifests. When the manifests change — because the CI pipeline updated the image tag — ArgoCD detects the difference between what is in Git and what is running in the cluster, and syncs them. The cluster always reflects what is in Git. That is GitOps.
+
+Jenkins runs CI-CD too, but it requires a dedicated server, ongoing maintenance, and a plugin ecosystem that ages poorly. CircleCI and GitLab CI are solid tools but add separate accounts and ecosystems when the team is already on GitHub. Flux does GitOps like ArgoCD but has a smaller community and a steeper CLI learning curve. For a team on GitHub running Kubernetes, Actions + ArgoCD is the cleanest combination.
+
+---
+
+## Prerequisites
+
+**Complete first:** [05. Kubernetes – Orchestration](../05.%20Kubernetes%20–%20Orchestration/README.md)
+
+ArgoCD deploys to a Kubernetes cluster. GitHub Actions builds images that run in Kubernetes. If you do not have a working cluster and a deployed webstore, CI-CD has nothing to automate.
+
+---
+
+## The Running Example
+
+Every file and every lab is built around the webstore app.
+
+| Service | Image | Registry |
+|---|---|---|
+| webstore-api | custom image | Docker Hub (learning) → ECR (production) |
+| webstore-frontend | nginx:1.24 | Docker Hub |
+| webstore-db | postgres:15 | Docker Hub |
+
+---
+
+## Where You Take the Webstore
+
+You arrive at CI-CD with the webstore running on a Kubernetes cluster. Deployments work. Pods self-heal. Storage persists. But every update requires you to manually build an image, push it, and apply the manifest.
+
+You leave with a pipeline that does all of that automatically. Push code to main — the pipeline builds the image, tags it with the commit SHA, pushes it to the registry, updates the manifest, and ArgoCD deploys it to the cluster. The only manual step left is writing the code.
+
+---
+
+## Why Two Repos
+
+This tool introduces the two-repo pattern. One repo holds your application code. A separate repo holds your Kubernetes manifests. The CI pipeline lives in the app repo and updates the manifest repo when a new image is built. ArgoCD watches the manifest repo.
+
+This separation means the cluster's desired state is always in Git, independent of the application code. Rolling back is a git revert on the manifest repo. Auditing who deployed what and when is a git log.
+
+---
+
+## Phases
+
+| # | Phase | Topics | Lab |
+|---|---|---|---|
+| 01 | [What is CI-CD](./01-what-is-cicd/README.md) | The problem with manual deployments, CI vs CD, the pipeline mental model | No lab |
+| 02 | [GitHub Actions](./02-github-actions/README.md) | Workflow file anatomy, triggers, jobs, steps, secrets, environment variables | [Lab 01](./cicd-labs/01-github-actions-lab.md) |
+| 03 | [Docker Build & Push](./03-docker-build-push/README.md) | `docker/build-push-action`, git SHA tagging, registry authentication in CI | [Lab 01](./cicd-labs/01-github-actions-lab.md) |
+| 04 | [ArgoCD](./04-argocd/README.md) | GitOps concept, install on Minikube, Application object, sync policies, health status | [Lab 02](./cicd-labs/02-argocd-lab.md) |
+| 05 | [Full Pipeline](./05-full-pipeline/README.md) | Connecting CI to CD — push triggers build, image tag updated, ArgoCD deploys | [Lab 03](./cicd-labs/03-full-pipeline-lab.md) |
+
+---
+
+## Labs
+
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 01](./cicd-labs/01-github-actions-lab.md) | GitHub Actions + Docker Build & Push | Write the webstore-api pipeline from scratch, trigger it with a push, watch it build and push the image |
+| [Lab 02](./cicd-labs/02-argocd-lab.md) | ArgoCD | Install ArgoCD on Minikube, create the Application object, connect it to the manifests repo, trigger a sync |
+| [Lab 03](./cicd-labs/03-full-pipeline-lab.md) | Full Pipeline | Push a code change, watch the pipeline build and push the image, watch ArgoCD detect the change and deploy it |
+
+---
+
+## What You Can Do After This
+
+- Write a GitHub Actions workflow from scratch without documentation
+- Build, tag, and push a Docker image from a CI pipeline
+- Explain the difference between CI and CD and why they are separate
+- Install and configure ArgoCD on a Kubernetes cluster
+- Explain GitOps and why Git is the source of truth for cluster state
+- Connect a CI pipeline to a CD system so deployments happen automatically
+- Roll back a deployment by reverting a commit in the manifests repo
+- Debug a failed pipeline run by reading GitHub Actions logs
+
+---
+
+## How to Use This
+
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
+
+---
+
+## What Comes Next
+
+→ [07. Observability – Monitoring & Logs](../07.%20Observability%20–%20Monitoring%20%26%20Logs/README.md)
+
+CI-CD deploys the webstore automatically. Observability tells you what is happening inside it after it is deployed — whether pods are healthy, whether requests are failing, and where to look when they are.
+
+
+---
+# SOURCE: ./notes/07. Observability – Monitoring & Logs/README.md
+
+<p align="center">
+  <img src="../../assets/observability-banner.svg" alt="observability" width="100%"/>
+</p>
+
+[← devops-runbook](../../README.md)
+
+---
+
+Metrics, logs, and alerting — built around the webstore running on Kubernetes, deployed by the CI-CD pipeline.
+
+---
+
+## Why Observability — and Why Prometheus + Grafana + Loki
+
+The pipeline deploys your code. Kubernetes keeps it running. But neither of them tells you what the application is actually doing. Is the webstore-api responding in under 200ms? Did three pods restart in the last hour? Did the database run out of connections at 2am? Without observability, the answer to all of those is: you find out when a user complains.
+
+Observability is the practice of instrumenting a system so you can answer those questions from the outside — without SSH-ing into pods, without reading raw logs manually, without waiting for someone to notice something is wrong.
+
+Prometheus collects metrics. Every pod exposes a `/metrics` endpoint and Prometheus scrapes it on a schedule. You query those metrics with PromQL to understand CPU, memory, request rates, error rates, and anything else your application exposes.
+
+Grafana visualises the data. It connects to Prometheus as a data source and lets you build dashboards — panels showing exactly what you want to see. It also connects to Loki for logs, meaning one UI for everything.
+
+Loki stores logs. Every pod writes to stdout. Promtail collects those logs from the node and ships them to Loki. You query them with LogQL — same mental model as PromQL, but for log lines instead of numbers.
+
+The reason this stack is standard is that kube-prometheus-stack is a single Helm chart that installs Prometheus, Grafana, Alertmanager, and all the Kubernetes dashboards in one command. Loki-stack adds Loki and Promtail in another. Datadog does all of this too, but at a cost that rules it out for most teams and all learning environments. The ELK stack handles logs but adds Elasticsearch and Kibana on top of what you already have — separate configuration, separate query language, separate billing. The PLG stack (Prometheus + Loki + Grafana) runs on the same cluster you already have, uses one UI, and is what cloud-native companies actually run.
+
+---
+
+## Prerequisites
+
+**Complete first:** [06. CI-CD – Pipelines & GitOps](../06.%20CI-CD%20–%20Pipelines%20%26%20GitOps/README.md)
+
+You need a running cluster with a deployed webstore before observability makes sense. There is nothing to observe without a running application — and the CI-CD pipeline is what keeps it deployed and updated.
+
+---
+
+## The Running Example
+
+Every file and every lab is built around the webstore app running on Kubernetes.
+
+| What gets instrumented | What you observe |
+|---|---|
+| webstore-api pods | Request rate, error rate, response time, restart count |
+| webstore-db pods | Connection count, query time, memory usage |
+| webstore-frontend pods | CPU and memory, pod health |
+| Cluster nodes | Node CPU, memory, disk pressure |
+
+---
+
+## Where You Take the Webstore
+
+You arrive at Observability with the webstore running on Kubernetes and deploying automatically through ArgoCD. It works — but you have no visibility into whether it is working well. You cannot answer basic operational questions without manually running kubectl commands.
+
+You leave with Prometheus scraping every webstore pod, Grafana showing dashboards for the entire cluster and the webstore specifically, Loki holding every log line from every container, and an alert that fires when a pod crashes or when the API error rate spikes. You can answer any operational question about the webstore from Grafana without touching the cluster.
+
+---
+
+## The Three Pillars
+
+Observability is built on three data types. You need all three — each one answers a different question.
+
+**Metrics** answer: is something wrong, and how wrong is it? A number over time. CPU at 94%. 500 errors per minute. Pod restart count is 7. Metrics tell you a fire exists and how big it is.
+
+**Logs** answer: what happened, and when exactly? A timestamped event from inside the application. `[ERROR] database connection refused`. `[WARN] response time exceeded 2000ms`. Logs tell you what the fire looks like up close.
+
+**Traces** answer: which service caused it? The path a single request took through every service — how long each hop took, where it failed. Traces are covered conceptually here but not hands-on. Entry level does not implement distributed tracing, but you must know it exists and what problem it solves.
+
+---
+
+## Phases
+
+| # | Phase | Topics | Lab |
+|---|---|---|---|
+| 01 | [What is Observability](./01-what-is-observability/README.md) | Three pillars, metrics vs logs vs traces, the incident mental model | No lab |
+| 02 | [Prometheus](./02-prometheus/README.md) | Pull model, /metrics endpoint, PromQL essentials, alert rules, Alertmanager | [Lab 01](./observability-labs/01-prometheus-lab.md) |
+| 03 | [Grafana](./03-grafana/README.md) | Data source connection, pre-built K8s dashboards, custom panels, Grafana alerts | [Lab 02](./observability-labs/02-grafana-lab.md) |
+| 04 | [Loki](./04-loki/README.md) | Promtail log collection, LogQL basics, install via loki-stack Helm chart | [Lab 03](./observability-labs/03-loki-lab.md) |
+| 05 | [Incident Workflow](./05-incident-workflow/README.md) | Full loop: alert fires → Grafana dashboard → Prometheus metrics → Loki logs → fix | [Lab 04](./observability-labs/04-incident-lab.md) |
+
+---
+
+## Labs
+
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 01](./observability-labs/01-prometheus-lab.md) | Prometheus | Install kube-prometheus-stack via Helm, verify scraping, write four essential PromQL queries |
+| [Lab 02](./observability-labs/02-grafana-lab.md) | Grafana | Connect to Prometheus, explore pre-built dashboards, build a custom webstore-api panel, set a pod restart alert |
+| [Lab 03](./observability-labs/03-loki-lab.md) | Loki | Install loki-stack via Helm, connect Loki to Grafana, query webstore logs with LogQL |
+| [Lab 04](./observability-labs/04-incident-lab.md) | Full Incident Workflow | Break the webstore on purpose, follow the alert → dashboard → logs → fix loop end to end |
+
+---
+
+## What You Can Do After This
+
+- Explain the three observability pillars and what question each one answers
+- Install the full PLG stack on a Kubernetes cluster with two Helm commands
+- Query Prometheus with PromQL to answer real operational questions
+- Read and navigate the pre-built Kubernetes Grafana dashboards
+- Build a custom Grafana panel for a specific application metric
+- Query pod logs from Loki using LogQL without kubectl logs
+- Set an alert rule that fires when a pod crashes or error rate spikes
+- Follow the complete incident workflow from alert to resolution
+
+---
+
+## How to Use This
+
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
+
+---
+
+## What Comes Next
+
+→ [08. AWS – Cloud Infrastructure](../08.%20AWS%20–%20Cloud%20Infrastructure/README.md)
+
+Observability gives you visibility into the local cluster. AWS is where you take everything — the cluster, the database, the pipeline, the monitoring — and run it in production on managed infrastructure. Everything you have built so far runs on a laptop. AWS makes it run for real users.
+
+
+---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/01-intro-aws/README.md
+
+[Home](../README.md) |
+[Intro](../01-intro-aws/README.md) |
+[IAM](../02-iam/README.md) |
+[VPC](../03-vpc-subnet/README.md) |
+[EBS](../04-ebs/README.md) |
+[S3](../05-s3/README.md) |
+[EC2](../06-ec2/README.md) |
+[RDS](../07-rds/README.md) |
+[Load Balancing](../08-load-balancing-auto-scaling/README.md) |
+[CloudWatch](../09-cloudwatch-sns/README.md) |
+[Route 53](../10-route53/README.md) |
+[CLI](../11-cli-cloudformation/README.md) |
+[EKS](../12-eks/README.md)
+
+---
+
 # Introduction to AWS & Cloud Computing
 
 Every system we build — from a small web app to a global streaming platform — runs on three invisible pillars: compute, storage, and networking.
 AWS brings all three together as building blocks you can rent, combine, and scale instantly.
 Instead of buying servers or worrying about power, racks, and backups, you build with ready-made components — like assembling Lego blocks in the cloud.
 
-In this journey, we’ll move from the inside out — starting with the smallest unit of trust and control (IAM), then stepping outward to networks (VPC), storage (EBS, S3), compute (EC2), databases (RDS), and finally into automation, scaling, and infrastructure as code.
+In this journey, we'll move from the inside out — starting with the smallest unit of trust and control (IAM), then stepping outward to networks (VPC), storage (EBS, S3), compute (EC2), databases (RDS), and finally into automation, scaling, and infrastructure as code.
 
-By the end, you won’t just “know” AWS services — you’ll think like an architect who sees how they connect and why each piece matters.
+By the end, you won't just "know" AWS services — you'll think like an architect who sees how they connect and why each piece matters.
+
+---
 
 ## Table of Contents
 
@@ -20442,208 +21411,185 @@ By the end, you won’t just “know” AWS services — you’ll think like an 
 
 ---
 
-<details>
-<summary><strong>1. Why Cloud Computing?</strong></summary>
+## 1. Why Cloud Computing?
 
 ### The Problem Before Cloud
 
 In the pre-cloud era, companies bought **physical servers** and ran their own data centers.
 This meant:
 
-* High capital cost for hardware and maintenance.
-* Under-utilized resources (servers idling most of the time).
-* Slow scaling and complex upgrades.
+- High capital cost for hardware and maintenance.
+- Under-utilized resources (servers idling most of the time).
+- Slow scaling and complex upgrades.
 
 ### The Cloud Revolution
 
 Cloud Computing lets you **rent computing power, storage, and networks over the internet**.
 You pay only for what you use and scale instantly without owning hardware.
 
-| Concept             | Description                        | Example                           |
-| ------------------- | ---------------------------------- | --------------------------------- |
-| **Physical Server** | One machine per application        | HP or IBM server in a data center |
-| **Virtualization**  | Many VMs on one server             | 1 physical → 10 virtual machines  |
-| **Cloud Computing** | On-demand virtual resources online | Launch an EC2 instance on AWS     |
+| Concept | Description | Example |
+|---|---|---|
+| **Physical Server** | One machine per application | HP or IBM server in a data center |
+| **Virtualization** | Many VMs on one server | 1 physical → 10 virtual machines |
+| **Cloud Computing** | On-demand virtual resources online | Launch an EC2 instance on AWS |
 
-💡 **Analogy:** Owning a generator vs paying the electric bill — Cloud is on-demand power.
-
-</details>
+**Analogy:** Owning a generator vs paying the electric bill — Cloud is on-demand power.
 
 ---
 
-<details>
-<summary><strong>2. Why AWS?</strong></summary>
+## 2. Why AWS?
 
 ### AWS at a Glance (2025)
 
-* **Launch Year:** 2006 – first public cloud provider.
-* **Market Share:** ~60% of cloud jobs worldwide.
-* **Global Coverage:** 36 active Regions, 114 Availability Zones (AZs), 400+ Edge Locations.
-* **Upcoming Regions:** Mexico, Taiwan, New Zealand, Saudi Arabia.
+- **Launch Year:** 2006 – first public cloud provider.
+- **Market Share:** ~60% of cloud jobs worldwide.
+- **Global Coverage:** 36 active Regions, 114 Availability Zones (AZs), 400+ Edge Locations.
+- **Upcoming Regions:** Mexico, Taiwan, New Zealand, Saudi Arabia.
 
-| Provider         | Core Strength                         | Market Presence |
-| ---------------- | ------------------------------------- | --------------- |
-| **AWS**          | Largest service portfolio & ecosystem | ⭐⭐⭐⭐⭐           |
-| **Azure**        | Enterprise integration with Microsoft | ⭐⭐⭐             |
-| **Google Cloud** | AI / ML excellence                    | ⭐⭐              |
+| Provider | Core Strength | Market Presence |
+|---|---|---|
+| **AWS** | Largest service portfolio & ecosystem | #1 |
+| **Azure** | Enterprise integration with Microsoft | #2 |
+| **Google Cloud** | AI / ML excellence | #3 |
 
 ### Why Start with AWS
 
-* Standard in DevOps and Cloud roles.
-* Skills transfer easily to Azure & GCP.
-* Rich documentation and global community.
+- Standard in DevOps and Cloud roles.
+- Skills transfer easily to Azure & GCP.
+- Rich documentation and global community.
 
-💡 **Analogy:** Learning AWS is like learning English first — opens every door in tech.
-
-</details>
+**Analogy:** Learning AWS is like learning English first — opens every door in tech.
 
 ---
 
-<details>
-<summary><strong>3. Cloud Service Models</strong></summary>
+## 3. Cloud Service Models
 
 ### Theory & Notes
 
-* **IaaS (Infrastructure as a Service)**
+**IaaS (Infrastructure as a Service)**
+- **What it is:** The provider gives you raw infrastructure — virtual machines, storage, and networks — over the internet.
+- **You manage:** Operating systems, applications, runtime, security patches.
+- **Provider manages:** Physical hardware, data centers, and virtualization.
+- **Analogy:** Renting a piece of land — you build your own house but don't own the land.
+- **Examples:** AWS EC2, Google Compute Engine, Microsoft Azure VMs.
 
-  * **What it is:** The provider gives you raw infrastructure — virtual machines, storage, and networks — over the internet.
-  * **You manage:** Operating systems, applications, runtime, security patches.
-  * **Provider manages:** Physical hardware, data centers, and virtualization.
-  * **Analogy:** Renting a piece of land — you build your own house but don’t own the land.
-  * **Examples:** AWS EC2, Google Compute Engine, Microsoft Azure VMs.
+**PaaS (Platform as a Service)**
+- **What it is:** The provider gives you infrastructure plus platforms/tools (like databases, runtime environments).
+- **You manage:** Only your code and data.
+- **Provider manages:** Infrastructure, OS, runtime, scaling, and security.
+- **Analogy:** Renting a fully furnished apartment — you move in and start using it.
+- **Examples:** AWS Elastic Beanstalk, Google App Engine, Heroku.
 
-* **PaaS (Platform as a Service)**
-
-  * **What it is:** The provider gives you infrastructure plus platforms/tools (like databases, runtime environments).
-  * **You manage:** Only your code and data.
-  * **Provider manages:** Infrastructure, OS, runtime, scaling, and security.
-  * **Analogy:** Renting a fully furnished apartment — you move in and start using it.
-  * **Examples:** AWS Elastic Beanstalk, Google App Engine, Heroku.
-
-* **SaaS (Software as a Service)**
-
-  * **What it is:** Complete software delivered over the internet.
-  * **You manage:** Only usage and basic settings.
-  * **Provider manages:** Everything else.
-  * **Analogy:** Booking a hotel room — you enjoy the service without managing anything.
-  * **Examples:** Gmail, Google Drive, Dropbox, Salesforce, Zoom.
+**SaaS (Software as a Service)**
+- **What it is:** Complete software delivered over the internet.
+- **You manage:** Only usage and basic settings.
+- **Provider manages:** Everything else.
+- **Analogy:** Booking a hotel room — you enjoy the service without managing anything.
+- **Examples:** Gmail, Google Drive, Dropbox, Salesforce, Zoom.
 
 ---
 
-| Model    | Provider Manages                     | You Manage              | Real Examples           | Best For    |
-| -------- | ------------------------------------ | ----------------------- | ----------------------- | ----------- |
+| Model | Provider Manages | You Manage | Real Examples | Best For |
+|---|---|---|---|---|
 | **IaaS** | Hardware, Virtualization, Networking | OS, Runtime, Apps, Data | AWS EC2, Google Compute | Custom apps |
-| **PaaS** | Everything above + OS, Runtime       | Apps, Data              | AWS Beanstalk, Heroku   | Developers  |
-| **SaaS** | Everything                           | Only usage/config       | Gmail, Salesforce, Zoom | End users   |
+| **PaaS** | Everything above + OS, Runtime | Apps, Data | AWS Beanstalk, Heroku | Developers |
+| **SaaS** | Everything | Only usage/config | Gmail, Salesforce, Zoom | End users |
 
 ---
 
 ### Cloud Market Comparison
 
-| Cloud Provider        | Market Position  | Key Strengths                        | Job Market Share |
-| --------------------- | ---------------- | ------------------------------------ | ---------------- |
-| **AWS (Amazon)**      | #1 Market Leader | First-mover advantage, 200+ services | ~60%             |
-| **Azure (Microsoft)** | #2 Strong Second | Deep Windows/Office integration      | ~25%             |
-| **GCP (Google)**      | #3 Growing Fast  | Superior AI/ML tools                 | ~10%             |
-| **Others**            | Niche Players    | Specialized industry solutions       | ~5%              |
+| Cloud Provider | Market Position | Key Strengths | Job Market Share |
+|---|---|---|---|
+| **AWS (Amazon)** | #1 Market Leader | First-mover advantage, 200+ services | ~60% |
+| **Azure (Microsoft)** | #2 Strong Second | Deep Windows/Office integration | ~25% |
+| **GCP (Google)** | #3 Growing Fast | Superior AI/ML tools | ~10% |
+| **Others** | Niche Players | Specialized industry solutions | ~5% |
 
-* **High Demand:** AWS professionals are in the highest demand across industries.
-* **Better Compensation:** Higher salaries and strong job security.
-* **Skill Transferability:** Core AWS concepts work across clouds.
-* **Ecosystem Support:** Huge community and documentation base.
-
-<img src="images/service-control.jpg" alt="" width="600" height="375" />
-
-</details>
+- **High Demand:** AWS professionals are in the highest demand across industries.
+- **Better Compensation:** Higher salaries and strong job security.
+- **Skill Transferability:** Core AWS concepts work across clouds.
+- **Ecosystem Support:** Huge community and documentation base.
 
 ---
 
-<details>  
-<summary><strong>4. Creating an AWS Free Tier Account</strong></summary>
+## 4. Creating an AWS Free Tier Account
 
-### **Step-by-Step**
+### Step-by-Step
 
-1. Visit [aws.amazon.com](https://aws.amazon.com) → click **“Create an AWS Account.”**  
-2. Enter a valid email, strong password, and account name.  
-3. Add a **credit or debit card** (for identity verification — Free Tier doesn’t charge if you stay within limits).  
-4. Complete **SMS verification**.  
-5. Choose the **Free Tier plan** when prompted.  
+1. Visit [aws.amazon.com](https://aws.amazon.com) → click **"Create an AWS Account."**
+2. Enter a valid email, strong password, and account name.
+3. Add a **credit or debit card** (for identity verification — Free Tier doesn't charge if you stay within limits).
+4. Complete **SMS verification**.
+5. Choose the **Free Tier plan** when prompted.
 6. Sign in as **Root User** and open the **AWS Management Console**.
 
-🎥 *Visual Guide:* [How to Create an AWS Free Tier Account (YouTube)](https://www.youtube.com/results?search_query=create+aws+free+tier+account)
-
 ---
 
-### **Key Terms**
+### Key Terms
 
 | Term | Meaning | Example |
-|------|----------|----------|
+|---|---|---|
 | **Root User** | Full-access owner of the AWS account | Used for billing and account-level security |
-| **IAM User** | Secure account for daily operations | You’ll create this next |
+| **IAM User** | Secure account for daily operations | You'll create this next |
 | **Free Tier** | Limited-usage plan or credit system for new users | 750 hrs/month of EC2 micro (for older accounts) |
 
 ---
 
-### **⚙️ Free Tier Rules in 2025**
+### Free Tier Rules in 2025
 
-AWS introduced an updated Free Tier model on **July 15, 2025**.  
+AWS introduced an updated Free Tier model on **July 15, 2025**.
 The eligibility depends on **when your account was created**:
 
 | Account Created | What You Get | Duration | Notes |
-|-----------------|---------------|-----------|--------|
-| **Before July 15 2025** | Classic 12-month Free Tier | 12 months | Includes EC2 750 hrs/month, RDS 750 hrs/month, S3 5 GB, CloudWatch/Lambda “Always Free.” |
-| **On or After July 15 2025** | New **Credit-based Free Tier** | Variable | You get ≈ $100–$200 credits + “Always Free” services (no fixed 12 months). |
+|---|---|---|---|
+| **Before July 15 2025** | Classic 12-month Free Tier | 12 months | Includes EC2 750 hrs/month, RDS 750 hrs/month, S3 5 GB, CloudWatch/Lambda "Always Free." |
+| **On or After July 15 2025** | New **Credit-based Free Tier** | Variable | You get ≈ $100–$200 credits + "Always Free" services (no fixed 12 months). |
 
 ---
 
-### **🧭 2025 Free Tier Highlights (Classic Accounts)**
+### 2025 Free Tier Highlights (Classic Accounts)
 
 | Service | Free Limit | Duration |
-|----------|-------------|-----------|
+|---|---|---|
 | **EC2** | 750 hrs/month (t2.micro or t3.micro) | 12 months |
 | **RDS** | 750 hrs/month (MySQL, PostgreSQL, MariaDB, etc.) | 12 months |
 | **S3** | 5 GB Standard storage | 12 months |
 | **CloudWatch & Lambda** | Always Free within limits | Unlimited |
 | **Credits (varies)** | ≈ $100 welcome credit for new accounts | Promo-based |
 
-> 🔸 *If you signed up after July 15 2025, you’ll see a credit balance instead of time-based limits.  
-> Always check **Billing → Free Tier Dashboard** to confirm what applies to you.*
+If you signed up after July 15 2025, you'll see a credit balance instead of time-based limits.
+Always check **Billing → Free Tier Dashboard** to confirm what applies to you.
 
 ---
 
-### **Best Practices**
+### Best Practices
 
-- Use the **Root User** only for **billing** and **security** tasks.  
-- Enable **MFA (Multi-Factor Authentication)** on the Root User.  
-- Create an **IAM Admin User** for all daily operations.  
-- Regularly monitor usage in **Billing → Free Tier Dashboard** to avoid accidental charges.  
+- Use the **Root User** only for **billing** and **security** tasks.
+- Enable **MFA (Multi-Factor Authentication)** on the Root User.
+- Create an **IAM Admin User** for all daily operations.
+- Regularly monitor usage in **Billing → Free Tier Dashboard** to avoid accidental charges.
 
 ---
 
-<details>
-<summary><strong>📘 Note – AWS Free Tier Change (July 2025 Update)</strong></summary>
+### Note — AWS Free Tier Change (July 2025 Update)
 
-AWS modified its **Free Tier policy on July 15, 2025**.  
+AWS modified its **Free Tier policy on July 15, 2025**.
 Your benefits depend on **when your account was created**:
 
 | Account Created | Model | What You Get |
-|-----------------|--------|---------------|
-| **Before July 15 2025** | Classic Free Tier | 12 months of free usage for core services:<br>• EC2 750 hrs/month (t2.micro or t3.micro)<br>• RDS 750 hrs/month (MySQL/PostgreSQL/MariaDB)<br>• S3 5 GB Standard Storage<br>• CloudWatch & Lambda always free within limits |
-| **On or After July 15 2025** | Credit-based Free Tier | No fixed 12-month period — instead you receive ≈ $100 to $200 in credits plus ongoing “Always Free” services. |
+|---|---|---|
+| **Before July 15 2025** | Classic Free Tier | 12 months of free usage: EC2 750 hrs/month, RDS 750 hrs/month, S3 5 GB Standard Storage, CloudWatch & Lambda always free within limits |
+| **On or After July 15 2025** | Credit-based Free Tier | No fixed 12-month period — instead you receive ≈ $100 to $200 in credits plus ongoing "Always Free" services. |
 
-**Quick Reminder:**  
-- The “12-month Free Tier” wording applies **only** to accounts created before July 15 2025.  
-- Newer accounts follow the **credit model**, so verify your balance and limits under **Billing → Free Tier Dashboard** in the AWS Console.  
+**Quick Reminder:**
+- The "12-month Free Tier" wording applies **only** to accounts created before July 15 2025.
+- Newer accounts follow the **credit model**, so verify your balance and limits under **Billing → Free Tier Dashboard** in the AWS Console.
 - AWS may adjust credits or service quotas by region or promotion, so always confirm your exact limits.
-
-</details>
-
-</details>
 
 ---
 
-<details>
-<summary><strong>5. AWS Global Infrastructure (2025 Update)</strong></summary>
+## 5. AWS Global Infrastructure (2025 Update)
 
 ### Why It Exists
 
@@ -20654,417 +21600,467 @@ If one area goes down, others keep running — this is fault tolerance by design
 
 ### Core Building Blocks
 
-| Component                  | 2025 Count                         | Purpose                                  | Example                | Analogy                       |
-| -------------------------- | ---------------------------------- | ---------------------------------------- | ---------------------- | ----------------------------- |
-| **Region**                 | 36 active + 4 announced            | Geographic cluster of data centers       | `us-east-1` (Virginia) | Country                       |
-| **Availability Zone (AZ)** | 114 operational                    | Independent data center within a Region  | `us-east-1a`           | City                          |
-| **Edge Location**          | 400+                               | Delivers content fast via CloudFront CDN | Tokyo, Miami           | Courier hub                   |
-| **Local Zone**             | 20+                                | Brings compute closer to metro areas     | Los Angeles            | Neighborhood station          |
-| **Wavelength Zone**        | Telco partnerships (Verizon, KDDI) | Extends AWS to 5G networks               | AWS on Verizon 5G      | Mobile tower mini-data center |
+| Component | 2025 Count | Purpose | Example | Analogy |
+|---|---|---|---|---|
+| **Region** | 36 active + 4 announced | Geographic cluster of data centers | `us-east-1` (Virginia) | Country |
+| **Availability Zone (AZ)** | 114 operational | Independent data center within a Region | `us-east-1a` | City |
+| **Edge Location** | 400+ | Delivers content fast via CloudFront CDN | Tokyo, Miami | Courier hub |
+| **Local Zone** | 20+ | Brings compute closer to metro areas | Los Angeles | Neighborhood station |
+| **Wavelength Zone** | Telco partnerships (Verizon, KDDI) | Extends AWS to 5G networks | AWS on Verizon 5G | Mobile tower mini-data center |
 
 ---
 
 ### How They Work Together
 
-* **Regions** are independent geographic areas.
-* Each Region has 2–6 **AZs**, each with separate power & networking.
-* **Edge Locations** serve cached data close to users for speed.
-* **Local Zones** handle low-latency tasks like gaming or streaming.
+- **Regions** are independent geographic areas.
+- Each Region has 2–6 **AZs**, each with separate power & networking.
+- **Edge Locations** serve cached data close to users for speed.
+- **Local Zones** handle low-latency tasks like gaming or streaming.
 
-📘 **Example:** An EC2 instance in `us-east-1` runs inside an AZ (e.g., `us-east-1a`).
+**Example:** An EC2 instance in `us-east-1` runs inside an AZ (e.g., `us-east-1a`).
 You can replicate it to `us-east-1b` for high availability.
 
 ---
 
 ### Best Practices
 
-| Goal                  | Recommendation                        | Why                                |
-| --------------------- | ------------------------------------- | ---------------------------------- |
-| **High Availability** | Use multiple AZs in the same Region   | One AZ failure won’t stop your app |
-| **Low Latency**       | Choose Region closest to end-users    | Faster responses                   |
-| **Data Compliance**   | Store data in legally approved Region | Meets local laws                   |
-| **Cost Optimization** | Compare Region pricing                | Rates vary globally                |
+| Goal | Recommendation | Why |
+|---|---|---|
+| **High Availability** | Use multiple AZs in the same Region | One AZ failure won't stop your app |
+| **Low Latency** | Choose Region closest to end-users | Faster responses |
+| **Data Compliance** | Store data in legally approved Region | Meets local laws |
+| **Cost Optimization** | Compare Region pricing | Rates vary globally |
 
 ---
 
 ### Real-World Analogy
 
-Think of AWS like **Netflix’s global distribution system**:
+Think of AWS like **Netflix's global distribution system**:
 
-* **Regions** = big production campuses.
-* **AZs** = buildings inside those campuses.
-* **Edge Locations** = servers in your city’s ISP delivering content instantly.
+- **Regions** = big production campuses.
+- **AZs** = buildings inside those campuses.
+- **Edge Locations** = servers in your city's ISP delivering content instantly.
 
-So when someone in India streams a movie, it’s served from the Mumbai Edge Location within the India Region — not from Virginia.
+So when someone in India streams a movie, it's served from the Mumbai Edge Location within the India Region — not from Virginia.
 
-✅ **Key Takeaway:** AWS’s superpower is its **redundancy + reach** — a web of Regions, AZs, and Edge Locations ensuring speed and reliability everywhere.
-
-</details>
+**Key Takeaway:** AWS's superpower is its **redundancy + reach** — a web of Regions, AZs, and Edge Locations ensuring speed and reliability everywhere.
 
 ---
----
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 02-iam
+
+## The Webstore on AWS
+
+The webstore that has been running locally on Minikube becomes a production system across AWS services. Every file after this one builds a piece of that production system.
+
+| Tool | AWS Service | What it does for the webstore |
+|---|---|---|
+| Compute | EC2 + EKS | Runs webstore-api and webstore-frontend pods |
+| Database | RDS PostgreSQL | Replaces the webstore-db container |
+| Storage | S3 | Holds product images, backups, Terraform state |
+| Block Storage | EBS | Backs RDS and EC2 root volumes |
+| Network | VPC + Subnets | Isolates web, api, and db tiers |
+| Access | IAM | webstore-api role accesses S3 and ECR |
+| Load Balancer | ALB | Routes traffic to webstore-api and frontend |
+| Monitoring | CloudWatch | Alarms on CPU, 5XX errors, RDS storage |
+| DNS | Route 53 | Points webstore.com to the ALB |
+| Registry | ECR | Stores the webstore-api container image |
+
 ---
 
-[Home](../README.md) | 
-[Intro to AWS](../01-intro-aws/README.md) | 
-[IAM](../02-iam/README.md) | 
-[VPC & Subnet](../03-vpc-subnet/README.md) | 
-[EBS](../04-ebs/README.md) | 
-[EFS](../05-efs/README.md) | 
-[S3](../06-s3/README.md) | 
-[EC2](../07-ec2/README.md) | 
-[RDS](../08-rds/README.md) | 
-[Load Balancing & Auto Scaling](../09-Load-balancing-auto-scaling/README.md) | 
-[CloudWatch & SNS](../10-cloudwatch-sns/README.md) | 
-[Lambda](../11-lambda/README.md) | 
-[Elastic Beanstalk](../12-elastic-beanstalk/README.md) | 
-[Route 53](../13-route53/README.md) | 
-[CLI + CloudFormation](../14-cli-cloudformation/README.md)
+## What You Can Do After This
+
+- Explain IaaS, PaaS, and SaaS with AWS examples of each
+- Describe Regions, AZs, and Edge Locations and how they relate
+- Create an AWS Free Tier account and secure it with MFA and an IAM admin user
+- Explain why multi-AZ deployments matter and what fails if you skip them
+
+---
+
+## What Comes Next
+
+→ [02. IAM](../02-iam/README.md)
+
+AWS is a building full of services. IAM decides who gets the keys and which doors they can open.
+
+
+---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/02-iam/README.md
+
+[Home](../README.md) |
+[Intro](../01-intro-aws/README.md) |
+[IAM](../02-iam/README.md) |
+[VPC](../03-vpc-subnet/README.md) |
+[EBS](../04-ebs/README.md) |
+[S3](../05-s3/README.md) |
+[EC2](../06-ec2/README.md) |
+[RDS](../07-rds/README.md) |
+[Load Balancing](../08-load-balancing-auto-scaling/README.md) |
+[CloudWatch](../09-cloudwatch-sns/README.md) |
+[Route 53](../10-route53/README.md) |
+[CLI](../11-cli-cloudformation/README.md) |
+[EKS](../12-eks/README.md)
+
+---
 
 # IAM (Identity and Access Management)
 
-We’ve seen what AWS really is — a planet of servers, storage, and networks you can rent on demand.
+We've seen what AWS really is — a planet of servers, storage, and networks you can rent on demand.
 But before we start building anything on it, we need to decide who gets the keys and what doors they can open.
-That’s where IAM (Identity and Access Management) steps in — the service that defines people, roles, and boundaries inside this cloud world.
+That's where IAM (Identity and Access Management) steps in — the service that defines people, roles, and boundaries inside this cloud world.
 
 ---
 
 ## Table of Contents
-1. [IAM Concepts](#iam-concepts)
-2. [IAM Hands-On (Console)](#iam-hands-on-console)
+
+1. [IAM Concepts](#1-iam-concepts)
+2. [IAM Hands-On (Console)](#2-iam-hands-on-console)
 
 ---
 
-<details>
-<summary><strong>1. IAM Concepts</strong></summary>
+## 1. IAM Concepts
 
 ---
 
-## 1. Why Do We Need IAM?
+### Why Do We Need IAM?
 
-Imagine AWS as a huge company building full of resources — EC2 machines, S3 storage rooms, databases, and more.  
-Without IAM, **anyone with the root account** could wander around, touch everything, and accidentally delete critical servers.  
-That’s where IAM steps in — it’s your **security department**, giving each person a personalized keycard that unlocks only what they need.
-
----
-
-### 2. Analogy
-
-Think of **AWS as a company building**:  
-- The **Root user** is the **company owner** — full control over everything.  
-- **IAM Users** are **employees** with their own ID cards to enter the building.  
-- **Groups** are **departments** like *Developers* or *Finance*, each with specific duties.  
-- **Policies** are the **rules** that define what each department or user can access.  
-- **Roles** are **temporary visitor passes** for people or systems that need short-term access.  
-- **MFA** is like a **security guard** asking for a second proof before entry.  
-
-> 🧠 IAM is the security department of your AWS company — it decides *who gets in*, *what doors they can open*, and *how safely they can move around.*
-
+Imagine AWS as a huge company building full of resources — EC2 machines, S3 storage rooms, databases, and more.
+Without IAM, **anyone with the root account** could wander around, touch everything, and accidentally delete critical servers.
+That's where IAM steps in — it's your **security department**, giving each person a personalized keycard that unlocks only what they need.
 
 ---
 
-## 3. Concept Understanding
+### Analogy
+
+Think of **AWS as a company building**:
+- The **Root user** is the **company owner** — full control over everything.
+- **IAM Users** are **employees** with their own ID cards to enter the building.
+- **Groups** are **departments** like *Developers* or *Finance*, each with specific duties.
+- **Policies** are the **rules** that define what each department or user can access.
+- **Roles** are **temporary visitor passes** for people or systems that need short-term access.
+- **MFA** is like a **security guard** asking for a second proof before entry.
+
+IAM is the security department of your AWS company — it decides *who gets in*, *what doors they can open*, and *how safely they can move around.*
+
+---
 
 ### IAM is Global
-IAM isn’t tied to any AWS region — the settings apply across all regions.
 
-### 🧍 Users
-- **Users** represent individual people or specific services that need access to your AWS account.  
-- Each user gets their own **credentials** — a unique username, password, and (optionally) access keys for programmatic access.  
-- This separation keeps actions traceable to specific individuals, improving **security** and **accountability**.  
-- Example:  
-  - `alice` might use the console to manage EC2 instances.  
-  - `build-server` (a service user) might use access keys to deploy applications automatically.  
+IAM isn't tied to any AWS region — the settings apply across all regions.
+
+---
+
+### Users
+
+- **Users** represent individual people or specific services that need access to your AWS account.
+- Each user gets their own **credentials** — a unique username, password, and (optionally) access keys for programmatic access.
+- This separation keeps actions traceable to specific individuals, improving **security** and **accountability**.
+- Example:
+  - `alice` might use the console to manage EC2 instances.
+  - `build-server` (a service user) might use access keys to deploy applications automatically.
 - **Best practice:** *One user = One human or service.* Never share credentials between people.
 
+---
 
-### 👥 Groups
-- **Groups** are collections of IAM users who share similar job roles or responsibilities.  
-- Instead of assigning permissions to each user one by one, you assign them to a **group** — and all members automatically inherit those permissions.  
-- This makes access control **organized**, **scalable**, and **easy to audit**.  
-- Example:  
-  - The `Developers` group has the **AmazonEC2FullAccess** policy.  
-  - Any new developer added to the group instantly gets EC2 permissions — no extra setup needed.  
+### Groups
+
+- **Groups** are collections of IAM users who share similar job roles or responsibilities.
+- Instead of assigning permissions to each user one by one, you assign them to a **group** — and all members automatically inherit those permissions.
+- This makes access control **organized**, **scalable**, and **easy to audit**.
+- Example:
+  - The `Developers` group has the **AmazonEC2FullAccess** policy.
+  - Any new developer added to the group instantly gets EC2 permissions — no extra setup needed.
 - A user can belong to **multiple groups** (e.g., `Developers` and `Audit-Team`), combining permissions from both.
 
-<img src="images/IAM.png" alt="IAM" width="600" height="150" />
+---
 
-### 📜 Policies
-- **Policies** are permission documents written in **JSON** that define what actions are **allowed** or **denied** in AWS.  
-- They decide **who can do what** and on **which resources**.  
-- Policies can be attached to **users**, **groups**, or **roles** to grant specific levels of access.  
-- Each policy is made up of key fields:  
-  - **Effect:** Allow or Deny  
-  - **Action:** The specific AWS service operations (e.g., `ec2:StartInstances`)  
-  - **Resource:** The AWS resources those actions apply to  
-- Example: A “ReadOnlyAccess” policy allows viewing resources but blocks any changes.
+### Policies
 
-<img src="images/IAM_Policies_inheritance.png" alt="IAM" width="600" height="300" /> 
-
-### 🧩 Roles
-
-- **What it is:**  
-  An **IAM Role** is a **temporary identity** that carries specific permissions.  
-  Unlike IAM Users, roles **don’t have long-term credentials** (no password or access keys).  
-  Instead, AWS issues **short-lived security tokens** whenever a role is **assumed**, and they expire automatically.
+- **Policies** are permission documents written in **JSON** that define what actions are **allowed** or **denied** in AWS.
+- They decide **who can do what** and on **which resources**.
+- Policies can be attached to **users**, **groups**, or **roles** to grant specific levels of access.
+- Each policy is made up of key fields:
+  - **Effect:** Allow or Deny
+  - **Action:** The specific AWS service operations (e.g., `ec2:StartInstances`)
+  - **Resource:** The AWS resources those actions apply to
+- Example: A "ReadOnlyAccess" policy allows viewing resources but blocks any changes.
 
 ---
 
-- **Why we need it:**  
-  Storing permanent access keys inside applications or servers is unsafe.  
-  Roles solve this by letting AWS generate **temporary credentials** automatically, which are **rotated** and **expire** after a short duration.  
-  This greatly reduces the risk of compromised keys.
+### Roles
+
+**What it is:**
+An **IAM Role** is a **temporary identity** that carries specific permissions.
+Unlike IAM Users, roles **don't have long-term credentials** (no password or access keys).
+Instead, AWS issues **short-lived security tokens** whenever a role is **assumed**, and they expire automatically.
+
+**Why we need it:**
+Storing permanent access keys inside applications or servers is unsafe.
+Roles solve this by letting AWS generate **temporary credentials** automatically, which are **rotated** and **expire** after a short duration.
+This greatly reduces the risk of compromised keys.
+
+**How it works (simplified flow):**
+1. The user, service, or application requests to **assume** a role.
+2. **AWS STS** (Security Token Service) issues temporary credentials — `AccessKeyId`, `SecretAccessKey`, and `SessionToken`.
+3. The entity uses these credentials to access AWS resources.
+4. Credentials **expire automatically** (default: 1 hour), removing access safely.
+
+**Why it's safer:**
+- No permanent credentials stored inside applications or servers.
+- Temporary, auto-rotating tokens limit the blast radius if compromised.
+- Enforces **least privilege** and **session-based access control**.
 
 ---
-- **How it works (simplified flow):**  
-  1. The user, service, or application requests to **assume** a role.  
-  2. **AWS STS** issues temporary credentials — `AccessKeyId`, `SecretAccessKey`, and `SessionToken`.  
-  3. The entity uses these credentials to access AWS resources.  
-  4. Credentials **expire automatically** (default: 1 hour), removing access safely.
 
----
-
-- **Why it’s safer:**  
-  - No permanent credentials stored inside applications or servers.  
-  - Temporary, auto-rotating tokens limit the blast radius if compromised.  
-  - Enforces **least privilege** and **session-based access control**.
-
----
-### 🎬 Simplified Analogy
+### Simplified Analogy
 
 Imagine a movie set:
 
-- **IAM User** = the **actor** (their normal self)  
-- **IAM Role** = the **costume** (grants temporary powers for that scene)  
-- **STS (Security Token Service)** = the **wardrobe department** that issues the costume and takes it back later  
+- **IAM User** = the **actor** (their normal self)
+- **IAM Role** = the **costume** (grants temporary powers for that scene)
+- **STS (Security Token Service)** = the **wardrobe department** that issues the costume and takes it back later
 
-Actors — whether humans or AWS services — can wear different **costumes (roles)** depending on what the **scene (task)** needs.  
+Actors — whether humans or AWS services — can wear different **costumes (roles)** depending on what the **scene (task)** needs.
 When the scene ends, the costume is returned and access expires automatically.
 
 ---
-- **Who can wear Roles:**  
 
-  | Who Wears It | Description | Example |
-  |---------------|--------------|----------|
-  | 🧍 **IAM User (Human)** | A person manually switches to a different role for temporary elevated permissions. | A developer switches to `AdminRole` for maintenance, then returns to normal user access. |
-  | ⚙️ **AWS Service** | A service automatically assumes a role to access other AWS resources securely. | An **EC2 instance** assumes a role to read/write data in an **S3 bucket** without storing credentials. |
-  | 🔁 **Another AWS Account** | Roles can be shared between AWS accounts through a **trust policy** (cross-account access). | **Account A** allows **Account B** to assume a role to manage shared infrastructure. |
-  | 🤖 **Application / Script / CLI** | Code or automation pipelines assume roles using **AWS STS (Security Token Service)**. | A **CI/CD pipeline** assumes a `DeployRole` to push new versions to production. |
+**Who can assume Roles:**
 
----
+| Who Wears It | Description | Example |
+|---|---|---|
+| **IAM User (Human)** | A person manually switches to a different role for temporary elevated permissions. | A developer switches to `AdminRole` for maintenance, then returns to normal user access. |
+| **AWS Service** | A service automatically assumes a role to access other AWS resources securely. | An **EC2 instance** assumes a role to read/write data in an **S3 bucket** without storing credentials. |
+| **Another AWS Account** | Roles can be shared between AWS accounts through a **trust policy** (cross-account access). | **Account A** allows **Account B** to assume a role to manage shared infrastructure. |
+| **Application / Script / CLI** | Code or automation pipelines assume roles using **AWS STS**. | A **CI/CD pipeline** assumes a `DeployRole` to push new versions to production. |
 
-- **Best Practice:**  
-  > Humans use **Users**. AWS services use **Roles**. Always apply the **least privilege** principle.  
-
----
-
-- **Coming up next:**  
-  > We’ll see IAM Roles *in action* in the **EC2** and **Lambda** sections — where services automatically assume roles to access other AWS resources securely.
+**Best Practice:**
+Humans use **Users**. AWS services use **Roles**. Always apply the **least privilege** principle.
 
 ---
 
-### ⚙️ In Action Example: EC2 Using a Role to Access S3
+### In Action Example: webstore-api EC2 Using a Role to Access S3
 
-1. **Create a Role**  
-   - Example permission:  
-     ```json
-     {
-       "Effect": "Allow",
-       "Action": "s3:GetObject",
-       "Resource": "arn:aws:s3:::my-bucket/*"
-     }
-     ```
-   - This policy allows reading objects from the S3 bucket.
+The webstore-api needs to read product images from S3 and pull container images from ECR.
+Instead of embedding access keys in the application, you create an IAM role and attach it to the EC2 instance.
 
-2. **Attach the Role to an EC2 Instance**  
-   - When the instance launches, it automatically **assumes** this role.
+**1. Create the Role**
 
-3. **Automatic Credential Retrieval**  
-   - Inside the EC2 instance, your application (Python script, AWS CLI, etc.) can now access S3 **without storing access keys**.  
-   - Behind the scenes, the instance retrieves **temporary credentials** through the **Instance Metadata Service (IMDS)** at:
-     ```
-     http://169.254.169.254/latest/meta-data/iam/security-credentials/
-     ```
+The role has two inline policies:
 
-4. **Result:**  
-   - The EC2 instance can safely download or upload to the S3 bucket.  
-   - Credentials are **temporary**, **auto-rotated**, and **never hard-coded** inside your code.
+```json
+{
+  "Effect": "Allow",
+  "Action": "s3:GetObject",
+  "Resource": "arn:aws:s3:::webstore-assets/*"
+}
+```
 
-> 🧠 This demonstrates the core purpose of IAM Roles — **secure, short-lived, and automatic access** between AWS services without manually handling keys.
+```json
+{
+  "Effect": "Allow",
+  "Action": [
+    "ecr:GetAuthorizationToken",
+    "ecr:BatchGetImage",
+    "ecr:GetDownloadUrlForLayer"
+  ],
+  "Resource": "*"
+}
+```
+
+**2. Attach the Role to the EC2 Instance**
+When the webstore-api instance launches, it automatically **assumes** this role.
+
+**3. Automatic Credential Retrieval**
+Inside the EC2 instance, your application (Python script, AWS CLI, etc.) can now access S3 **without storing access keys**.
+Behind the scenes, the instance retrieves **temporary credentials** through the **Instance Metadata Service (IMDS)** at:
+
+```
+http://169.254.169.254/latest/meta-data/iam/security-credentials/webstore-api-role
+```
+
+**4. Result:**
+- The webstore-api can safely read product images from S3.
+- The webstore-api can pull its own container image from ECR.
+- Credentials are **temporary**, **auto-rotated**, and **never hard-coded** inside your code.
+
+This demonstrates the core purpose of IAM Roles — **secure, short-lived, and automatic access** between AWS services without manually handling keys.
 
 ---
 
-### 🏁 Best Practices
-1. **Never use root account** for daily tasks  
-2. **Use groups** to manage permissions at scale  
-3. **Regularly audit permissions** (remove unused access)  
-4. **Enable MFA** for all users  
+### Best Practices
+
+1. **Never use root account** for daily tasks
+2. **Use groups** to manage permissions at scale
+3. **Regularly audit permissions** (remove unused access)
+4. **Enable MFA** for all users
 5. **Apply least privilege principle**
 
-</details>
-
 ---
 
-<details>
-<summary><strong>2. IAM Hands-On (Console)</strong></summary>
+## 2. IAM Hands-On (Console)
 
----
-
-### 🎯 Excerise:
+**Exercise:**
 Create an IAM user, add it to a group, attach policies, test access, and secure it with MFA.
 
 ---
 
-### **Step 1: Open IAM Console**
-1. Log in as the **root user** → [https://aws.amazon.com/console](https://aws.amazon.com/console)  
-2. Search for **IAM** in the service bar.  
-3. Observe the **IAM Dashboard** — it shows account summary, MFA status, and security recommendations.  
+### Step 1: Open IAM Console
 
-📸 Screenshot →   
-<img src="images/IAM_Dashboard.png" />
+1. Log in as the **root user** → [https://aws.amazon.com/console](https://aws.amazon.com/console)
+2. Search for **IAM** in the service bar.
+3. Observe the **IAM Dashboard** — it shows account summary, MFA status, and security recommendations.
 
----
-
-### **Step 2: Create a New User**
-1. In the left sidebar → click **Users → Add users**.  
-
-📸 Screenshot →     
-<img src="images/IAM_adduser.png" />   
-
-2. Enter username: `devops-user`.  
-3. Check **Provide user access to the AWS Management Console**.  
-4. Choose **Custom password**, uncheck “Require password reset.”  
-5. Click **Next**.  
-
-📸 Screenshot →   
-<img src="images/IAM_userdetials.png" />
+Screenshot reference → `images/IAM_Dashboard.png`
 
 ---
 
-### **Step 3: Create a Group and Assign Permissions**
-1. Choose **Add user to group → Create group.**  
+### Step 2: Create a New User
 
-📸 Screenshot →     
-<img src="images/IAM_creatgroup.png" />
+1. In the left sidebar → click **Users → Add users**.
 
-2. Name the group: `DevOps-Admins`.  
-3. From the policy list, select **AdministratorAccess.**  
-   - This gives full permissions across AWS services — ideal for admin-level users.  
-   - *(For learning environments, you can later replace this with a custom least-privilege policy.)*  
+Screenshot reference → `images/IAM_adduser.png`
+
+2. Enter username: `devops-user`.
+3. Check **Provide user access to the AWS Management Console**.
+4. Choose **Custom password**, uncheck "Require password reset."
+5. Click **Next**.
+
+Screenshot reference → `images/IAM_userdetails.png`
+
+---
+
+### Step 3: Create a Group and Assign Permissions
+
+1. Choose **Add user to group → Create group.**
+
+Screenshot reference → `images/IAM_creatgroup.png`
+
+2. Name the group: `DevOps-Admins`.
+3. From the policy list, select **AdministratorAccess.**
+   - This gives full permissions across AWS services — ideal for admin-level users.
+   - *(For learning environments, you can later replace this with a custom least-privilege policy.)*
 4. Click **Create group** → select it → click **Next** → **Create user.**
 
-📸 Screenshot →     
-<img src="images/IAM_groupcreation.png" />
+Screenshot reference → `images/IAM_groupcreation.png`
 
-5. After the user is created, you’ll see the **Retrieve password** screen.  
-   It displays your **sign-in URL**, **username**, and **temporary password**.  
+5. After the user is created, you'll see the **Retrieve password** screen.
+   It displays your **sign-in URL**, **username**, and **temporary password**.
 
-📸 Screenshot →  
-<img src="images/IAM_Retrieve password.png" />
+Screenshot reference → `images/IAM_Retrieve_password.png`
 
-6. Click **“Download .csv file.”**  
-   - This file contains your new user’s **username**, **password**, and **sign-in URL.**  
-   - Save it somewhere **secure** (e.g., a private folder, not GitHub or shared drives).  
-   - ⚠️ You will **not** be able to view this password again later.
+6. Click **"Download .csv file."**
+   - This file contains your new user's **username**, **password**, and **sign-in URL.**
+   - Save it somewhere **secure** (e.g., a private folder, not GitHub or shared drives).
+   - You will **not** be able to view this password again later.
 
-7. *(Optional but Recommended)* — Click **“Email sign-in instructions.”**  
+7. *(Optional but Recommended)* — Click **"Email sign-in instructions."**
    - This opens an email template to send login details securely to yourself.
 
-8. Click **“Return to users list.”**  
-   - You’ll be redirected to the **IAM → Users** page.  
-   - You’ll now see your new user **`Devops_Admin`** listed successfully.
+8. Click **"Return to users list."**
+   - You'll be redirected to the **IAM → Users** page.
+   - You'll now see your new user **`Devops_Admin`** listed successfully.
+
 ---
 
-### **Step 4: Log In as IAM User**
-1. Copy the **Sign-in URL** displayed after user creation (looks like:  
-   `https://<account-id>.signin.aws.amazon.com/console`).  
-2. Log out from root and log in with:  
-   - Username: `Devops_Admin`  
-   - Password: your custom password  
+### Step 4: Log In as IAM User
+
+1. Copy the **Sign-in URL** displayed after user creation (looks like:
+   `https://<account-id>.signin.aws.amazon.com/console`).
+2. Log out from root and log in with:
+   - Username: `Devops_Admin`
+   - Password: your custom password
 3. You should now see the full AWS Console as an IAM Administrator.
-  
-📸 Screenshot →    
-<img src="images/IAM_devopsadmin.png" />
+
+Screenshot reference → `images/IAM_devopsadmin.png`
+
 ---
 
-### **Step 5: Test Permissions**
+### Step 5: Test Permissions
 
-1. Open **EC2**, **S3**, **IAM**, and other services — your `Devops_Admin` user should have **full access** to all AWS services.  
-2. To test least privilege, create another IAM user with restricted access:  
-   - Go to **IAM → Users → Add users.**  
-   - Enter username: `teja`  
-   - Provide console access (same as before).  
-   - Set a **custom password** (optional: uncheck “Require password reset”).  
+1. Open **EC2**, **S3**, **IAM**, and other services — your `Devops_Admin` user should have **full access** to all AWS services.
+2. To test least privilege, create another IAM user with restricted access:
+   - Go to **IAM → Users → Add users.**
+   - Enter username: `teja`
+   - Provide console access (same as before).
+   - Set a **custom password** (optional: uncheck "Require password reset").
    - Click **Next.**
-3. Choose **Add user to group → Create group.**  
-   - Name the group: `Developers`  
-   - Attach the following **AWS Managed Policies:**  
-     - `AmazonEC2ReadOnlyAccess`  
-     - `AmazonS3ReadOnlyAccess`  
-     - `IAMReadOnlyAccess`  
+3. Choose **Add user to group → Create group.**
+   - Name the group: `Developers`
+   - Attach the following **AWS Managed Policies:**
+     - `AmazonEC2ReadOnlyAccess`
+     - `AmazonS3ReadOnlyAccess`
+     - `IAMReadOnlyAccess`
    - Click **Create group → Next → Create user.**
 
-📸 Screenshot →   
-<img src="images/group_dev.png">
+Screenshot reference → `images/group_dev.png`
 
-4. Log in using the new user credentials for `teja`:  
-   - **Sign-in URL:** `https://735189763643.signin.aws.amazon.com/console`  
-   - **Username:** `teja`  
+4. Log in using the new user credentials for `teja`:
+   - **Sign-in URL:** `https://735189763643.signin.aws.amazon.com/console`
+   - **Username:** `teja`
    - **Password:** (from your downloaded .csv file)
-5. Test permissions:  
-   - Open **EC2**, **S3**, and **IAM** — you should be able to **view** resources but **cannot create, edit, or delete** them.  
+5. Test permissions:
+   - Open **EC2**, **S3**, and **IAM** — you should be able to **view** resources but **cannot create, edit, or delete** them.
    - This confirms that your `Developers` group and Read-Only policies are working correctly.
 
-📸 Screenshot →   
-<img src="images/access_denied.png">
+Screenshot reference → `images/access_denied.png`
 
 6. Switch back to your `Devops_Admin` user to regain full permissions.
 
-
-✅ **Result:**  
-You now have two properly configured IAM users —  
-- **`Devops_Admin`** → Full administrative access  
+**Result:**
+You now have two properly configured IAM users —
+- **`Devops_Admin`** → Full administrative access
 - **`teja` (Developers group)** → Read-only access across EC2, S3, and IAM
 
 ---
 
-### **Step 6: Enable MFA for Extra Security**
-1. Back in IAM → select your `devops-admin` user.  
-2. Go to **Security credentials → Assign MFA device.**  
+### Step 6: Enable MFA for Extra Security
 
-📸 Screenshot →   
-<img src="images/IAM_assign_MFA.png">
+1. Back in IAM → select your `devops-admin` user.
+2. Go to **Security credentials → Assign MFA device.**
 
-3. Choose **Virtual MFA** → scan the QR code using Google Authenticator or Authy.  
-4. Enter two consecutive codes → **Assign MFA.**  
+Screenshot reference → `images/IAM_assign_MFA.png`
 
-📸 Screenshot →   
-<img src="images/DuoPush.png">
-<img src="images/MFA_Code.png">
+3. Choose **Virtual MFA** → scan the QR code using Google Authenticator or Authy.
+4. Enter two consecutive codes → **Assign MFA.**
 
-</details>
+Screenshot reference → `images/DuoPush.png` and `images/MFA_Code.png`
 
 ---
+
+## What You Can Do After This
+
+- Create IAM users, groups, and policies correctly
+- Attach an IAM role to an EC2 instance so it accesses S3 and ECR without hardcoded credentials
+- Explain the difference between users, groups, roles, and policies
+- Apply the least privilege principle across a team
+- Enable MFA on root and admin users
+
 ---
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 03-vpc-subnet
+
+## What Comes Next
+
+→ [03. VPC & Subnets](../03-vpc-subnet/README.md)
+
+IAM decided who gets access. VPC decides where that access works — your private, isolated network inside AWS.
+
+
 ---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/03-vpc-subnet/README.md
 
 [Home](../README.md) |
-[Intro to AWS](../01-intro-aws/README.md) |
+[Intro](../01-intro-aws/README.md) |
 [IAM](../02-iam/README.md) |
-[VPC & Subnet](../03-vpc-subnet/README.md) |
+[VPC](../03-vpc-subnet/README.md) |
 [EBS](../04-ebs/README.md) |
-[EFS](../05-efs/README.md) |
-[S3](../06-s3/README.md) |
-[EC2](../07-ec2/README.md) |
-[RDS](../08-rds/README.md) |
-[Load Balancing & Auto Scaling](../09-Load-balancing-auto-scaling/README.md) |
-[CloudWatch & SNS](../10-cloudwatch-sns/README.md) |
-[Lambda](../11-lambda/README.md) |
-[Elastic Beanstalk](../12-elastic-beanstalk/README.md) |
-[Route 53](../13-route53/README.md) |
-[CLI + CloudFormation](../14-cli-cloudformation/README.md)
+[S3](../05-s3/README.md) |
+[EC2](../06-ec2/README.md) |
+[RDS](../07-rds/README.md) |
+[Load Balancing](../08-load-balancing-auto-scaling/README.md) |
+[CloudWatch](../09-cloudwatch-sns/README.md) |
+[Route 53](../10-route53/README.md) |
+[CLI](../11-cli-cloudformation/README.md) |
+[EKS](../12-eks/README.md)
+
+---
 
 # AWS VPC & Subnets
 
@@ -21072,10 +22068,10 @@ You now have two properly configured IAM users —
 
 IAM decided **who** gets access. VPC decides **where** that access works — your private, isolated network inside AWS. This file covers how to design a VPC from scratch, plan subnets correctly, route traffic between tiers, and secure every layer with Security Groups and NACLs. By the end you will be able to design a production-ready multi-tier AWS network and understand exactly what happens at every hop inside it.
 
-> **Foundation:** The networking concepts behind everything here — IP addressing, CIDR math, NAT, stateful vs stateless firewalls — are covered in depth in the [Networking Fundamentals](../../03.%20Networking%20–%20Foundations/README.md) folder. Specifically:
-> - Subnets and CIDR: [05 — Subnets & CIDR](../../03.%20Networking%20–%20Foundations/05-subnets-cidr/README.md)
-> - NAT concept: [07 — NAT & Translation](../../03.%20Networking%20–%20Foundations/07-nat/README.md)
-> - Stateful vs Stateless firewalls: [09 — Firewalls & Security](../../03.%20Networking%20–%20Foundations/09-firewalls/README.md)
+**Foundation:** The networking concepts behind everything here — IP addressing, CIDR math, NAT (Network Address Translation), stateful vs stateless firewalls — are covered in depth in the [Networking Fundamentals](../../03.%20Networking%20–%20Foundations/README.md) folder. Specifically:
+- Subnets and CIDR: [05 — Subnets & CIDR](../../03.%20Networking%20–%20Foundations/05-subnets-cidr/README.md)
+- NAT concept: [07 — NAT & Translation](../../03.%20Networking%20–%20Foundations/07-nat/README.md)
+- Stateful vs Stateless firewalls: [09 — Firewalls & Security](../../03.%20Networking%20–%20Foundations/09-firewalls/README.md)
 
 ---
 
@@ -21094,14 +22090,12 @@ IAM decided **who** gets access. VPC decides **where** that access works — you
 
 ---
 
-<details>
-<summary><strong>1. Why VPC Exists</strong></summary>
+## 1. Why VPC Exists
 
 Before the cloud, every company had a physical server room — racks, cables, routers, and switches all wired together manually. Expanding meant buying hardware, finding rack space, and rewiring everything.
 
-AWS virtualizes that entire setup. Instead of physical cables and switches, you define your network in software. That virtual network is your **VPC**.
+AWS virtualizes that entire setup. Instead of physical cables and switches, you define your network in software. That virtual network is your VPC.
 
-**The Building Analogy:**
 Think of AWS as a massive city of skyscrapers — one per account. Your VPC is your private building inside that city. You control everything about it:
 
 - Which floors face the street (public subnets)
@@ -21124,12 +22118,9 @@ AWS City (many accounts)
         └── NACLs               = Security gates at each floor entrance
 ```
 
-</details>
-
 ---
 
-<details>
-<summary><strong>2. What Is a VPC</strong></summary>
+## 2. What Is a VPC
 
 A **Virtual Private Cloud (VPC)** is an isolated network you own inside AWS. Every resource you launch — EC2, RDS, Lambda — lives inside a VPC.
 
@@ -21154,27 +22145,24 @@ For any real workload you create a **Custom VPC** — every subnet, route, and f
 ```
 ┌────────────────────────── AWS Region ──────────────────────────────┐
 │                                                                    │
-│  ┌─────────────────────── VPC (10.0.0.0/16) ──────────────────┐   │
-│  │                                                            │   │
-│  │  Public Subnet (10.0.1.0/24)   Private Subnet (10.0.2.0/24)│   │
-│  │  ┌──────────────────────┐      ┌──────────────────────┐    │   │
-│  │  │  EC2 Web Server      │      │  RDS Database        │    │   │
-│  │  │  Route → IGW         │      │  Route → NAT         │    │   │
-│  │  └──────────────────────┘      └──────────────────────┘    │   │
-│  │                                                            │   │
-│  │  IGW ↔ Internet                NAT Gateway (in public)     │   │
-│  └────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────── VPC (10.0.0.0/16) ──────────────────┐    │
+│  │                                                            │    │
+│  │  Public Subnet (10.0.1.0/24)   Private Subnet (10.0.2.0/24)│    │
+│  │  ┌──────────────────────┐      ┌──────────────────────┐    │    │
+│  │  │  EC2 Web Server      │      │  RDS Database        │    │    │
+│  │  │  Route → IGW         │      │  Route → NAT         │    │    │
+│  │  └──────────────────────┘      └──────────────────────┘    │    │
+│  │                                                            │    │
+│  │  IGW ↔ Internet                NAT Gateway (in public)     │    │
+│  └────────────────────────────────────────────────────────────┘    │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-</details>
-
 ---
 
-<details>
-<summary><strong>3. CIDR and IP Address Ranges</strong></summary>
+## 3. CIDR and IP Address Ranges
 
-Before you build subnets, you choose how much IP space your VPC owns. That range is defined using **CIDR notation**.
+Before you build subnets, you choose how much IP space your VPC owns. That range is defined using **CIDR (Classless Inter-Domain Routing)** notation.
 
 A CIDR block like `10.0.0.0/16` means:
 - `10.0.0.0` is the starting address
@@ -21216,21 +22204,18 @@ Always use private ranges for VPC CIDRs. Public IP ranges in a VPC cause routing
 If you ever connect two VPCs (VPC Peering) or connect to an on-premises network, their CIDR ranges must not overlap. This is why planning matters upfront.
 
 ```
-❌ Bad — overlap:
+Bad — overlap:
 VPC A: 10.0.0.0/16  (10.0.0.0 - 10.0.255.255)
 VPC B: 10.0.1.0/24  (10.0.1.0 - 10.0.1.255)  ← inside VPC A's range
 
-✅ Good — no overlap:
+Good — no overlap:
 VPC A: 10.0.0.0/16  (10.0.0.0 - 10.0.255.255)
 VPC B: 10.1.0.0/16  (10.1.0.0 - 10.1.255.255)
 ```
 
-</details>
-
 ---
 
-<details>
-<summary><strong>4. Subnets and Availability Zones</strong></summary>
+## 4. Subnets and Availability Zones
 
 A **subnet** is a slice of your VPC CIDR assigned to one Availability Zone. Every resource you launch lives in a specific subnet — and therefore in a specific AZ.
 
@@ -21270,12 +22255,9 @@ DB tier (private):    /24 — consistent sizing keeps things simple
 
 Always size larger than you think you need. You cannot resize a subnet after creation — you would have to create a new one.
 
-</details>
-
 ---
 
-<details>
-<summary><strong>5. Routing, IGW and NAT Gateway</strong></summary>
+## 5. Routing, IGW and NAT Gateway
 
 Every subnet is associated with a **route table** — a set of rules that tell AWS where to send traffic based on destination IP.
 
@@ -21325,7 +22307,7 @@ Without an IGW attached and routed, no instance in the VPC can reach the interne
 
 ### NAT Gateway
 
-A NAT Gateway lets instances in **private subnets** make outbound internet connections (downloading packages, calling external APIs) while remaining completely unreachable from the internet inbound.
+A NAT (Network Address Translation) Gateway lets instances in **private subnets** make outbound internet connections (downloading packages, calling external APIs) while remaining completely unreachable from the internet inbound.
 
 **How it works:**
 ```
@@ -21368,14 +22350,11 @@ One NAT Gateway per AZ. If you use a single NAT Gateway and that AZ goes down, a
 | Availability | Highly available within AZ | You manage failover |
 | Bandwidth | Up to 45 Gbps | Limited by instance type |
 | Cost | Higher | Lower (EC2 cost only) |
-| Recommendation | ✅ Always use this | Legacy — avoid |
-
-</details>
+| Recommendation | Always use this | Legacy — avoid |
 
 ---
 
-<details>
-<summary><strong>6. Security Groups vs NACLs</strong></summary>
+## 6. Security Groups vs NACLs
 
 AWS gives you two layers of network security. Understanding the difference between them is one of the most important concepts in AWS networking.
 
@@ -21460,9 +22439,9 @@ Outbound rules:
 | Feature | Security Group | NACL |
 |---|---|---|
 | Level | Instance | Subnet |
-| Stateful? | ✅ Yes | ❌ No |
-| Allow rules | ✅ Yes | ✅ Yes |
-| Deny rules | ❌ No | ✅ Yes |
+| Stateful? | Yes | No |
+| Allow rules | Yes | Yes |
+| Deny rules | No | Yes |
 | Default inbound | Deny all | Allow all |
 | Rule evaluation | All rules checked | Lowest number first |
 | Return traffic | Auto-allowed | Must be explicitly allowed |
@@ -21470,12 +22449,9 @@ Outbound rules:
 
 **The Recommendation:** Use Security Groups for all primary access control — they are stateful and easier to manage. Add NACLs only when you need explicit Deny rules or a subnet-level defense layer.
 
-</details>
-
 ---
 
-<details>
-<summary><strong>7. The NACL Trap — The Most Common Beginner Mistake</strong></summary>
+## 7. The NACL Trap — The Most Common Beginner Mistake
 
 This single misconfiguration causes more AWS networking failures than anything else. Read this carefully.
 
@@ -21502,7 +22478,7 @@ Looks complete. Allows HTTP and HTTPS both ways. But your website does not load.
 User (123.45.67.89:54321) → Your server (:80)
 
 NACL Inbound check:
-  Rule 100: TCP port 80 from anywhere → ALLOW ✅
+  Rule 100: TCP port 80 from anywhere → ALLOW
   Packet enters subnet, reaches EC2
 
 Server processes request
@@ -21513,7 +22489,7 @@ Server (:80) → User (123.45.67.89:54321)
 NACL Outbound check:
   Rule 100: TCP port 80 → not a match (destination port is 54321)
   Rule 110: TCP port 443 → not a match
-  Rule *: DENY ❌
+  Rule *: DENY
 
 Response is dropped. User sees timeout.
 ```
@@ -21541,12 +22517,9 @@ Security Groups teach you to only think about inbound rules — return traffic i
 **Best practice:**
 Most teams leave NACLs at the default (allow all) and use Security Groups for all access control. Only add custom NACLs when you specifically need Deny rules — and when you do, always include the ephemeral port range in both directions.
 
-</details>
-
 ---
 
-<details>
-<summary><strong>8. IP Concepts — Private, Public, Elastic, ENI</strong></summary>
+## 8. IP Concepts — Private, Public, Elastic, ENI
 
 Every EC2 instance in your VPC gets network addresses. Understanding which type does what prevents a lot of confusion.
 
@@ -21558,11 +22531,11 @@ Assigned automatically when an instance launches. Used for all communication wit
 
 ```
 Properties:
-  ✅ Free
-  ✅ Stays the same when instance stops and starts
-  ❌ Released permanently when instance is terminated
-  ❌ Not reachable from the internet
-  ❌ Cannot route on the public internet
+  Free
+  Stays the same when instance stops and starts
+  Released permanently when instance is terminated
+  Not reachable from the internet
+  Cannot route on the public internet
 ```
 
 ---
@@ -21573,10 +22546,10 @@ Assigned automatically to instances in public subnets (if the subnet is configur
 
 ```
 Properties:
-  ✅ Automatically assigned — no action needed
-  ✅ Included in Free Tier (750 hrs/month)
-  ❌ Changes every time the instance stops and starts
-  ❌ Lost permanently when instance is terminated
+  Automatically assigned — no action needed
+  Included in Free Tier (750 hrs/month)
+  Changes every time the instance stops and starts
+  Lost permanently when instance is terminated
 ```
 
 This is the problem with Public IPs — they change. If your DNS record points to `3.120.55.23` and the instance restarts, it gets a new IP and your DNS breaks.
@@ -21589,10 +22562,10 @@ A static public IPv4 address that you allocate to your account. It stays the sam
 
 ```
 Properties:
-  ✅ Permanent — survives stop/start/restart
-  ✅ Can be moved between instances (failover)
-  ✅ Free while attached to a running instance
-  ❌ Billed when allocated but not attached (idle charge)
+  Permanent — survives stop/start/restart
+  Can be moved between instances (failover)
+  Free while attached to a running instance
+  Billed when allocated but not attached (idle charge)
 ```
 
 **When to use Elastic IP:**
@@ -21616,19 +22589,16 @@ You can create additional ENIs and attach them to instances — useful for netwo
 
 | Type | Persists on restart? | Internet reachable? | Cost |
 |---|---|---|---|
-| Private IP | ✅ Yes | ❌ No | Free |
-| Public IP | ❌ Changes | ✅ Yes | Free (750 hrs/mo) |
-| Elastic IP | ✅ Yes | ✅ Yes | Free if attached, billed if idle |
+| Private IP | Yes | No | Free |
+| Public IP | No — changes | Yes | Free (750 hrs/mo) |
+| Elastic IP | Yes | Yes | Free if attached, billed if idle |
 | ENI | N/A | Depends | Free |
-
-</details>
 
 ---
 
-<details>
-<summary><strong>9. VPC Subnet Design — Webstore on AWS</strong></summary>
+## 9. VPC Subnet Design — Webstore on AWS
 
-This is how you translate requirements into a real VPC design. Work through this before touching the console.
+This is how you translate the webstore requirements into a real VPC design. Work through this before touching the console.
 
 **Requirements:**
 ```
@@ -21646,9 +22616,9 @@ Use `10.0.0.0/16` — 65,536 IPs. Plenty of room for all subnets across multiple
 **Step 2 — Calculate subnet sizes**
 
 ```
-Web tier:      ~20 instances now, ~60 eventually → /24 (251 usable) ✅
-API tier:      ~40 instances now, ~120 eventually → /24 (251 usable) ✅
-Database tier: ~5 instances now, ~15 eventually   → /24 (251 usable) ✅
+Web tier:      ~20 instances now, ~60 eventually → /24 (251 usable)
+API tier:      ~40 instances now, ~120 eventually → /24 (251 usable)
+Database tier: ~5 instances now, ~15 eventually   → /24 (251 usable)
 
 Consistent /24 sizing — simple to manage, no mental math needed
 ```
@@ -21696,7 +22666,7 @@ webstore-api-sg:
   Outbound: All
 
 webstore-db-sg:
-  Inbound:  27017 from webstore-api-sg  ← only api tier can reach db
+  Inbound:  5432 from webstore-api-sg  ← only api tier can reach db
   Outbound: All
 ```
 
@@ -21710,7 +22680,7 @@ webstore-db-sg:
 10.0.12.0/24  → 10.0.12.0 - 10.0.12.255
 10.0.13.0/24  → 10.0.13.0 - 10.0.13.255
 
-No overlaps ✅
+No overlaps.
 ```
 
 **Terraform snippet:**
@@ -21744,43 +22714,40 @@ resource "aws_subnet" "db_1a" {
 }
 ```
 
-</details>
-
 ---
 
-<details>
-<summary><strong>10. Architecture Blueprint</strong></summary>
+## 10. Architecture Blueprint
 
 **Webstore production VPC — full picture:**
 
 ```
 ┌──────────────────────────────── AWS Region (us-east-1) ────────────────────────────────────┐
 │                                                                                            │
-│  ┌─────────────────────────────── VPC: 10.0.0.0/16 ──────────────────────────────────┐    │
-│  │                                                                                    │    │
-│  │  AZ: us-east-1a                          AZ: us-east-1b                           │    │
-│  │                                                                                    │    │
-│  │  ┌─── Public (10.0.1.0/24) ────┐        ┌─── Public (10.0.11.0/24) ───┐           │    │
-│  │  │  ALB (webstore-alb-sg)      │        │  ALB (webstore-alb-sg)      │           │    │
-│  │  │  NAT Gateway                │        │  NAT Gateway                │           │    │
-│  │  │  Route: 0.0.0.0/0 → IGW     │        │  Route: 0.0.0.0/0 → IGW     │           │    │
-│  │  └─────────────────────────────┘        └─────────────────────────────┘           │    │
-│  │                                                                                    │    │
-│  │  ┌─── Private (10.0.2.0/24) ───┐        ┌─── Private (10.0.12.0/24) ──┐           │    │
-│  │  │  webstore-api EC2           │        │  webstore-api EC2            │           │    │
-│  │  │  SG: allow 8080 from ALB SG │        │  SG: allow 8080 from ALB SG  │           │    │
-│  │  │  Route: 0.0.0.0/0 → NAT     │        │  Route: 0.0.0.0/0 → NAT      │           │    │
-│  │  └─────────────────────────────┘        └─────────────────────────────┘           │    │
-│  │                                                                                    │    │
-│  │  ┌─── Private (10.0.3.0/24) ───┐        ┌─── Private (10.0.13.0/24) ──┐           │    │
-│  │  │  webstore-db (MongoDB)      │        │  webstore-db replica         │           │    │
-│  │  │  SG: allow 27017 from       │        │  SG: allow 27017 from        │           │    │
-│  │  │      api SG only            │        │      api SG only             │           │    │
-│  │  │  No public IP               │        │  No public IP                │           │    │
-│  │  └─────────────────────────────┘        └─────────────────────────────┘           │    │
-│  │                                                                                    │    │
-│  │  Internet Gateway                                                                  │    │
-│  └────────────────────────────────────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────── VPC: 10.0.0.0/16 ──────────────────────────────────┐     │
+│  │                                                                                   │     │
+│  │  AZ: us-east-1a                          AZ: us-east-1b                           │     │
+│  │                                                                                   │     │
+│  │  ┌─── Public (10.0.1.0/24) ────┐        ┌─── Public (10.0.11.0/24) ───┐           │     │
+│  │  │  ALB (webstore-alb-sg)      │        │  ALB (webstore-alb-sg)      │           │     │
+│  │  │  NAT Gateway                │        │  NAT Gateway                │           │     │
+│  │  │  Route: 0.0.0.0/0 → IGW     │        │  Route: 0.0.0.0/0 → IGW     │           │     │
+│  │  └─────────────────────────────┘        └─────────────────────────────┘           │     │
+│  │                                                                                   │     │
+│  │  ┌─── Private (10.0.2.0/24) ───┐        ┌─── Private (10.0.12.0/24) ──┐           │     │
+│  │  │  webstore-api EC2           │        │  webstore-api EC2           │           │     │
+│  │  │  SG: allow 8080 from ALB SG │        │  SG: allow 8080 from ALB SG │           │     │
+│  │  │  Route: 0.0.0.0/0 → NAT     │        │  Route: 0.0.0.0/0 → NAT     │           │     │
+│  │  └─────────────────────────────┘        └─────────────────────────────┘           │     │
+│  │                                                                                   │     │
+│  │  ┌─── Private (10.0.3.0/24) ───┐        ┌─── Private (10.0.13.0/24) ──┐           │     │
+│  │  │  webstore-db (RDS postgres) │        │  webstore-db (RDS standby)  │           │     │
+│  │  │  SG: allow 5432 from        │        │  SG: allow 5432 from        │           │     │
+│  │  │      api SG only            │        │      api SG only            │           │     │
+│  │  │  No public IP               │        │  No public IP               │           │     │
+│  │  └─────────────────────────────┘        └─────────────────────────────┘           │     │
+│  │                                                                                   │     │
+│  │  Internet Gateway                                                                 │     │
+│  └───────────────────────────────────────────────────────────────────────────────────┘     │
 │                                                                                            │
 └────────────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -21799,58 +22766,73 @@ Traffic flow:
 | Instance boundary | Security Groups | Per-resource stateful firewall — primary security control |
 | Database isolation | SG referencing | Only api tier SG can reach db — no IP-based rules needed |
 
-</details>
-
----
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 04-ebs
 ---
 
-[Home](../README.md) | 
-[Intro to AWS](../01-intro-aws/README.md) | 
-[IAM](../02-iam/README.md) | 
-[VPC & Subnet](../03-vpc-subnet/README.md) | 
-[EBS](../04-ebs/README.md) | 
-[EFS](../05-efs/README.md) | 
-[S3](../06-s3/README.md) | 
-[EC2](../07-ec2/README.md) | 
-[RDS](../08-rds/README.md) | 
-[Load Balancing & Auto Scaling](../09-Load-balancing-auto-scaling/README.md) | 
-[CloudWatch & SNS](../10-cloudwatch-sns/README.md) | 
-[Lambda](../11-lambda/README.md) | 
-[Elastic Beanstalk](../12-elastic-beanstalk/README.md) | 
-[Route 53](../13-route53/README.md) | 
-[CLI + CloudFormation](../14-cli-cloudformation/README.md)
+## What You Can Do After This
+
+- Design a multi-tier VPC from scratch — subnets, routing, security groups, NACLs
+- Calculate CIDR blocks and verify no overlaps between subnets
+- Explain the difference between IGW and NAT Gateway and when each is used
+- Write Security Group rules that reference other Security Groups
+- Explain exactly why the NACL ephemeral port trap breaks connections
+- Design the webstore production VPC with six subnets across two AZs
+
+---
+
+## What Comes Next
+
+→ [04. EBS](../04-ebs/README.md)
+
+The network is designed. Now your EC2 instances need somewhere to store data — EBS (Elastic Block Store) is the persistent block storage that attaches to instances and survives stop/start cycles.
+
+
+---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/04-ebs/README.md
+
+[Home](../README.md) |
+[Intro](../01-intro-aws/README.md) |
+[IAM](../02-iam/README.md) |
+[VPC](../03-vpc-subnet/README.md) |
+[EBS](../04-ebs/README.md) |
+[S3](../05-s3/README.md) |
+[EC2](../06-ec2/README.md) |
+[RDS](../07-rds/README.md) |
+[Load Balancing](../08-load-balancing-auto-scaling/README.md) |
+[CloudWatch](../09-cloudwatch-sns/README.md) |
+[Route 53](../10-route53/README.md) |
+[CLI](../11-cli-cloudformation/README.md) |
+[EKS](../12-eks/README.md)
+
+---
 
 # Elastic Block Store (EBS)
 
 Our network is now set — roads, gates, and rules are ready.
-But a server can’t run without storage to hold its data.
-That’s where EBS (Elastic Block Store) comes in.
+But a server can't run without storage to hold its data.
+That's where EBS (Elastic Block Store) comes in.
 Think of it as attaching an SSD to your EC2 instance — local, fast, and always there when you restart the machine.
-
-## Table of Contents
-1. [What Is EBS?](#1-what-is-ebs)
-2. [How EBS Works with EC2](#2-how-ebs-works-with-ec2)
-3. [EBS Volume Types](#3-ebs-volume-types)
-4. [Snapshots & Backup Mechanism](#4-snapshots--backup-mechanism)
-5. [Cross-AZ and Cross-Region Copy](#5-cross-az-and-cross-region-copy)
-6. [EBS Encryption](#6-ebs-encryption)
-7. [Modifying Volumes (Resize, Migrate, Tune)](#7-modifying-volumes-resize-migrate-tune)
-8. [Performance Essentials (IOPS & Throughput)](#8-performance-essentials-iops--throughput)
-9. [Best Practices & Cost Optimization](#9-best-practices--cost-optimization)
-10. [Quick Summary](#10-quick-summary)
 
 ---
 
-<details>
-<summary><strong>1. What Is EBS?</strong></summary>
+## Table of Contents
 
-**Elastic Block Store (EBS)** is a **persistent block storage** service designed for Amazon EC2 instances.  
+1. [What Is EBS and How It Works with EC2](#1-what-is-ebs-and-how-it-works-with-ec2)
+2. [EBS Volume Types and Performance](#2-ebs-volume-types-and-performance)
+3. [Snapshots & Backup Mechanism](#3-snapshots--backup-mechanism)
+4. [Cross-AZ and Cross-Region Copy](#4-cross-az-and-cross-region-copy)
+5. [EBS Encryption](#5-ebs-encryption)
+6. [Modifying Volumes (Resize, Migrate, Tune)](#6-modifying-volumes-resize-migrate-tune)
+7. [Best Practices & Quick Summary](#7-best-practices--quick-summary)
+
+---
+
+## 1. What Is EBS and How It Works with EC2
+
+**Elastic Block Store (EBS)** is a **persistent block storage** service designed for Amazon EC2 instances.
 Each EBS volume behaves like a **virtual hard drive** — you can format it, mount it, detach it, and re-attach it to other EC2 instances within the same Availability Zone (AZ).
 
 Even if you stop or restart your instance, **the data remains intact**, making EBS a reliable storage layer for OS files, applications, and databases.
 
-💡 **Analogy (minimal use):**  
 Think of EBS as a **detachable SSD** for your EC2 instance — you can unplug it, carry it to another machine in the same data center (AZ), and plug it back in without losing your data.
 
 **Key properties:**
@@ -21859,15 +22841,11 @@ Think of EBS as a **detachable SSD** for your EC2 instance — you can unplug it
 - **Flexible**: You can increase size, change performance, or migrate without downtime.
 - **AZ-scoped**: Must be in the same Availability Zone as the instance.
 
-📸 **Reference:** [Amazon EBS Volumes](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volumes.html)
-</details>
-
 ---
 
-<details>
-<summary><strong>2. How EBS Works with EC2</strong></summary>
+### How EBS Works with EC2
 
-EBS volumes attach to EC2 instances over the **availability zone network**.  
+EBS volumes attach to EC2 instances over the **availability zone network**.
 When you launch an EC2 instance, it can have:
 - **Root Volume:** Stores OS and boot files.
 - **Additional Data Volumes:** For app data, logs, or databases.
@@ -21875,119 +22853,136 @@ When you launch an EC2 instance, it can have:
 **High-level flow:**
 
 ```
-
 EBS Volume  <──attached──>  EC2 Instance
 │
 └── Snapshots stored in S3 (for backup & cloning)
-
 ```
 
 - EBS is **replicated automatically within its AZ** to prevent data loss.
 - You can attach **multiple EBS volumes** to one EC2, or attach a single EBS volume to multiple EC2s (only for io1/io2 Multi-Attach use cases).
 
-💡 **Use Case Examples:**
+**Use Case Examples:**
 - Root volume for Linux/Windows OS.
 - Application data storage for web servers.
 - Database storage (MySQL, PostgreSQL).
 - Persistent log storage or caching layer.
 
-<summary><strong>2.1  Special Case – EBS Multi-Attach (io1 / io2 Volumes)</strong></summary>
+---
 
-Normally, a single EBS volume can be **attached to only one EC2 instance at a time**.  
+### Special Case — EBS Multi-Attach (io1 / io2 Volumes)
+
+Normally, a single EBS volume can be **attached to only one EC2 instance at a time**.
 That keeps data consistent, just like plugging a physical SSD into one machine.
 
-However, the **Provisioned IOPS SSD (io1 and io2)** volume types introduce a feature called **Multi-Attach**.  
+However, the **Provisioned IOPS SSD (io1 and io2)** volume types introduce a feature called **Multi-Attach**.
 It lets you connect the same volume to **up to 16 EC2 instances** *simultaneously* within the **same Availability Zone**.
 
-💡 **Why this exists:**  
-Some enterprise or clustered applications (for example, Oracle RAC or shared file systems) need multiple servers to read and write to the same shared disk.  
+**Why this exists:**
+Some enterprise or clustered applications (for example, Oracle RAC or shared file systems) need multiple servers to read and write to the same shared disk.
 Multi-Attach gives them a common block-level layer while keeping latency extremely low.
 
-⚙️ **How it behaves**
-- Every attached EC2 gets a unique device name (e.g., `/dev/sdf`, `/dev/sdg` …).  
-- All instances see the **same data blocks** in real time.  
-- There’s **no built-in locking** — your application must manage concurrent writes safely (through a clustered file system or DB engine).  
+**How it behaves:**
+- Every attached EC2 gets a unique device name (e.g., `/dev/sdf`, `/dev/sdg` …).
+- All instances see the **same data blocks** in real time.
+- There's **no built-in locking** — your application must manage concurrent writes safely (through a clustered file system or DB engine).
 - If ordinary servers try to write at the same time without coordination, data corruption can occur.
 
-🧭 **Architect’s Note:**  
-Use Multi-Attach only when your workload is explicitly designed for shared block access.  
+**Architect's Note:**
+Use Multi-Attach only when your workload is explicitly designed for shared block access.
 For general cases, treat EBS as a **one-to-one disk** between an instance and its volume — simpler, faster, safer.
-
-</details>
 
 ---
 
-<details>
-<summary><strong>3. EBS Volume Types</strong></summary>
+## 2. EBS Volume Types and Performance
 
 | Volume Type | Medium | Description | Best For |
-|--------------|---------|--------------|-----------|
+|---|---|---|---|
 | **gp3** | SSD | General-purpose SSD with configurable IOPS (up to 16,000) and throughput (up to 1,000 MB/s). | Most workloads – OS, applications, boot volumes |
 | **io2/io1** | SSD | Provisioned IOPS SSD with consistent latency and Multi-Attach support. | High-performance databases |
 | **st1** | HDD | Throughput-optimized HDD for large sequential workloads. | Big data, logs, streaming workloads |
 | **sc1** | HDD | Cold HDD with lowest cost and lowest performance. | Archival and infrequently accessed data |
 
-💡 **Tip:**  
-Use **gp3** by default unless you have a clear reason to optimize for either IOPS (io2/io1) or cost (st1/sc1).
+**Tip:** Use **gp3** by default unless you have a clear reason to optimize for either IOPS (io2/io1) or cost (st1/sc1).
 
-📘 **Durability:**  
-EBS volumes provide **99.999% availability** within an AZ due to internal replication.
-</details>
+**Durability:** EBS volumes provide **99.999% availability** within an AZ due to internal replication.
 
 ---
 
-<details>
-<summary><strong>4. Snapshots & Backup Mechanism</strong></summary>
+### Performance Essentials — IOPS & Throughput
 
-A **snapshot** is a **point-in-time backup** of an EBS volume stored in Amazon S3.  
+**IOPS (Input/Output Operations Per Second)** → speed for small random reads/writes.
+**Throughput (MB/s)** → speed for large sequential data transfers.
+
+| Metric | gp3 (max) | io2 (max) | st1/sc1 |
+|---|---|---|---|
+| IOPS | 16,000 | 256,000 (provisioned) | Low |
+| Throughput | 1,000 MB/s | 4,000 MB/s | High sequential only |
+| Latency | ~5 ms | <1 ms | High (HDD latency) |
+
+**Tip:** Monitor performance using **CloudWatch metrics** like `VolumeReadOps`, `VolumeWriteOps`, `VolumeThroughputPercentage`, etc.
+
+---
+
+### The Webstore and EBS
+
+The webstore-db postgres container on Kubernetes uses a PersistentVolumeClaim backed by an EBS gp3 volume. When webstore-db migrates to RDS, RDS provisions its own gp3 EBS volume internally — you never touch it directly, but snapshotting, resizing, and encryption all apply.
+
+For webstore-api EC2 instances, each node has:
+- **Root volume:** 20 GB gp3 — OS, nginx, application
+- **Logs volume (optional):** separate gp3 — keeps root volume from filling
+
+```
+webstore-api EC2 (us-east-1a)
+├── /dev/xvda  →  gp3 20GB  (root — OS + app)
+└── /dev/xvdf  →  gp3 50GB  (data — logs, uploads)
+
+webstore-db RDS
+└── gp3 20GB  (managed by RDS, backed by EBS internally)
+```
+
+---
+
+## 3. Snapshots & Backup Mechanism
+
+A **snapshot** is a **point-in-time backup** of an EBS volume stored in Amazon S3.
 Although stored in S3, snapshots are managed transparently by EBS.
 
 ```
-
 EBS Volume → Snapshot → New Volume
-
 ```
 
-- **First snapshot** = full copy  
+- **First snapshot** = full copy
 - **Subsequent snapshots** = incremental (only changed blocks)
 - Snapshots can be **used to create new volumes**, **copied across regions**, or **automated via Lifecycle Manager**.
 
-💡 **Analogy:**  
-It’s like taking a **photo of your disk’s current state**.  
+It's like taking a **photo of your disk's current state**.
 If anything breaks later, you can rebuild an exact copy using that snapshot.
-
-📸 **Reference:** [EBS Snapshots](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSSnapshots.html)
-</details>
 
 ---
 
-<details>
-<summary><strong>5. Cross-AZ and Cross-Region Copy</strong></summary>
+## 4. Cross-AZ and Cross-Region Copy
 
 You can use snapshots to **clone volumes** across Availability Zones or Regions.
 
 ### Cross-AZ (within same region)
+
 1. Create a snapshot of the source volume (e.g., `us-east-1a`).
 2. Use that snapshot to create a new volume in another AZ (e.g., `us-east-1b`).
 3. Attach it to an EC2 instance there.
 
 ### Cross-Region
+
 1. Copy the snapshot to another region.
 2. Create a volume from that copy.
 3. Attach to EC2 in the destination region.
 
-💡 **Analogy:**  
-It’s like **replicating your disk** to a different branch office — same setup, new location.
-
-📸 **Reference:** [Copy Snapshots](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-copy-snapshot.html)
-</details>
+It's like **replicating your disk** to a different branch office — same setup, new location.
 
 ---
 
-<details>
-<summary><strong>6. EBS Encryption</strong></summary>
+## 5. EBS Encryption
 
-EBS provides **encryption at rest and in transit** using **AWS KMS** (Key Management Service).  
+EBS provides **encryption at rest and in transit** using **AWS KMS** (Key Management Service).
 You can use **AWS-managed keys (aws/ebs)** or **customer-managed CMKs**.
 
 **Key points:**
@@ -21996,93 +22991,57 @@ You can use **AWS-managed keys (aws/ebs)** or **customer-managed CMKs**.
 - New volumes created from encrypted snapshots remain encrypted.
 - Enable **EBS encryption by default** in your account for consistency.
 
-📘 **Command:**
 ```bash
 aws ec2 enable-ebs-encryption-by-default
-````
-
-📸 **Reference:** [EBS Encryption](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
-
-</details>
+```
 
 ---
 
-<details>
-<summary><strong>7. Modifying Volumes (Resize, Migrate, Tune)</strong></summary>
+## 6. Modifying Volumes (Resize, Migrate, Tune)
 
 You can dynamically **resize** or **change** EBS volume attributes without detaching it.
 
 **Options you can modify:**
-
-* Size (GB)
-* IOPS
-* Throughput (for gp3)
+- Size (GB)
+- IOPS
+- Throughput (for gp3)
 
 **After resizing:**
-
-* Extend partition and filesystem inside the OS (`growpart`, `xfs_growfs`).
+- Extend partition and filesystem inside the OS (`growpart`, `xfs_growfs`).
 
 **Migration approach:**
-
-* Create snapshot → New volume (different type or region) → Attach → Sync data.
-
-📘 **Example command:**
+- Create snapshot → New volume (different type or region) → Attach → Sync data.
 
 ```bash
 aws ec2 modify-volume --volume-id vol-1234567890abcdef --size 200 --iops 8000 --throughput 600
 ```
 
-📸 **Reference:** [Modify EBS Volumes](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-modify-volume.html)
+---
 
-</details>
+## 7. Best Practices & Quick Summary
+
+### Best Practices & Cost Optimization
+
+- Use **gp3** for most workloads (better performance per $).
+- Set **volume and snapshot tags** for cost tracking.
+- Enable **EBS Lifecycle Manager** to automatically delete old snapshots.
+- For large-scale systems, **align IOPS with EC2 bandwidth** to avoid bottlenecks.
+- Use **RAID 0** (striping) for high I/O and **RAID 1** (mirroring) for durability if needed.
+- Always **unmount before detaching** volumes to avoid data corruption.
 
 ---
 
-<details>
-<summary><strong>8. Performance Essentials (IOPS & Throughput)</strong></summary>
+### Quick Summary — Command Reference
 
-**IOPS (Input/Output Operations Per Second)** → speed for small random reads/writes.
-**Throughput (MB/s)** → speed for large sequential data transfers.
-
-| Metric     | gp3 (max)  | io2 (max)             | st1/sc1              |
-| ---------- | ---------- | --------------------- | -------------------- |
-| IOPS       | 16,000     | 256,000 (provisioned) | Low                  |
-| Throughput | 1,000 MB/s | 4,000 MB/s            | High sequential only |
-| Latency    | ~5 ms      | <1 ms                 | High (HDD latency)   |
-
-💡 **Tip:**
-Monitor performance using **CloudWatch metrics** like `VolumeReadOps`, `VolumeWriteOps`, `VolumeThroughputPercentage`, etc.
-
-</details>
-
----
-
-<details>
-<summary><strong>9. Best Practices & Cost Optimization</strong></summary>
-
-✅ Use **gp3** for most workloads (better performance per $).
-✅ Set **volume and snapshot tags** for cost tracking.
-✅ Enable **EBS Lifecycle Manager** to automatically delete old snapshots.
-✅ For large-scale systems, **align IOPS with EC2 bandwidth** to avoid bottlenecks.
-✅ Use **RAID 0** (striping) for high I/O and **RAID 1** (mirroring) for durability if needed.
-✅ Always **unmount before detaching** volumes to avoid data corruption.
-
-</details>
-
----
-
-<details>
-<summary><strong>10. Quick Summary</strong></summary>
-
-| Task                      | Command                                                                                                    | Description                        |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| Create new gp3 volume     | `aws ec2 create-volume --size 50 --availability-zone us-east-1a --volume-type gp3`                         | Creates 50 GB volume               |
-| Attach volume             | `aws ec2 attach-volume --volume-id <id> --instance-id <id> --device /dev/xvdf`                             | Mounts volume to instance          |
-| Create snapshot           | `aws ec2 create-snapshot --volume-id <id> --description "backup"`                                          | Point-in-time backup               |
-| Copy snapshot             | `aws ec2 copy-snapshot --source-region us-east-1 --source-snapshot-id <id> --destination-region us-west-2` | Cross-region copy                  |
-| Modify volume             | `aws ec2 modify-volume --volume-id <id> --size 200`                                                        | Resize volume                      |
-| List volumes              | `aws ec2 describe-volumes`                                                                                 | View all attached/detached volumes |
-| Enable encryption default | `aws ec2 enable-ebs-encryption-by-default`                                                                 | Enforces KMS encryption            |
+| Task | Command | Description |
+|---|---|---|
+| Create new gp3 volume | `aws ec2 create-volume --size 50 --availability-zone us-east-1a --volume-type gp3` | Creates 50 GB volume |
+| Attach volume | `aws ec2 attach-volume --volume-id <id> --instance-id <id> --device /dev/xvdf` | Mounts volume to instance |
+| Create snapshot | `aws ec2 create-snapshot --volume-id <id> --description "backup"` | Point-in-time backup |
+| Copy snapshot | `aws ec2 copy-snapshot --source-region us-east-1 --source-snapshot-id <id> --destination-region us-west-2` | Cross-region copy |
+| Modify volume | `aws ec2 modify-volume --volume-id <id> --size 200` | Resize volume |
+| List volumes | `aws ec2 describe-volumes` | View all attached/detached volumes |
+| Enable encryption default | `aws ec2 enable-ebs-encryption-by-default` | Enforces KMS encryption |
 
 **Linux Filesystem Resize Example:**
 
@@ -22094,15 +23053,3098 @@ sudo xfs_growfs /                    # expand filesystem
 
 **Output:**
 
-```output
+```
 data blocks changed from 26214400 to 52428800
 Filesystem successfully expanded
 ```
 
-</details>
 ---
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 05-efs
+
+## What You Can Do After This
+
+- Choose the right EBS volume type for a given workload
+- Attach an EBS volume to an EC2 instance and extend the filesystem after resizing
+- Create and manage snapshots for backup and cross-AZ/cross-Region data movement
+- Enable EBS encryption by default at the account level
+- Explain how RDS uses EBS underneath and why snapshots and sizing still matter
+
 ---
+
+## What Comes Next
+
+→ [05. S3](../05-s3/README.md)
+
+EBS is attached to one instance in one AZ. S3 is different — global, serverless object storage that any service can read from or write to from anywhere.
+
+
+---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/05-s3/README.md
+
+[Home](../README.md) |
+[Intro](../01-intro-aws/README.md) |
+[IAM](../02-iam/README.md) |
+[VPC](../03-vpc-subnet/README.md) |
+[EBS](../04-ebs/README.md) |
+[S3](../05-s3/README.md) |
+[EC2](../06-ec2/README.md) |
+[RDS](../07-rds/README.md) |
+[Load Balancing](../08-load-balancing-auto-scaling/README.md) |
+[CloudWatch](../09-cloudwatch-sns/README.md) |
+[Route 53](../10-route53/README.md) |
+[CLI](../11-cli-cloudformation/README.md) |
+[EKS](../12-eks/README.md)
+
+---
+
+# AWS S3 (Simple Storage Service)
+
+EBS works great inside one zone, but sometimes data needs to travel — backups, media, global access.
+That's where S3 (Simple Storage Service) takes over.
+Instead of local disks, it's like a giant warehouse in the cloud — infinite shelves where any app can drop a file and pick it up from anywhere on the planet.
+
+---
+
+## Table of Contents
+
+1. [What Is S3](#1-what-is-s3)
+2. [Core Concept — Buckets and Objects](#2-core-concept--buckets-and-objects)
+3. [Bucket Naming Rules](#3-bucket-naming-rules)
+4. [Static Website Hosting](#4-static-website-hosting)
+5. [Versioning](#5-versioning)
+6. [Storage Classes and Pricing](#6-storage-classes-and-pricing)
+7. [Security, Lifecycle, and Encryption](#7-security-lifecycle-and-encryption)
+8. [Real Example — Webstore on S3](#8-real-example--webstore-on-s3)
+9. [CLI Reference](#9-cli-reference)
+
+---
+
+## 1. What Is S3
+
+### Why Do We Need S3?
+
+EBS volumes are reliable but tied to one instance in one zone.
+They're perfect for operating systems or databases — not for global sharing.
+
+When applications grow, you need a place where:
+- Any service can store or fetch data, anytime.
+- Capacity expands automatically.
+- Costs depend on how much you store.
+
+That's **Amazon S3** — an object-storage service that acts like a limitless data vault.
+You can store photos, backups, code, logs, or even full websites — pay only for what you use.
+
+### Analogy — The Infinite Warehouse
+
+Think of S3 as an **endless warehouse** in the cloud.
+Each **bucket** is a storage room with its own label.
+Every file you drop inside becomes an **object**, tagged with a unique barcode (its URL).
+
+You can walk in, store or retrieve any object from anywhere in the world.
+Unlike an EBS disk, this warehouse has no walls, no cables — just infinite shelves that never fill up.
+
+---
+
+## 2. Core Concept — Buckets and Objects
+
+- You create **buckets** to organize data. Each bucket name must be globally unique.
+- Inside a bucket, every uploaded **object** is stored with:
+  - **Key** → the file name / path
+  - **Value** → file data
+  - **Metadata** → object info
+  - **Version ID** (if versioning is on)
+
+S3 automatically replicates data across devices in the same region for durability (11 nines).
+
+Example URL:
+```
+https://my-bucket.s3.amazonaws.com/image.png
+```
+
+**Architect's Note:**
+S3 is a **global service**, but buckets are **region-specific**.
+Pick regions closer to your users to reduce latency.
+
+---
+
+## 3. Bucket Naming Rules
+
+| Rule | Description |
+|---|---|
+| Length | 3 – 63 characters |
+| Characters | a-z, 0-9, period (.), hyphen (-) |
+| Must start/end with | Letter or number |
+| Global uniqueness | No two buckets share the same name |
+| Forbidden | Uppercase, underscores, or spaces |
+
+**Tip:** For websites, match your bucket name to your domain (e.g., `webstore-assets.com`).
+
+---
+
+## 4. Static Website Hosting
+
+S3 can host **static websites** — sites made of HTML, CSS, and JS files that look identical for all users.
+
+**Steps:**
+1. Create a bucket (often named after your domain).
+2. Upload your website files (`index.html`, `error.html`).
+3. Enable **Static Website Hosting** under *Properties*.
+4. Provide the index and error documents.
+5. Make objects publicly readable.
+6. Access your site via the generated endpoint URL.
+
+Example endpoint:
+`http://webstore-website.s3-website-us-east-1.amazonaws.com`
+
+**Modern tip:** For production, use **AWS Amplify** or **CloudFront** for performance and HTTPS.
+
+---
+
+## 5. Versioning
+
+Think of versioning as an **undo button** for your bucket.
+When enabled, every new upload of the same object keeps the previous version rather than replacing it.
+
+- **Default:** Disabled (new file overwrites the old one).
+- **Enabled:** S3 preserves all versions.
+- **Suspended:** Keeps existing versions but stops new ones.
+
+**Why it matters in DevOps:**
+- Recover from accidental deletes or overwrites.
+- Track configuration file history or deployment artifacts.
+- Combine with Lifecycle policies to expire old versions automatically.
+
+---
+
+## 6. Storage Classes and Pricing
+
+### Storage Classes with Scenarios
+
+Different data deserves different storage costs.
+Here's how each S3 storage class fits a real-world use case:
+
+| Storage Class | When to Use | Real Scenario |
+|---|---|---|
+| **Standard** | Frequently accessed data | Website images, app assets, or user uploads accessed every day. |
+| **Intelligent-Tiering** | Unknown or changing access patterns | Logs and reports whose popularity changes — S3 auto-moves them between hot/cold tiers. |
+| **Standard-IA (Infrequent Access)** | Accessed once or twice a month | Monthly analytics exports, historical sales reports. |
+| **One Zone-IA** | Rarely used and easily reproducible | Cached data or thumbnails that can be recreated anytime. |
+| **Glacier Instant Retrieval** | Archives needed quarterly with instant access | Marketing footage or past project files that must be instantly restored. |
+| **Glacier Flexible Retrieval** | Long-term archives, retrieved occasionally | Tax filings or compliance documents you access once a year. |
+| **Glacier Deep Archive** | Long-term retention, rarely accessed | 7-year legal backups or raw sensor data for audit purposes. |
+| **Reduced Redundancy** | Legacy option (not recommended) | Old, non-critical assets; replaced by Standard class today. |
+
+**Architect's rule:** Match **frequency of access** with **cost of storage** — frequent = Standard; rare = Glacier.
+
+---
+
+### How S3 Billing Actually Works
+
+S3 pricing depends on **what you store and how you use it**, not on how many buckets you create.
+
+| Charged For | Example |
+|---|---|
+| **Storage (GB per month)** | Total size of all objects in all buckets |
+| **Requests** | PUT / GET / COPY / DELETE calls made to S3 |
+| **Data Transfer Out** | Data leaving S3 to the Internet or another AWS Region |
+| **Optional Features** | Replication, Inventory, Analytics, Object Lock, etc. |
+
+You **do not** pay for:
+- Number of buckets
+- Number of folders
+- How many EC2 instances access them
+
+If you store **1 TB** of data — whether it lives in one bucket or ten — the cost is identical.
+
+---
+
+### Multiple Buckets vs One Big Bucket
+
+| Approach | Pros | Notes |
+|---|---|---|
+| **Single bucket with folders** | Simpler to manage, one policy to maintain | Harder to apply different lifecycle or security rules |
+| **Separate buckets per data type** | Clear boundaries for policy and lifecycle; easy cost breakdown | Slightly more management overhead, but no extra charges |
+
+**Example — webstore bucket design:**
+- `webstore-assets` → product images (Standard → IA lifecycle)
+- `webstore-logs` → app logs (Intelligent-Tiering → Glacier)
+- `webstore-backups` → database exports (Deep Archive)
+- `webstore-tf-state` → Terraform state files (Standard + versioning)
+
+All together they cost the same as one huge bucket — only the **usage** matters.
+
+---
+
+### EC2 and S3 Interaction Costs
+
+S3 isn't "attached" like EBS; EC2 accesses it via the S3 API (HTTPS).
+
+| Scenario | Cost |
+|---|---|
+| EC2 ↔ S3 in same region | Free for inbound and most outbound traffic |
+| EC2 ↔ S3 cross-region | Inter-region data transfer fees apply |
+| EC2 ↔ S3 via Internet (no VPC endpoint) | Charged as Internet egress per GB |
+
+**Architect's Guideline:**
+- Use **multiple buckets** if you need different security or retention rules.
+- Use **one bucket with folders** for simpler projects.
+- Always keep S3 and EC2 in the same region to avoid transfer charges.
+- Tag buckets to track cost by project or environment.
+
+---
+
+## 7. Security, Lifecycle, and Encryption
+
+### Security & Access Control
+
+S3 security is multi-layered:
+
+1. **IAM Policies** → Who can access S3 resources.
+2. **Bucket Policies** → What specific actions are allowed or denied at bucket level.
+3. **ACLs** → Object-level access (legacy, rarely used).
+4. **Block Public Access** → Global safeguard against accidental exposure.
+5. **Encryption** → Protects data both at rest (AES-256 / KMS) and in transit (HTTPS).
+
+Always use **IAM roles** for EC2 or Lambda to grant temporary, secure access instead of embedding keys.
+
+---
+
+### Lifecycle Management
+
+As data ages, its value often drops.
+**Lifecycle rules** let you automate storage transitions and deletions.
+
+Example policy ideas:
+- Move logs to **Glacier** after 30 days.
+- Delete old object versions after 90 days.
+- Permanently remove expired data after 1 year.
+
+This keeps S3 lean, cost-efficient, and self-maintaining.
+
+---
+
+### Encryption & Consistency
+
+- **At Rest:** S3 encrypts objects with AES-256 (SSE-S3) or AWS KMS (SSE-KMS).
+- **In Transit:** Uses HTTPS/TLS for secure uploads and downloads.
+- **Data Consistency:** Offers strong read-after-write consistency for all PUT and DELETE operations.
+
+These features make S3 safe for both personal data and enterprise-grade workloads.
+
+---
+
+## 8. Real Example — Webstore on S3
+
+In the **webstore app**, product images and static assets sit inside S3 buckets — secure, versioned, and globally accessible.
+When a user views a product, the app fetches metadata (title, price, description) from **RDS**, then serves the product image directly from **S3** through a pre-signed URL.
+
+This separation keeps:
+- **RDS** focused on lightweight queries
+- **S3** handling heavy media storage
+- **EC2** running business logic
+
+```
+webstore-assets/
+  images/product-001.jpg   ← served via pre-signed URL
+  images/product-002.jpg
+  static/style.css
+
+webstore-backups/
+  db-2026-04-01.dump.gz    ← postgres backup uploaded by Bash script
+
+webstore-tf-state/
+  terraform.tfstate         ← versioned, never public
+```
+
+**Webstore Terraform state backend (S3 + DynamoDB locking):**
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket         = "webstore-tf-state"
+    key            = "prod/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "webstore-tf-lock"
+    encrypt        = true
+  }
+}
+```
+
+**Pre-signed URL generation (webstore-api serving product images):**
+
+```bash
+aws s3 presign s3://webstore-assets/images/product-001.jpg \
+  --expires-in 3600
+```
+
+---
+
+## 9. CLI Reference
+
+### AWS CLI Examples
+
+```bash
+# Upload a file
+aws s3 cp product-001.jpg s3://webstore-assets/images/product-001.jpg
+
+# Download a file
+aws s3 cp s3://webstore-assets/images/product-001.jpg ./downloads/
+
+# Sync local folder to bucket
+aws s3 sync ./media s3://webstore-assets/
+
+# Remove an object
+aws s3 rm s3://webstore-assets/images/old-product.jpg
+```
+
+### Quick Command Summary
+
+| Command | Description |
+|---|---|
+| `aws s3 mb s3://bucket` | Make a new bucket |
+| `aws s3 ls` | List buckets |
+| `aws s3 ls s3://bucket/` | List objects in bucket |
+| `aws s3 cp file s3://bucket` | Upload object |
+| `aws s3 rm s3://bucket/file` | Delete object |
+| `aws s3 sync local/ s3://bucket/` | Sync folders |
+| `aws s3 rb s3://bucket --force` | Remove bucket and contents |
+| `aws s3 presign s3://bucket/file --expires-in 3600` | Generate pre-signed URL |
+
+---
+
+## What You Can Do After This
+
+- Create and configure S3 buckets with correct access controls
+- Design a multi-bucket strategy for the webstore (assets, backups, state)
+- Enable versioning and configure lifecycle rules for cost management
+- Explain the difference between S3 storage classes and when to use each
+- Generate pre-signed URLs so applications serve S3 objects without making buckets public
+- Use S3 as a Terraform state backend with DynamoDB locking
+
+---
+
+## What Comes Next
+
+→ [06. EC2](../06-ec2/README.md)
+
+You have networking, IAM, block storage, and object storage. Now you need compute — EC2 (Elastic Compute Cloud) is the virtual machine that ties all of it together into a running server.
+
+
+---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/06-ec2/README.md
+
+[Home](../README.md) |
+[Intro](../01-intro-aws/README.md) |
+[IAM](../02-iam/README.md) |
+[VPC](../03-vpc-subnet/README.md) |
+[EBS](../04-ebs/README.md) |
+[S3](../05-s3/README.md) |
+[EC2](../06-ec2/README.md) |
+[RDS](../07-rds/README.md) |
+[Load Balancing](../08-load-balancing-auto-scaling/README.md) |
+[CloudWatch](../09-cloudwatch-sns/README.md) |
+[Route 53](../10-route53/README.md) |
+[CLI](../11-cli-cloudformation/README.md) |
+[EKS](../12-eks/README.md)
+
+---
+
+# AWS EC2 — Elastic Compute Cloud
+
+## What This File Is About
+
+We now understand storage — both local (EBS) and global (S3). But storage by itself doesn't process anything. We need the engine that runs our code and powers our apps. That engine is EC2 (Elastic Compute Cloud) — the virtual machine that ties IAM, VPC, and storage into one working system.
+
+---
+
+## Table of Contents
+
+1. [EC2 Overview & Purpose](#1-ec2-overview--purpose)
+2. [Billing & Pricing Models](#2-billing--pricing-models)
+3. [AMI & Instance Types](#3-ami--instance-types)
+4. [EC2 Lifecycle & States](#4-ec2-lifecycle--states)
+5. [Key Pairs & Security Groups](#5-key-pairs--security-groups)
+6. [Web Hosting & User Data](#6-web-hosting--user-data)
+7. [Instance Metadata & Identity](#7-instance-metadata--identity)
+8. [The Webstore-API on EC2](#8-the-webstore-api-on-ec2)
+
+> **Cross-references:** VPC, subnets, and IP concepts are covered in full in [03. VPC & Subnets](../03-vpc-subnet/README.md). EBS storage, snapshots, and cross-AZ copy are in [04. EBS](../04-ebs/README.md). Load balancing and Auto Scaling are in [08. Load Balancing & Auto Scaling](../08-load-balancing-auto-scaling/README.md). Networking foundations (DNS, TCP, OSI layers) are in [03. Networking — Foundations](../../03.%20Networking%20–%20Foundations/README.md).
+
+---
+
+## 1. EC2 Overview & Purpose
+
+### What is EC2?
+
+EC2 stands for **Elastic Compute Cloud**, AWS's service for creating virtual machines in the cloud.
+"Elastic" means you can increase or decrease compute capacity on demand — like stretching or shrinking a rubber band depending on workload.
+It allows you to rent compute capacity from AWS instead of owning physical servers.
+You decide how much **CPU**, **memory**, and **storage** you need — and can scale up or down anytime.
+
+**Use Cases:**
+- Hosting websites and APIs
+- Running databases or backend servers
+- Testing and development environments
+- Machine learning workloads
+
+---
+
+## 2. Billing & Pricing Models
+
+### EC2 Billing Basics
+
+You pay for the **time your instance is running**:
+- **Linux:** billed **per second** (minimum 60 seconds)
+- **Windows:** billed **per hour**
+
+**Example:**
+Run a Linux instance for 2 minutes 15 seconds → billed for **135 seconds**.
+Windows instances → billed for the full **hour** even if used for 5 minutes.
+
+---
+
+### Free Tier
+
+AWS Free Tier gives:
+- **750 hours/month for 12 months**
+- Enough to run one small instance continuously
+
+**Instance types:**
+- `t2.micro` (older, available in Asia regions)
+- `t3.micro` (newer, available in US/EU regions)
+
+---
+
+### Pricing Models
+
+| Model | Description | When to Use |
+|---|---|---|
+| **On-Demand** | Pay by second/hour. No commitment. | Testing, short workloads |
+| **Reserved Instances (RI)** | 1–3 year commitment for up to 72% discount. | Long-running production workloads |
+| **Spot Instances** | Use spare AWS capacity, up to 90% cheaper. | Fault-tolerant workloads |
+| **Savings Plans** | Commit to $/hour usage, flexible across services. | Predictable workloads |
+| **Dedicated Hosts** | Physical server reserved just for you. | Compliance or licensing needs |
+
+**Notes:**
+- Linux instances are billed **per-second** (minimum 60 s).
+- Windows instances are billed **per hour**.
+- Public IPv4 addresses are **billable** outside the Free Tier. The Free Tier covers **750 hours/month** of one public IPv4; additional or idle ones incur charges.
+- Elastic IP (EIP) addresses are **free while attached** to a running instance, but **billed when idle** (allocated but unused).
+
+---
+
+## 3. AMI & Instance Types
+
+### Amazon Machine Image (AMI)
+
+An AMI is a **template** used to launch EC2 instances.
+It includes:
+- Operating System (Linux, Windows, Ubuntu, etc.)
+- Preinstalled software (optional)
+- Configurations and permissions
+
+**Examples:**
+- Ubuntu Server AMI → ready-to-use Linux machine
+- Windows Server AMI → preconfigured Windows environment
+
+---
+
+### Instance Types
+
+| Family | Optimized For | Example | Use Case |
+|---|---|---|---|
+| **General Purpose** | Balanced CPU/RAM | `t3.micro` | Web servers |
+| **Compute Optimized** | High CPU | `c5.large` | Batch processing |
+| **Memory Optimized** | High RAM | `r5.large` | Databases |
+| **Storage Optimized** | High I/O | `i3.large` | Data warehousing |
+| **Accelerated (GPU)** | Graphics / ML | `p3.2xlarge` | AI/ML workloads |
+
+---
+
+## 4. EC2 Lifecycle & States
+
+### Lifecycle Stages
+
+| State | Description |
+|---|---|
+| **Pending** | Preparing resources and booting |
+| **Running** | Fully operational and billable |
+| **Stopping** | OS shutting down gracefully |
+| **Stopped** | Not running, storage billed but compute stops |
+| **Terminated** | Deleted permanently |
+
+```
+EC2 Instance Lifecycle:
+
+  [Pending] ──► [Running] ──► [Stopping] ──► [Stopped]
+                    │                              │
+                    │                         [Starting]
+                    │                              │
+                    └──────────────────────────────┘
+                    │
+                    ▼
+              [Terminated] (permanent, cannot undo)
+```
+
+---
+
+## 5. Key Pairs & Security Groups
+
+### Key Pair Authentication
+
+When you create an EC2 instance, AWS uses **public-key cryptography** to ensure secure access.
+
+- The **public key** is the **lock** installed on the instance door (AWS automatically adds it).
+- The **private key file** (`.pem` or `.ppk`) that **you download** is the key that fits that lock.
+
+You need this private key every time you want to connect via SSH.
+If the key doesn't match the lock → you can't get inside.
+
+**Example: Connecting to EC2 (Linux/macOS)**
+
+```bash
+# Step 1: Secure your private key
+chmod 400 mykey.pem
+
+# Step 2: Connect to your EC2 instance using SSH
+ssh -i mykey.pem ec2-user@<Public-IP>
+```
+
+---
+
+### Security Groups (SG)
+
+A **Security Group** acts as a **virtual firewall** controlling inbound and outbound traffic at the instance level.
+
+**Key Rules:**
+- **Inbound:** what traffic can reach your instance
+- **Outbound:** what traffic your instance can send
+- **Stateful:** if you allow inbound, the return traffic is automatically allowed
+
+**Example Security Group for webstore-api:**
+
+| Direction | Protocol | Port | Source | Purpose |
+|---|---|---|---|---|
+| Inbound | TCP | 8080 | webstore-alb-sg | Traffic from ALB only |
+| Inbound | TCP | 22 | Your IP | SSH access |
+| Outbound | All | All | 0.0.0.0/0 | All outbound allowed |
+
+**Security Group Chaining (multi-tier pattern):**
+
+```
+[Internet]
+    │
+    ▼
+[ALB — webstore-alb-sg]  ← open to 0.0.0.0/0 on 80/443
+    │
+    ▼
+[webstore-api — webstore-api-sg]  ← only allows from webstore-alb-sg
+    │
+    ▼
+[webstore-db — webstore-db-sg]   ← only allows from webstore-api-sg
+```
+
+Each layer only accepts traffic from the layer directly above it. The database is unreachable from the internet — not because of NAT (Network Address Translation) or complex routing, but because no SG rule allows it.
+
+---
+
+## 6. Web Hosting & User Data
+
+### Hosting a Simple Website on EC2
+
+You can turn your EC2 into a small web server using **Apache HTTPD**.
+
+**Step 1 – Install Apache**
+
+```bash
+sudo yum install -y httpd
+```
+
+**Step 2 – Start the service**
+
+```bash
+sudo systemctl start httpd
+sudo systemctl enable httpd
+```
+
+**Step 3 – Allow Traffic**
+
+In your Security Group, open:
+- HTTP (80)
+- HTTPS (443)
+
+**Step 4 – Create a Web Page**
+
+```bash
+cd /var/www/html
+sudo bash -c 'echo "<h1>Webstore DevOps Learning</h1>" > index.html'
+```
+
+Now visit `http://<Public-IP>` in your browser.
+
+---
+
+### User Data — Automation on First Boot
+
+**User Data scripts** run only once when a new instance starts.
+They're used for quick setup — installing software or creating files automatically.
+
+```bash
+#!/bin/bash
+yum install -y httpd
+echo "<h1>Webstore App – 1</h1>" > /var/www/html/index.html
+systemctl enable httpd
+systemctl start httpd
+```
+
+This is like your **"opening-day checklist"** pinned to the door — each new instance runs it automatically before serving traffic.
+
+**User Data notes:**
+- Runs as root
+- Runs only once — at first launch
+- If you stop and start the instance, User Data does not run again
+- To run commands on every boot, use `/etc/rc.local` or a systemd service
+
+---
+
+## 7. Instance Metadata & Identity
+
+### Instance Metadata — Facts About Your Instance
+
+This is a local HTTP endpoint inside every EC2 that gives information about itself.
+It's only reachable **from within** the instance.
+
+```bash
+curl http://169.254.169.254/latest/meta-data/
+```
+
+Examples:
+- `public-ipv4`
+- `instance-id`
+- `security-groups`
+- `ami-id`
+
+---
+
+### IMDSv2 (Security Upgrade)
+
+Newer version of the metadata service uses **session tokens** for safety.
+AWS recommends **enforcing IMDSv2 only**.
+
+```bash
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" \
+  -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+
+curl -H "X-aws-ec2-metadata-token: $TOKEN" \
+  http://169.254.169.254/latest/meta-data/
+```
+
+---
+
+### Instance Identity Document
+
+Signed JSON document that proves which instance you are.
+
+```bash
+curl http://169.254.169.254/latest/dynamic/instance-identity/document
+```
+
+Shows:
+- Region
+- Instance ID
+- AMI ID
+- Account ID
+
+This document is used by tools and services to verify the identity of the instance without relying on credentials.
+
+---
+
+## 8. The Webstore-API on EC2
+
+Before moving to Kubernetes and EKS, the webstore-api tier runs on EC2. Here is what the full deployment looks like:
+
+```
+Internet
+  │
+  ▼
+Application Load Balancer (ALB)
+  Public subnets — us-east-1a and us-east-1b
+  Listener: HTTPS 443 → webstore-api-tg
+  Listener: HTTP  80  → redirect to 443
+  │
+  ├── webstore-api EC2 (us-east-1a, private subnet 10.0.2.0/24)
+  │     AMI:            Ubuntu 22.04
+  │     Instance type:  t3.medium
+  │     IAM role:       webstore-api-role
+  │                     (s3:GetObject on webstore-assets/*)
+  │                     (ecr:GetAuthorizationToken, ecr:BatchGetImage)
+  │     EBS root vol:   20GB gp3
+  │     Security group: webstore-api-sg
+  │                     (inbound 8080 from webstore-alb-sg only)
+  │     User Data:      installs nginx, starts webstore-api service
+  │
+  └── webstore-api EC2 (us-east-1b, private subnet 10.0.12.0/24)
+        Same configuration — second AZ for HA
+  │
+  ▼
+RDS PostgreSQL (private subnets, webstore-db-sg)
+  Inbound: 5432 from webstore-api-sg only
+```
+
+**What the IAM role provides:**
+The `webstore-api-role` attached to each instance gives it permission to:
+- Pull product images from S3 (`s3:GetObject` on `webstore-assets/*`)
+- Pull container images from ECR
+
+No credentials are hardcoded anywhere. The instance retrieves temporary credentials from the metadata service at `169.254.169.254/latest/meta-data/iam/security-credentials/webstore-api-role`. The SDK picks these up automatically.
+
+**What the User Data does:**
+```bash
+#!/bin/bash
+apt-get update -y
+apt-get install -y nginx
+
+# Write nginx config for the API
+cat > /etc/nginx/sites-available/webstore-api <<EOF
+server {
+    listen 8080;
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host \$host;
+    }
+}
+EOF
+
+ln -s /etc/nginx/sites-available/webstore-api /etc/nginx/sites-enabled/
+systemctl enable nginx
+systemctl start nginx
+```
+
+---
+
+## What You Can Do After This
+
+- Launch an EC2 instance with the correct AMI, instance type, IAM role, and security group
+- Write a User Data script that bootstraps an application on first boot
+- SSH into an EC2 instance using a key pair
+- Explain the difference between Stop and Terminate and what happens to EBS in each case
+- Understand what the instance metadata service provides and why it matters for IAM roles
+- Design a multi-tier EC2 deployment with ALB and RDS using Security Group chaining
+
+---
+
+## What Comes Next
+
+→ [07. RDS](../07-rds/README.md)
+
+The webstore-db runs as a postgres container in Kubernetes. RDS is what it becomes in production — a managed, multi-AZ PostgreSQL database that AWS operates so you do not have to.
+
+
+---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/07-rds/README.md
+
+[Home](../README.md) |
+[Intro](../01-intro-aws/README.md) |
+[IAM](../02-iam/README.md) |
+[VPC](../03-vpc-subnet/README.md) |
+[EBS](../04-ebs/README.md) |
+[S3](../05-s3/README.md) |
+[EC2](../06-ec2/README.md) |
+[RDS](../07-rds/README.md) |
+[Load Balancing](../08-load-balancing-auto-scaling/README.md) |
+[CloudWatch](../09-cloudwatch-sns/README.md) |
+[Route 53](../10-route53/README.md) |
+[CLI](../11-cli-cloudformation/README.md) |
+[EKS](../12-eks/README.md)
+
+---
+
+# AWS RDS — Relational Database Service
+
+## What This File Is About
+
+EC2 gives us compute power, but most real-world apps also need a structured place to store and query data — not just flat files. RDS (Relational Database Service) fills that role. This file covers what RDS is, how it manages databases, the migration path from the webstore-db postgres container to RDS, and exactly how backups and recovery work under the hood.
+
+---
+
+## Table of Contents
+
+1. [Why Managed Databases](#1-why-managed-databases)
+2. [What Is Amazon RDS?](#2-what-is-amazon-rds)
+3. [Core Components](#3-core-components)
+4. [Key Features](#4-key-features)
+5. [How Backups Actually Work (Behind the Scenes)](#5-how-backups-actually-work-behind-the-scenes)
+6. [Migrating Webstore-DB from Container to RDS](#6-migrating-webstore-db-from-container-to-rds)
+
+---
+
+## 1. Why Managed Databases
+
+Every application — whether it's a food delivery app or a webstore — needs a place to **store and recall information safely**. That's what a database does: it holds your data even after your system restarts.
+
+### The Problem Before Cloud
+
+Before cloud services existed, companies had to host databases on **physical servers**.
+That sounds fine until you realize what it really meant:
+
+- You had to **buy and maintain hardware**.
+- You were responsible for **installing, patching, and updating** the database software.
+- **Scaling** was a nightmare — if your app suddenly went viral, you couldn't just "add capacity" overnight.
+- **Backups and failovers** had to be handled manually.
+- And if a server crashed — well, good luck restoring it quickly.
+
+So instead of building your product, you'd be stuck doing IT housekeeping.
+
+### The Restaurant Analogy
+
+Let's imagine your application is a restaurant.
+
+- The **chef** is your **database engine** (MySQL, PostgreSQL, Oracle, etc.) — cooking up the data and serving results.
+- The **manager** is **AWS RDS** — taking care of the kitchen, groceries, cleaning, and overall maintenance.
+- And you — the **owner (application)** — just focus on serving customers and taking new orders.
+
+You don't worry about whether the gas is filled or the ingredients are fresh — that's RDS's job.
+
+| Role | Real-World Task | AWS Equivalent |
+|---|---|---|
+| You (Owner/App) | Take customer orders | Application sending queries |
+| Chef (DB Engine) | Cook food | Process and store data |
+| Manager (RDS) | Keep kitchen running, handle maintenance | Manage infrastructure, backups, and scaling |
+
+---
+
+## 2. What Is Amazon RDS?
+
+RDS is a **fully managed service** that handles all the heavy lifting — setup, maintenance, scaling, patching, and backups — while you focus on using the database, not running it.
+
+You just choose:
+- which **engine** you want (MySQL, PostgreSQL, Oracle, SQL Server, or MariaDB)
+- how big your instance should be
+- and AWS does the rest
+
+So you focus on your app, and RDS quietly takes care of the kitchen.
+
+**Quick Architecture View:**
+
+```
+Application (EC2 / EKS Pod)
+↓
+Security Group (Port 5432 for PostgreSQL)
+↓
+RDS Instance
+↓
+Automated Backups + Multi-AZ Replicas
+```
+
+In short — your app connects to RDS, and AWS makes sure your data stays available, secure, and recoverable.
+
+---
+
+## 3. Core Components
+
+When you launch an RDS instance, AWS silently builds several moving parts underneath.
+
+### DB Instance
+The actual **compute environment** where your database runs — like a virtual machine with CPU, RAM, and storage.
+You can scale it vertically (change instance type) or horizontally (add read replicas).
+
+### DB Engine
+This defines which database technology is powering your instance.
+Options include MySQL, PostgreSQL, Oracle, SQL Server, and MariaDB.
+Each has its own pricing and features, but RDS handles all of them in a similar way.
+
+### Endpoint
+Every RDS instance gets a **unique DNS endpoint**.
+That's your connection string — your app uses it instead of an IP.
+
+```
+webstore-db.xxxxx.us-east-1.rds.amazonaws.com
+```
+
+Even during a failover or maintenance, the endpoint always points to the correct active instance.
+
+### Storage Type
+RDS storage comes from **EBS (Elastic Block Store)**.
+You can pick:
+- **gp3 (General Purpose SSD)** – cost-effective and balanced performance.
+- **io2 (Provisioned IOPS SSD)** – high-speed, low-latency storage for heavy workloads.
+
+You can increase storage size anytime — no downtime required.
+
+### Security Group
+Acts as a **firewall** controlling who can access your database.
+
+| Engine | Port |
+|---|---|
+| MySQL | 3306 |
+| PostgreSQL | 5432 |
+
+Always restrict access to specific Security Groups — never open the DB port to `0.0.0.0/0`.
+
+**Summary:**
+
+| Component | Description |
+|---|---|
+| **DB Instance** | The environment where the database runs |
+| **DB Engine** | MySQL, PostgreSQL, Oracle, SQL Server, etc. |
+| **Endpoint** | DNS name used by apps to connect |
+| **Storage Type** | SSD-backed storage (gp3 / io2) |
+| **Security Group** | Firewall controlling inbound and outbound traffic |
+
+---
+
+## 4. Key Features
+
+### 1. Automated Backups
+RDS automatically takes **daily snapshots** and transaction log backups.
+You can roll back to **any specific second** within your backup retention window.
+Perfect for accidental deletions or human errors.
+
+### 2. Multi-AZ Deployment
+RDS creates a **standby replica** in another Availability Zone.
+If the primary database fails, RDS automatically switches over to the standby.
+This means zero manual recovery and almost no downtime.
+
+```
+AZ us-east-1a                    AZ us-east-1b
+┌─────────────────┐              ┌─────────────────┐
+│  RDS Primary    │ ──sync──────►│  RDS Standby    │
+│  postgres:15    │              │  postgres:15    │
+│  webstore-db    │              │  (auto-promote  │
+│  (reads/writes) │              │   on failure)   │
+└─────────────────┘              └─────────────────┘
+```
+
+### 3. Read Replicas
+For apps with lots of read requests (like dashboards or analytics), you can create **read-only copies**.
+They help distribute the load and improve performance.
+
+### 4. Monitoring with CloudWatch
+You can monitor CPU, memory, connections, and IOPS in real time.
+Set alarms or automation to scale when performance metrics go high.
+
+### 5. Fully Managed by AWS
+AWS takes care of everything — patching, scaling, failovers, and security updates.
+You only pay for what you use.
+
+| Feature | What It Does |
+|---|---|
+| **Automated Backups** | Daily snapshots + point-in-time restore |
+| **Multi-AZ Deployment** | Creates standby DB in another AZ for failover |
+| **Read Replicas** | Distribute read traffic and improve performance |
+| **CloudWatch Monitoring** | Tracks performance metrics |
+| **Fully Managed** | AWS handles all the maintenance tasks |
+
+---
+
+## 5. How Backups Actually Work (Behind the Scenes)
+
+Let's say you create a **PostgreSQL RDS instance** named `webstore-db` in the **us-east-1** region.
+
+### 1. Primary Storage (EBS)
+
+When you launch the database:
+
+- AWS automatically attaches **EBS (Elastic Block Store)** volumes behind the scenes to store your DB files.
+- These volumes hold your actual data — tables, indexes, logs, configurations.
+- You don't see or manage them; RDS abstracts them away.
+
+**Service involved:** Amazon EBS (RDS uses it internally for database storage)
+
+---
+
+### 2. Automated Backups Start
+
+When you enable automated backups (default setting):
+
+- RDS quietly takes **EBS snapshots** of your database storage volume once every 24 hours.
+- These are **incremental snapshots** — meaning only the changed data blocks are stored after the first backup.
+
+**Service involved:** Amazon EBS + Amazon S3
+Snapshots are EBS-level backups **stored inside Amazon S3** (you don't see them directly in S3 console, but they live there).
+
+---
+
+### 3. Transaction Logs (Point-in-Time Recovery)
+
+Throughout the day, RDS continuously uploads **transaction logs** (the history of every write or change) to S3.
+These logs allow **point-in-time recovery**, meaning you can restore your DB to *any exact second* before failure.
+
+**Service involved:** Amazon S3 (stores binary logs securely and redundantly)
+
+---
+
+### 4. Restore from Backup
+
+Imagine something goes wrong — your app accidentally drops a table.
+You go to: **AWS Console → RDS → Databases → Restore to Point in Time.**
+
+You choose a timestamp, like:
+
+```
+12th Oct, 2025 – 14:22:05
+```
+
+AWS then:
+
+1. Fetches the relevant **EBS snapshot** from S3.
+2. Replays all **transaction logs** up to that exact second.
+3. Creates a **new RDS instance** (`webstore-db-restore`) with recovered data.
+
+Your original DB stays untouched.
+
+**Services involved:**
+- **Amazon RDS** → Orchestrates the recovery process.
+- **Amazon S3** → Provides the stored backups and logs.
+- **Amazon EBS** → Creates new volumes for the restored DB.
+
+---
+
+### 5. Monitoring and Logging
+
+Once your backups and restores are running, AWS gives you two watchers that keep an eye on everything — one for **performance**, and one for **activity history**.
+
+#### a) CloudWatch — Performance Monitor
+Think of this as a health meter for your database.
+It constantly measures things like:
+- CPU usage
+- Storage space used
+- Number of connections
+- Backup duration and progress
+
+You can open **CloudWatch → Metrics → RDS** in the console and see live graphs.
+If something goes wrong (for example, CPU > 90% for 5 minutes), you can set an **alarm** so AWS notifies you or even runs an action.
+
+**Purpose:** lets you know if your database or backups are slowing down, filling up, or overloading — before it becomes a problem.
+
+#### b) CloudTrail — Activity History
+This keeps a diary of what actions were taken and by whom.
+Example: if someone runs:
+- `CreateSnapshot`
+- `DeleteDBInstance`
+- `RestoreDBInstanceFromBackup`
+
+You'll see exactly when and who did it.
+
+It's mainly for **security and auditing** — so you can trace changes if something unexpected happens.
+
+**Purpose:** proves accountability and helps investigate any wrong action or failure later.
+
+---
+
+### 6. Cross-Region Backups (Optional, for Extra Safety)
+
+If you enable it, AWS can make **a copy of your snapshots** and send them to another region — say your main DB is in `us-east-1`, the copy could go to `us-west-2`.
+
+Why this matters:
+- If an entire region faces an outage or disaster, your data is still safe elsewhere.
+- You can even launch an RDS instance from that copy in the other region and keep your app running.
+
+You can set this up once — RDS automates the rest.
+
+---
+
+### 7. The Big Picture (Tie Everything Together)
+
+Here's what's happening overall:
+
+1. **Your RDS instance** stores live data on **EBS volumes**.
+2. **Automated backups** take **EBS snapshots** daily and save them in **S3**.
+3. **Transaction logs** continuously flow into **S3** so you can rewind to any second.
+4. **When you restore**, RDS combines the latest snapshot + those logs to rebuild your data on new EBS volumes.
+5. **CloudWatch** keeps you informed about performance and backup health.
+6. **CloudTrail** keeps an action log for auditing.
+7. Optionally, **S3** replicates your snapshots to another region for disaster recovery.
+
+Visually:
+
+```
+RDS Instance (EBS)
+│
+├──► Daily Snapshots ──► Amazon S3
+├──► Transaction Logs ──► Amazon S3
+│
+├──► Monitoring ────────► CloudWatch
+├──► Activity Logs ─────► CloudTrail
+└──► Optional Copies ───► S3 (Other Region)
+```
+
+**In Short:**
+- **EBS** = live database storage.
+- **S3** = safe long-term backup vault.
+- **CloudWatch** = performance dashboard.
+- **CloudTrail** = security history log.
+
+Together, these services make RDS backups automatic, trackable, and easy to recover.
+
+### Realistic Example
+
+Your production webstore uses RDS for orders and products.
+
+Scenario:
+- At 3:15 PM, a wrong SQL command deletes the `products` table.
+- You open RDS → click "Restore to point in time" → select 3:14:59 PM.
+- AWS automatically restores from your latest backup snapshot + replays logs → **new DB instance appears with all data intact**.
+- You reconnect your app to the new endpoint, and everything resumes normally.
+
+In short:
+- RDS uses **EBS** for live data
+- **S3** for backups and logs
+- **CloudWatch** for monitoring
+- **CloudTrail** for auditing
+- all of it is managed by **RDS itself** — no manual coordination needed
+
+---
+
+## 6. Migrating Webstore-DB from Container to RDS
+
+The webstore-db runs as a `postgres:15` container with a PersistentVolumeClaim on Kubernetes. Here is the migration path to RDS.
+
+### Step 1 — Dump the data from the container
+
+```bash
+# From inside the Kubernetes cluster
+kubectl exec -it webstore-db-0 -- pg_dump \
+  -U postgres \
+  -d webstore \
+  -F c \
+  -f /tmp/webstore-backup.dump
+
+# Copy the dump out of the pod
+kubectl cp webstore-db-0:/tmp/webstore-backup.dump ./webstore-backup.dump
+```
+
+### Step 2 — Create the RDS instance
+
+```bash
+aws rds create-db-instance \
+  --db-instance-identifier webstore-db \
+  --db-instance-class db.t3.medium \
+  --engine postgres \
+  --engine-version 15 \
+  --master-username webstore_admin \
+  --master-user-password <secure-password> \
+  --allocated-storage 20 \
+  --storage-type gp3 \
+  --vpc-security-group-ids sg-webstore-db \
+  --db-subnet-group-name webstore-db-subnet-group \
+  --multi-az \
+  --backup-retention-period 7 \
+  --no-publicly-accessible
+```
+
+### Step 3 — Restore the dump to RDS
+
+```bash
+# Create the database on RDS
+psql -h webstore-db.xxxxx.us-east-1.rds.amazonaws.com \
+  -U webstore_admin \
+  -c "CREATE DATABASE webstore;"
+
+# Restore the dump
+pg_restore \
+  -h webstore-db.xxxxx.us-east-1.rds.amazonaws.com \
+  -U webstore_admin \
+  -d webstore \
+  -F c \
+  ./webstore-backup.dump
+```
+
+### Step 4 — Update the application connection string
+
+Change the `DATABASE_URL` in the webstore-api Kubernetes Secret from the container endpoint to the RDS endpoint. Apply the updated Secret. Roll out the Deployment to pick up the new connection string.
+
+### Step 5 — Verify and decommission the container
+
+Run smoke tests against the application. Verify data integrity. Once confirmed, delete the webstore-db Deployment and PVC.
+
+---
+
+### RDS in a DevOps Workflow
+
+In a DevOps workflow, RDS acts as your **database backbone** — reliable, monitored, and automated.
+
+- **Infrastructure as Code (IaC):** Create and manage RDS using Terraform or CloudFormation.
+- **Automation:** Integrate snapshots and restore operations into CI/CD pipelines.
+- **Monitoring:** Push CloudWatch metrics into Grafana or custom dashboards.
+- **Security:** Use IAM roles, KMS encryption, and TLS connections.
+- **Reliability:** Multi-AZ and PITR protect against failures and human mistakes.
+
+In short — RDS gives your application the confidence to scale, fail, recover, and still stay online.
+
+---
+
+## What You Can Do After This
+
+- Create an RDS PostgreSQL instance with Multi-AZ and automated backups
+- Explain exactly how RDS backups work — EBS snapshots, transaction logs, S3, CloudWatch, CloudTrail
+- Perform a point-in-time restore of a database
+- Migrate a postgres database from a Kubernetes container to RDS
+- Update an application to connect to RDS instead of a local container
+- Explain the difference between automated backups and manual snapshots
+
+---
+
+## What Comes Next
+
+→ [08. Load Balancing & Auto Scaling](../08-load-balancing-auto-scaling/README.md)
+
+The webstore-api runs on two EC2 instances across two AZs. Traffic needs to reach both of them and route away from any instance that becomes unhealthy. That is what the Application Load Balancer (ALB) does.
+
+
+---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/08-load-balancing-auto-scaling/README.md
+
+[Home](../README.md) |
+[Intro](../01-intro-aws/README.md) |
+[IAM](../02-iam/README.md) |
+[VPC](../03-vpc-subnet/README.md) |
+[EBS](../04-ebs/README.md) |
+[S3](../05-s3/README.md) |
+[EC2](../06-ec2/README.md) |
+[RDS](../07-rds/README.md) |
+[Load Balancing](../08-load-balancing-auto-scaling/README.md) |
+[CloudWatch](../09-cloudwatch-sns/README.md) |
+[Route 53](../10-route53/README.md) |
+[CLI](../11-cli-cloudformation/README.md) |
+[EKS](../12-eks/README.md)
+
+---
+
+# AWS Load Balancer & Auto Scaling — Resilience and Scaling in Action
+
+Once our app is up, we hit the next challenge — growth.
+More users mean more requests, and one EC2 can't handle them forever.
+This is where Load Balancers and Auto Scaling come in: one spreads the traffic, the other adds or removes servers automatically.
+Together they make your system stable, fast, and cost-smart.
+
+---
+
+## Table of Contents
+
+1. [Why We Need Load Balancing & Auto Scaling](#1-why-we-need-load-balancing--auto-scaling)
+2. [Load Balancer — The Traffic Director](#2-load-balancer--the-traffic-director)
+3. [AWS Load Balancer Types](#3-aws-load-balancer-types)
+4. [Health Checks Explained](#4-health-checks-explained)
+5. [Auto Scaling — The Self-Healing Mechanism](#5-auto-scaling--the-self-healing-mechanism)
+6. [Scaling Policies](#6-scaling-policies)
+7. [Monitoring with CloudWatch](#7-monitoring-with-cloudwatch)
+8. [Recommended Architecture — Webstore](#8-recommended-architecture--webstore)
+9. [Cost, Benefits, and Hands-On](#9-cost-benefits-and-hands-on)
+
+---
+
+## 1. Why We Need Load Balancing & Auto Scaling
+
+When an application runs on a single EC2 instance, it's vulnerable — if that instance fails, users face downtime.
+As traffic grows, that single instance also becomes a bottleneck.
+
+**Load Balancing** prevents overload by distributing requests across multiple servers.
+**Auto Scaling** ensures the number of servers adjusts automatically with demand.
+
+Together, they create systems that are:
+- **Highly available** – no single point of failure
+- **Scalable** – adapt to load changes
+- **Cost-efficient** – run only what's needed
+
+**Analogy:**
+Think of a restaurant during lunch hour. The manager (Load Balancer) sends customers evenly to free tables, and when the rush increases, new waiters are called in (Auto Scaling). When it's quiet again, the extra waiters leave — smooth, efficient, and balanced.
+
+---
+
+## 2. Load Balancer — The Traffic Director
+
+### Purpose
+
+A Load Balancer acts as a **single entry point** for all users, forwarding requests to backend EC2 instances that are healthy and available.
+
+### How It Works
+
+1. Users connect to the LB's DNS name.
+2. The LB routes each request to a **Target Group** (group of EC2 instances or IPs).
+3. Constant **Health Checks** decide which targets are fit to receive traffic.
+4. The LB automatically stops sending traffic to unhealthy instances.
+
+### Core Concepts
+
+| Term | Description |
+|---|---|
+| **Listener** | Defines protocol and port (e.g., HTTP 80 → Target Group A) |
+| **Target Group** | Pool of EC2 targets behind the LB |
+| **Rule** | Conditions (path/host/header) used for routing |
+| **Cross-Zone LB** | Balances traffic across AZs for fault tolerance |
+| **Sticky Sessions** | Keeps a client bound to the same target |
+| **TLS Termination** | LB handles HTTPS encryption via ACM certificate |
+| **Access Logs** | Store detailed connection data to S3 |
+
+### Simple Architecture
+
+```
+Internet Users
+│
+▼
++------------------+
+|  Load Balancer   |
++------------------+
+│      │      │
+▼      ▼      ▼
+EC2-A  EC2-B  EC2-C
+```
+
+---
+
+## 3. AWS Load Balancer Types
+
+Each LB type works at a specific **OSI layer** and fits different needs.
+
+| Type | OSI Layer | Think of It As | Ideal For | Why It Fits Best |
+|---|---|---|---|---|
+| **Application LB (ALB)** | Layer 7 | Smart receptionist who understands full sentences | Web apps (HTTP/HTTPS) | Routes by path/host, supports cookies, redirects, WebSockets, and integrates with ACM & WAF. |
+| **Network LB (NLB)** | Layer 4 | Bouncer who checks connection tickets | Gaming, IoT, low-latency or fixed-IP workloads | Handles millions of TCP/UDP connections with static IPs and TLS pass-through. |
+| **Gateway LB (GWLB)** | Layer 3 | Security checkpoint inspecting every packet | Firewalls, intrusion detection, network inspection | Transparently inserts appliances into traffic flow. |
+| **Classic LB (CLB)** | Layer 4/7 | Old front-desk operator | Legacy EC2 stacks | Simple, but lacks advanced routing and metrics — migrate to ALB/NLB. |
+
+---
+
+### Real-World Scenarios
+
+| Scenario | Best LB | Why This Works |
+|---|---|---|
+| Multi-path web app (`/`, `/api`, `/login`) | **ALB** | Path-based routing, SSL termination, WAF support. |
+| Multiplayer gaming needing static IPs | **NLB** | TCP/UDP speed, minimal latency. |
+| Deploying network firewalls (FortiGate, Palo Alto) | **GWLB** | Inserts inspection appliances inline transparently. |
+| Legacy monolith (pre-2016) | **CLB → ALB recommended** | Backward compatible, but ALB adds performance & logs. |
+
+---
+
+### OSI Layer Quick View
+
+| Layer | Understands | Example Decision |
+|---|---|---|
+| **L3 (GWLB)** | IP Packets | "Route 10.0.0.0/16 through firewall." |
+| **L4 (NLB)** | Ports & Protocols | "If TCP 443 → EC2-A." |
+| **L7 (ALB)** | Full HTTP/HTTPS requests | "If path = /api → Target Group 2." |
+
+---
+
+### Choosing Quickly
+
+| Goal | Choose |
+|---|---|
+| Smart routing (URLs, headers) | **ALB** |
+| Ultra-low latency or static IP | **NLB** |
+| Security inspection | **GWLB** |
+| Legacy support | **CLB** |
+
+---
+
+## 4. Health Checks Explained
+
+Health Checks are what keep your Load Balancer smart — it constantly asks "Are you okay?" to each target before sending traffic.
+
+**Parameters to Configure:**
+- **Protocol & Path** → `HTTP:80 /healthz` or `TCP:22`
+- **Healthy Threshold** → How many successes before marking healthy
+- **Unhealthy Threshold** → Failures before removing instance
+- **Interval** → Frequency of checks
+- **Timeout** → Wait time before declaring failure
+
+**Goal:** keep traffic flowing only to **healthy** instances automatically.
+
+---
+
+## 5. Auto Scaling — The Self-Healing Mechanism
+
+When traffic rises, add servers; when it drops, remove them.
+That's what Auto Scaling does — **scale dynamically without manual control.**
+
+### Core Components
+
+| Component | Description |
+|---|---|
+| **Launch Template** | Blueprint defining AMI, instance type, SGs, IAM role, User Data |
+| **Auto Scaling Group (ASG)** | Logical group controlling instance count (Min/Desired/Max) |
+| **Scaling Policies** | Define how and when scaling occurs |
+| **Health Checks** | Replace unhealthy instances automatically |
+| **Lifecycle Hooks** | Trigger actions before join/after terminate (warm-up, drain, save logs) |
+
+**Analogy:**
+Like a supermarket opening more checkout counters when queues form and closing them when the rush ends — smooth, elastic, cost-efficient.
+
+---
+
+## 6. Scaling Policies
+
+| Policy Type | Trigger | Example |
+|---|---|---|
+| **Target Tracking** | Maintain a steady metric | Keep CPU ≈ 60% |
+| **Step Scaling** | Adjust by threshold steps | +1 instance @ 70%, +2 @ 90% |
+| **Simple Scaling** | One threshold → one action | Add 1 instance when CPU > 80% |
+| **Scheduled Scaling** | Time-based automation | Weekdays 9 AM scale out, 5 PM scale in |
+
+**Behind the Scenes:**
+- Scaling uses **CloudWatch Alarms** to detect thresholds.
+- ASG then launches or terminates instances based on that metric.
+
+---
+
+## 7. Monitoring with CloudWatch
+
+**CloudWatch** provides full observability:
+
+| Type | Use |
+|---|---|
+| **Metrics** | CPU, Network, RequestCountPerTarget, TargetResponseTime |
+| **Alarms** | Trigger actions or notifications |
+| **Logs** | Collect system/app logs |
+| **Dashboards** | Unified view of health and scaling metrics |
+
+Combine these with scaling policies for a closed feedback loop:
+*Monitor → Decide → Act → Repeat.*
+
+---
+
+## 8. Recommended Architecture — Webstore
+
+**Goal:** High availability + elastic scaling + cost efficiency.
+
+```
+                    Internet Users
+                          │
+                          ▼
+             ┌────────────────────────┐
+             │   Application LB (ALB) │  ← HTTPS 443 (ACM certs)
+             │   HTTP 80 → redirect   │
+             └────────────┬───────────┘
+                          │
+             ┌────────────┴────────────┐
+             ▼                         ▼
+     ┌──────────────┐         ┌──────────────┐
+     │ webstore-api │         │ webstore-api │
+     │  EC2 (AZ-a)  │         │  EC2 (AZ-b)  │
+     └──────────────┘         └──────────────┘
+             ▲                         ▲
+             └──────────┬──────────────┘
+                        │
+               Auto Scaling Group
+               Min=2  Desired=2  Max=6
+               ↑ scale out when CPU > 70%
+               ↓ scale in  when CPU < 30%
+```
+
+- Instances spread across multiple AZs
+- Health Checks at ALB and EC2 level (`/healthz` → expect 200 OK)
+- Scaling based on CPU or RequestCountPerTarget
+- Instance Refresh for rolling updates (new AMI/Launch Template)
+- Logging + Alerts via CloudWatch
+
+**ALB listeners for webstore:**
+```
+Listener: HTTPS 443
+  Default rule → webstore-api-tg (port 8080)
+  Path /static/* → webstore-frontend-tg (port 80)
+
+Listener: HTTP 80
+  Redirect → HTTPS 443 (301)
+```
+
+---
+
+## 9. Cost, Benefits, and Hands-On
+
+### Cost Awareness
+
+| Component | Cost Basis | Notes |
+|---|---|---|
+| **ALB** | per hour + per LCU (Load Balancer Capacity Unit) | Pay for time active + processed traffic |
+| **NLB** | per hour + per LCU (new connections, data processed) | Slightly higher but faster |
+| **ASG** | Free | Pay only for EC2 and CloudWatch usage |
+| **CloudWatch** | per metric + alarms + logs | Optimize by filtering important metrics only |
+
+**Tip:** Right-size instance types and schedule down-scaling windows to reduce bills.
+
+---
+
+### Benefits Recap
+
+| Capability | Handled By | Outcome |
+|---|---|---|
+| Traffic Distribution | Load Balancer | Balanced user experience |
+| Fault Tolerance | LB + ASG | Automatic recovery from failures |
+| Cost Efficiency | ASG | Scales down when idle |
+| Security & Monitoring | WAF + CloudWatch | Visibility and Protection |
+
+Together they build **resilient, self-adjusting AWS architectures.**
+
+---
+
+### Hands-On Pointers
+
+1. Deploy **ALB** in public subnets; register EC2 targets in private subnets.
+2. Create **Launch Template** → link to ASG → attach scaling policy.
+3. Configure Health Checks (`/healthz`) and grace periods.
+4. Use **ACM** (AWS Certificate Manager) for free SSL/TLS certificates.
+5. Verify metrics in **CloudWatch Dashboard**.
+6. Test scaling by generating load (e.g., Apache Bench or stress tool).
+
+**Further reading:**
+- [AWS Elastic Load Balancing Docs](https://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/what-is-load-balancing.html)
+- [Amazon EC2 Auto Scaling Docs](https://docs.aws.amazon.com/autoscaling/ec2/userguide/what-is-amazon-ec2-auto-scaling.html)
+- [Amazon CloudWatch Docs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html)
+- [AWS WAF Integration Guide](https://docs.aws.amazon.com/waf/latest/developerguide/waf-chapter.html)
+- [AWS Certificate Manager Overview](https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html)
+
+---
+
+## What You Can Do After This
+
+- Create an ALB with listeners, target groups, and health checks
+- Explain the difference between ALB, NLB, GWLB, and CLB
+- Configure an Auto Scaling Group with a Launch Template and scaling policy
+- Set up health checks that correctly identify unhealthy instances
+- Design the webstore load balancer setup with path-based routing
+
+---
+
+## What Comes Next
+
+→ [09. CloudWatch & SNS](../09-cloudwatch-sns/README.md)
+
+The ALB distributes traffic. The ASG maintains capacity. CloudWatch tells you what all of this is doing — and SNS alerts you when something goes wrong.
+
+
+---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/09-cloudwatch-sns/README.md
+
+[Home](../README.md) |
+[Intro](../01-intro-aws/README.md) |
+[IAM](../02-iam/README.md) |
+[VPC](../03-vpc-subnet/README.md) |
+[EBS](../04-ebs/README.md) |
+[S3](../05-s3/README.md) |
+[EC2](../06-ec2/README.md) |
+[RDS](../07-rds/README.md) |
+[Load Balancing](../08-load-balancing-auto-scaling/README.md) |
+[CloudWatch](../09-cloudwatch-sns/README.md) |
+[Route 53](../10-route53/README.md) |
+[CLI](../11-cli-cloudformation/README.md) |
+[EKS](../12-eks/README.md)
+
+---
+
+# AWS CloudWatch & SNS — The Eyes and Bell of AWS
+
+CloudWatch observes. SNS alerts.
+Together, they form the heartbeat and voice of your AWS ecosystem — detecting change and announcing it instantly.
+
+---
+
+## Table of Contents
+
+1. [What Is CloudWatch and Why Observability Matters](#1-what-is-cloudwatch-and-why-observability-matters)
+2. [What Is SNS — Core Concepts](#2-what-is-sns--core-concepts)
+3. [Architecture Diagram](#3-architecture-diagram)
+4. [Hands-On Workflow](#4-hands-on-workflow)
+5. [Best Practices & Use Cases](#5-best-practices--use-cases)
+6. [Beyond Alerts — Automation & IaC](#6-beyond-alerts--automation--iac)
+7. [Summary, Cost, and Checklist](#7-summary-cost-and-checklist)
+
+---
+
+## 1. What Is CloudWatch and Why Observability Matters
+
+### Why We Need Observability
+
+As infrastructure grows, manual health checks don't scale.
+We need **real-time telemetry** — metrics, logs, events — that expose what's happening under the hood.
+
+Without observability:
+- Outages go undetected until users report them.
+- Bottlenecks stay hidden.
+- MTTR (mean time to repair) skyrockets.
+
+**CloudWatch + SNS** close the loop:
+
+> Measure → Detect → Alert → Respond → Recover.
+
+---
+
+### What Is CloudWatch
+
+Amazon CloudWatch provides a **central nervous system** for AWS environments.
+
+It collects and visualizes:
+- **Metrics:** quantitative measures (CPU, Memory, I/O).
+- **Logs:** textual data from applications & services.
+- **Events:** resource state changes (e.g., EC2 stopped).
+- **Alarms:** logic that evaluates metrics and triggers actions.
+
+Advanced features:
+- **Metric Math:** combine or compute metrics (e.g., `CPUUtilization / NumberOfCores`).
+- **Anomaly Detection:** ML-based deviation banding.
+- **Composite Alarms:** aggregate multiple alarms → one decision point.
+- **Dashboards:** unified visibility across accounts and regions.
+
+---
+
+## 2. What Is SNS — Core Concepts
+
+### What Is SNS
+
+Amazon Simple Notification Service (SNS) is a **fully-managed pub/sub messaging service**.
+It decouples **publishers (alarms)** from **subscribers (email, Lambda, SQS, HTTP)**.
+
+```
+CloudWatch Alarm ──► SNS Topic ──► Subscribers (Email / SMS / Lambda)
+```
+
+Features:
+- **Fan-out delivery** to multiple endpoints.
+- **Durability** and delivery retries.
+- **Message filtering** per subscription.
+- **Cross-account topics** for centralized alerting.
+
+---
+
+### Core Concepts
+
+| Concept | CloudWatch Role | SNS Role |
+|---|---|---|
+| **Metric** | Numeric data point (e.g., CPU %, Requests) | — |
+| **Log Group / Stream** | Store application or system logs | — |
+| **Alarm** | Evaluates metric vs threshold → state change | Publishes message to topic |
+| **Dashboard** | Visualization of metrics | — |
+| **Event** | Detects resource changes | May publish notifications through SNS |
+| **Topic** | — | Named channel for messages |
+| **Subscription** | — | Destination endpoint (Email/SMS/Lambda) |
+
+**Logs vs Metrics vs Events:**
+
+| Data Type | Example Source | Used For |
+|---|---|---|
+| **Logs** | App stdout / EC2 syslog | Root-cause analysis |
+| **Metrics** | CPU %, Memory, Latency | Trend monitoring & threshold alarms |
+| **Events** | EC2 stop, Lambda invoke | Automation & reactive flows |
+
+---
+
+## 3. Architecture Diagram
+
+```
+                   ┌──────────────────────────────┐
+                   │         AWS Resources         │
+                   │  (EC2, RDS, Lambda, ECS…)    │
+                   └──────────────┬───────────────┘
+                                  │  Metrics / Logs
+                                  ▼
+                        ┌──────────────────┐
+                        │   CloudWatch     │
+                        │ Metrics + Logs   │
+                        └───────┬──────────┘
+                                │ Alarm Trigger
+                                ▼
+                        ┌──────────────────┐
+                        │     SNS Topic    │
+                        │   (ops-alerts)   │
+                        └───────┬──────────┘
+              ┌────────────────┼────────────────┐
+              │                │                │
+       ┌────────────┐  ┌────────────┐  ┌────────────┐
+       │   Email     │  │   SMS      │  │  Lambda    │
+       │ Subscriber  │  │ Subscriber │  │ Automation │
+       └────────────┘  └────────────┘  └────────────┘
+```
+
+**Planes of Operation:**
+
+```
+Metrics Plane      →  Collect & Store  (CloudWatch)
+Alarm Plane        →  Evaluate & Trigger
+Notification Plane →  Publish & Deliver (SNS)
+Automation Plane   →  Remediate (Lambda/Systems Manager)
+```
+
+---
+
+## 4. Hands-On Workflow
+
+### Webstore Monitoring Setup
+
+These are the core alarms for the webstore on AWS.
+
+**Alarm 1 — webstore-api high CPU:**
+```bash
+aws cloudwatch put-metric-alarm \
+  --alarm-name webstore-api-high-cpu \
+  --metric-name CPUUtilization \
+  --namespace AWS/EC2 \
+  --statistic Average \
+  --period 300 \
+  --threshold 80 \
+  --comparison-operator GreaterThanThreshold \
+  --dimensions Name=AutoScalingGroupName,Value=webstore-api-asg \
+  --evaluation-periods 1 \
+  --alarm-actions arn:aws:sns:us-east-1:123456789012:webstore-warning
+```
+
+**Alarm 2 — webstore ALB 5XX errors:**
+```bash
+aws cloudwatch put-metric-alarm \
+  --alarm-name webstore-alb-5xx \
+  --metric-name HTTPCode_ELB_5XX_Count \
+  --namespace AWS/ApplicationELB \
+  --statistic Sum \
+  --period 60 \
+  --threshold 10 \
+  --comparison-operator GreaterThanThreshold \
+  --evaluation-periods 2 \
+  --alarm-actions arn:aws:sns:us-east-1:123456789012:webstore-critical
+```
+
+---
+
+**Step 1 – Create SNS Topic & Subscription:**
+
+```bash
+aws sns create-topic --name ops-alerts
+
+aws sns subscribe \
+  --topic-arn arn:aws:sns:us-east-1:111122223333:ops-alerts \
+  --protocol email \
+  --notification-endpoint admin@example.com
+```
+
+Confirm email subscription.
+
+**Step 2 – Create CloudWatch Alarm:**
+
+```bash
+aws cloudwatch put-metric-alarm \
+  --alarm-name HighCPU \
+  --metric-name CPUUtilization --namespace AWS/EC2 \
+  --statistic Average --period 300 --threshold 80 \
+  --comparison-operator GreaterThanThreshold \
+  --dimensions Name=InstanceId,Value=i-0123456789abcdef \
+  --evaluation-periods 1 \
+  --alarm-actions arn:aws:sns:us-east-1:111122223333:ops-alerts
+```
+
+**Step 3 – Trigger Alarm:**
+
+```bash
+sudo yum install stress -y
+sudo stress --cpu 4 --timeout 60
+```
+
+→ Alarm state changes to `ALARM` → SNS emails team.
+
+**Step 4 – View Alarm History:**
+Console → CloudWatch → Alarms → History.
+
+---
+
+## 5. Best Practices & Use Cases
+
+### Operational Excellence
+
+- Group metrics per application/environment.
+- Apply consistent naming: `<env>-<service>-<metric>-<severity>`.
+- Define severity levels → separate SNS topics (`critical`, `warning`, `info`).
+- Use **composite alarms** to reduce noise.
+- Set **log retention policies**.
+- Encrypt SNS topics with KMS.
+- Integrate Slack/MS Teams via Lambda webhooks.
+- Enable **cross-account dashboards** for central visibility.
+
+### Practical Use Cases
+
+| Category | Example |
+|---|---|
+| **Performance** | Alert when ALB 5xx > 1%, CPU > 80% |
+| **Security** | Root login event → SNS critical topic |
+| **Automation** | Low disk space → Lambda expands EBS volume |
+| **Cost Control** | Idle instance → SNS → Lambda terminates |
+| **DevOps Pipelines** | CI/CD failure → SNS → Slack channel |
+
+---
+
+## 6. Beyond Alerts — Automation & IaC
+
+### Event-Driven Remediation (Example)
+
+```
+CloudWatch Alarm → SNS Topic → Lambda → EC2 API (Action)
+```
+
+**Scenario:** CPU ≥ 95% for 5 min → auto-scale EC2.
+
+Lambda code (abstract):
+
+```python
+import boto3
+def handler(event, context):
+  asg = boto3.client('autoscaling')
+  asg.set_desired_capacity(AutoScalingGroupName='webstore-api-asg', DesiredCapacity=3)
+```
+
+SNS publishes → Lambda invoked → Infra self-heals.
+
+---
+
+### Infrastructure-as-Code (CloudFormation Snippet)
+
+```yaml
+Resources:
+  OpsAlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: ops-alerts
+
+  HighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: High CPU Utilization
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Statistic: Average
+      Period: 300
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: 1
+      AlarmActions:
+        - !Ref OpsAlertsTopic
+```
+
+Version-control your alerts and topics alongside application code.
+
+---
+
+## 7. Summary, Cost, and Checklist
+
+### Cost & Optimization Tips
+
+| Area | Tip |
+|---|---|
+| **Metrics** | Publish aggregated custom metrics instead of per-instance. |
+| **Logs** | Set retention < 30 days unless required. |
+| **Dashboards** | Delete unused widgets to cut API calls. |
+| **Alarms** | Combine via Composite Alarms to reduce charges. |
+| **SNS** | Batch non-urgent notifications or route through SQS to throttle. |
+
+---
+
+### Quick Summary
+
+- **CloudWatch = Observer**, **SNS = Messenger**.
+- Together → real-time visibility + automated response.
+- Use metric math & anomaly detection for smarter alerts.
+- Codify monitoring via CloudFormation/Terraform.
+- Maintain alert hygiene (severity, naming, noise control).
+- Integrate Lambda for self-healing automation.
+
+---
+
+### Self-Audit Checklist
+
+- [ ] I can explain how CloudWatch and SNS interact.
+- [ ] I can create metrics, alarms, and SNS topics via CLI/IaC.
+- [ ] I understand metric math and anomaly detection.
+- [ ] I can draw the Event → Metric → Alarm → SNS → Lambda flow.
+- [ ] I can implement alert severity and retention policies.
+- [ ] I can estimate and optimize CloudWatch costs.
+- [ ] I have a cross-account dashboard for visibility.
+
+---
+
+## What You Can Do After This
+
+- Create CloudWatch alarms on the metrics that matter for the webstore
+- Create SNS topics and subscribe email addresses and Lambda functions
+- Build a CloudWatch dashboard that shows webstore health at a glance
+- Write CloudFormation to codify alarms and topics alongside infrastructure
+- Design an event-driven remediation flow using CloudWatch → SNS → Lambda
+
+---
+
+## What Comes Next
+
+→ [10. Route 53](../10-route53/README.md)
+
+The webstore is running, load-balanced, and monitored. Route 53 is how users actually reach it — DNS resolves `webstore.com` to the ALB's DNS name.
+
+
+---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/10-route53/README.md
+
+[Home](../README.md) |
+[Intro](../01-intro-aws/README.md) |
+[IAM](../02-iam/README.md) |
+[VPC](../03-vpc-subnet/README.md) |
+[EBS](../04-ebs/README.md) |
+[S3](../05-s3/README.md) |
+[EC2](../06-ec2/README.md) |
+[RDS](../07-rds/README.md) |
+[Load Balancing](../08-load-balancing-auto-scaling/README.md) |
+[CloudWatch](../09-cloudwatch-sns/README.md) |
+[Route 53](../10-route53/README.md) |
+[CLI](../11-cli-cloudformation/README.md) |
+[EKS](../12-eks/README.md)
+
+---
+
+# AWS Route 53 — The Global Gateway of Your Architecture
+
+---
+
+## Table of Contents
+
+1. [What Is Route 53 and Why It Exists](#1-what-is-route-53-and-why-it-exists)
+2. [Analogy — The AWS Postal System](#2-analogy--the-aws-postal-system)
+3. [Core Concepts](#3-core-concepts)
+4. [Architecture Blueprint](#4-architecture-blueprint)
+5. [Deep Theory — Records & Routing Policies](#5-deep-theory--records--routing-policies)
+6. [Real-World Examples and Practical Use Cases](#6-real-world-examples-and-practical-use-cases)
+7. [Summary and Checklist](#7-summary-and-checklist)
+
+---
+
+## 1. What Is Route 53 and Why It Exists
+
+### Why We Need Route 53
+
+Every system eventually asks: **how do users reach it?**
+Humans remember names like `webstore.com`; machines only understand IPs.
+
+**AWS Route 53** is a globally distributed **Domain Name System (DNS)** service that resolves those names to IPs and directs users to the closest, healthiest endpoint (ALB, EC2, or S3).
+It's not merely a directory — it's an intelligent **traffic controller** ensuring every request finds the right door, fast.
+
+### The Problem Without Route 53
+
+Without Route 53:
+- You manually update IPs when ALB/EC2 changes.
+- No health checks → downtime for users.
+- Latency rises as queries travel globally.
+- IaC automation becomes fragile.
+
+**Bottom line:** users can't reliably find your app.
+
+### The Solution — Global DNS Network
+
+AWS Route 53 operates hundreds of edge DNS servers worldwide.
+Each query is answered by the nearest healthy server for low latency and automatic failover.
+
+**Flow:**
+1. User enters domain.
+2. Nearest edge server resolves request.
+3. Looks up record in Hosted Zone.
+4. Applies Routing Policy and returns target (ALB DNS).
+5. Browser connects to ALB → EC2/EKS → RDS.
+
+**Strengths:**
+- High availability.
+- Latency-based routing.
+- Health-aware failover.
+- Tight AWS integration + IaC support.
+
+---
+
+## 2. Analogy — The AWS Postal System
+
+| AWS Concept | Real-World Equivalent | Role |
+|---|---|---|
+| **Route 53** | National Postal Network | Knows every delivery path |
+| **Hosted Zone** | Local Post Office | Manages mail for one domain |
+| **DNS Record** | Address Label | Tells where to deliver |
+| **Routing Policy** | Delivery Rule | Chooses best path |
+| **Health Check** | Postal Inspector | Confirms route is open |
+| **TTL** | Stamp Validity | How long others reuse the address |
+
+When someone types your domain, Route 53:
+1. Reads the label (record).
+2. Chooses the best route (policy + health check).
+3. Delivers the request to the correct AWS building (ALB → EC2/EKS → RDS).
+
+---
+
+## 3. Core Concepts
+
+| Concept | Description | Analogy |
+|---|---|---|
+| **Domain Name** | Human-readable address (`webstore.com`) | Name on envelope |
+| **Hosted Zone** | Container for records | Local Post Office |
+| **Record Set** | Name → target mapping | Address Label |
+| **Routing Policy** | Decides which target to return | Delivery Rule |
+| **Health Check** | Tests availability | Route Inspector |
+| **TTL** | Cache duration | Stamp Validity |
+
+---
+
+## 4. Architecture Blueprint
+
+```
+                     User / Browser
+                           │
+                           ▼
+                     AWS Route 53
+                 (Global DNS Resolution)
+                           │
+                           ▼
+                   Internet Gateway (IGW)
+                           │
+                           ▼
+             Application Load Balancer (ALB)
+                     (Public Subnet)
+                           │
+                           ▼
+                EC2 / EKS Instances
+                     (Private Subnet)
+                           │
+                           ▼
+              ┌────────────┴────────────┐
+              │                         │
+           Amazon RDS               Amazon S3
+         (PostgreSQL DB)           (Static Assets)
+```
+
+**Flow Summary:**
+1. User types `webstore.com` → Route 53 resolves to ALB DNS.
+2. Traffic enters via IGW → ALB (public subnet).
+3. ALB routes to EC2/EKS (private subnet).
+4. Instances communicate internally with RDS and S3.
+
+---
+
+## 5. Deep Theory — Records & Routing Policies
+
+### Record Types
+
+| Type | Purpose | Example |
+|---|---|---|
+| A | Name → IPv4 | `@ → 54.231.10.45` |
+| AAAA | Name → IPv6 | `@ → 2600:1f16::45` |
+| CNAME | Alias → another domain | `www → webstore.com` |
+| MX | Mail routing | `10 mail.google.com` |
+| TXT | Metadata / Verification | `google-site-verification=abc` |
+| Alias A | Direct AWS target | `@ → ALB/S3` |
+
+---
+
+### Routing Policies
+
+| Policy | Function | When to Use |
+|---|---|---|
+| Simple | Single IP | Static apps |
+| Weighted | Split traffic by percent | A/B tests |
+| Latency-Based | Closest region | Global apps |
+| Failover | Backup target | DR scenarios |
+| Geolocation | By user region | Compliance |
+| Multi-Value | Multiple healthy IPs | Redundancy |
+
+**Failover Visual:**
+
+```
+User
+ ├─► Primary (ALB – Healthy)
+ └─► Secondary (ALB – Failover)
+```
+
+**Latency Visual:**
+
+```
+EU User   → EU Endpoint
+US User   → US Endpoint
+APAC User → Asia Endpoint
+```
+
+---
+
+## 6. Real-World Examples and Practical Use Cases
+
+### Real-World Examples
+
+**Example 1 – webstore.com → ALB:**
+Hosted Zone + Alias A record → ALB DNS → EC2/EKS.
+
+**Example 2 – Static Site on S3:**
+Enable hosting → Alias A record → S3 endpoint.
+
+**Example 3 – HTTPS Validation:**
+ACM DNS validation adds TXT record via Route 53.
+
+**Example 4 – Failover:**
+us-east-1 primary, eu-west-1 secondary → automatic switch.
+
+**Example 5 – IaC:**
+Manage zones and records via CloudFormation or Terraform.
+
+---
+
+### Practical Use Cases
+
+| Scenario | Route 53 Feature |
+|---|---|
+| Blue/Green Deployments | Weighted Routing |
+| Global User Latency | Latency-Based Routing |
+| Disaster Recovery | Failover + Health Checks |
+| Regional Compliance | Geolocation Routing |
+| Simple Redundancy | Multi-Value Answer |
+| Public Web Hosting | Alias A → ALB/S3 |
+
+---
+
+## 7. Summary and Checklist
+
+### Quick Summary
+
+| Area | Key Points |
+|---|---|
+| **Purpose** | Authoritative DNS for your domains — resolves names with policy and health logic |
+| **Strengths** | Global, automated, AWS-integrated |
+| **Integrations** | ALB, S3, CloudFront, ACM, Terraform |
+| **Cost** | ≈ $0.50/zone + $0.40/M queries (+ health checks) |
+| **Defaults** | Alias A for AWS targets; TTL ≈ 300 s |
+
+Every AWS architecture needs a dependable doorway.
+**Route 53 is that door — a global, fault-tolerant, policy-driven DNS layer that lets the world find your cloud infrastructure without ever getting lost.**
+
+---
+
+### Self-Audit Checklist
+
+- [ ] I can describe DNS resolution via Route 53.
+- [ ] I can link a domain → ALB/S3 using Alias A.
+- [ ] I understand Weighted, Latency, and Failover policies.
+- [ ] I can configure Health Checks.
+- [ ] I can validate ACM certificates through Route 53.
+- [ ] I can create zones and records in Terraform/CloudFormation.
+- [ ] I can estimate hosted-zone and query costs.
+
+---
+
+## What You Can Do After This
+
+- Create a Hosted Zone and point a domain's nameservers at Route 53
+- Create Alias A records pointing a domain to an ALB
+- Explain the difference between CNAME and Alias records
+- Configure ACM certificate validation through Route 53
+- Set up Failover and Weighted routing policies
+
+---
+
+## What Comes Next
+
+→ [11. CLI & CloudFormation](../11-cli-cloudformation/README.md)
+
+All the AWS resources you have built manually can be defined as code. The CLI is the command-line interface for every action you have taken in the console. CloudFormation is the AWS-native IaC tool — a foundation before Terraform replaces it.
+
+
+---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/11-cli-cloudformation/README.md
+
+[Home](../README.md) |
+[Intro](../01-intro-aws/README.md) |
+[IAM](../02-iam/README.md) |
+[VPC](../03-vpc-subnet/README.md) |
+[EBS](../04-ebs/README.md) |
+[S3](../05-s3/README.md) |
+[EC2](../06-ec2/README.md) |
+[RDS](../07-rds/README.md) |
+[Load Balancing](../08-load-balancing-auto-scaling/README.md) |
+[CloudWatch](../09-cloudwatch-sns/README.md) |
+[Route 53](../10-route53/README.md) |
+[CLI](../11-cli-cloudformation/README.md) |
+[EKS](../12-eks/README.md)
+
+---
+
+# AWS CLI + CloudFormation — From Manual Commands to Code-Driven Infrastructure
+
+---
+
+## Table of Contents
+
+1. [Why CLI and CloudFormation](#1-why-cli-and-cloudformation)
+2. [AWS CLI — Your Command-Line Bridge](#2-aws-cli--your-command-line-bridge)
+3. [CloudFormation — Your Infrastructure Engine](#3-cloudformation--your-infrastructure-engine)
+4. [Architecture Blueprint — Automation Flow](#4-architecture-blueprint--automation-flow)
+5. [Template Deep Dive — Webstore EC2 Stack](#5-template-deep-dive--webstore-ec2-stack)
+6. [Real-World Use Cases & Best Practices](#6-real-world-use-cases--best-practices)
+7. [Quick Summary & Self-Audit](#7-quick-summary--self-audit)
+
+---
+
+## 1. Why CLI and CloudFormation
+
+### Why Automation Matters
+
+Manual provisioning through the console is fine for exploration — but it doesn't scale.
+When every instance, bucket, or network must be created consistently across environments, **automation becomes survival**.
+
+Automation:
+- Removes human error
+- Enforces repeatability
+- Enables disaster recovery
+- Saves time in testing, labs, and CI/CD
+
+In AWS, **CLI** gives command-level control; **CloudFormation** codifies entire infrastructures.
+They're two sides of the same efficiency coin.
+
+### Analogy — Driver & Autopilot
+
+| Tool | Analogy | Role |
+|---|---|---|
+| **AWS Console** | Manual driving | Visual, one-at-a-time actions |
+| **AWS CLI** | Steering wheel | Command-based control over services |
+| **CloudFormation** | Autopilot | Reads a flight plan (YAML/JSON) and provisions automatically |
+
+You first learn to **drive manually** (CLI) — steering each service yourself —
+then you let **autopilot (CloudFormation)** fly the same route flawlessly every time.
+
+### The Problem Without Automation
+
+Imagine decorating a house without writing anything down.
+A few months later, you move rooms around — but you forget which switch turns on which light.
+That's what happens when you **manage AWS by hand** using only the Console.
+
+Without CLI or CloudFormation:
+- You forget what settings you used before.
+- Two teammates set up things differently.
+- Fixing or recreating something takes hours.
+- A simple mistake (like wrong region or subnet) breaks everything.
+
+Automation is your **blueprint and memory**.
+It ensures every server, bucket, and network can be rebuilt exactly the same way — anywhere, anytime, by anyone.
+
+> "Manual setup is like cooking without a recipe.
+> Automation is the cookbook that guarantees the same flavor every time."
+
+---
+
+## 2. AWS CLI — Your Command-Line Bridge
+
+### Installing AWS CLI (Mac, Windows, Linux)
+
+**For Mac (recommended):**
+
+```bash
+brew install awscli
+```
+
+or use the official pkg:
+
+```bash
+curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+sudo installer -pkg AWSCLIV2.pkg -target /
+```
+
+**For Windows:**
+Download → [AWSCLIV2.msi](https://awscli.amazonaws.com/AWSCLIV2.msi)
+
+**For Linux:**
+
+```bash
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+```
+
+**Verify installation:**
+
+```bash
+aws --version
+```
+
+---
+
+### Configure Once
+
+```bash
+aws configure
+```
+
+You'll be asked for:
+- Access Key ID
+- Secret Key
+- Default region (e.g., `us-east-1`)
+- Output format (`json`, `table`, `text`)
+
+After setup, your credentials are stored safely under `~/.aws/credentials`.
+
+---
+
+### Grand Table — Everyday AWS CLI Commands for DevOps Engineers
+
+| Service | Task | Command | What It Does |
+|---|---|---|---|
+| **General** | Show current profile & region | `aws configure list` | Confirms which account/region you're using |
+| | Switch region temporarily | `aws ec2 describe-instances --region us-west-2` | Overrides default |
+| **S3 (Storage)** | List buckets | `aws s3 ls` | Shows all buckets |
+| | Create bucket | `aws s3 mb s3://webstore-demo` | Makes a new S3 bucket |
+| | Upload file | `aws s3 cp index.html s3://webstore-demo/` | Uploads a file |
+| | Sync folders | `aws s3 sync ./website s3://webstore-demo` | Mirrors local → S3 |
+| | Delete bucket | `aws s3 rb s3://webstore-demo --force` | Removes everything inside |
+| **EC2 (Compute)** | List instances | `aws ec2 describe-instances` | View running/stopped servers |
+| | Start instance | `aws ec2 start-instances --instance-ids i-1234abcd` | Boot up |
+| | Stop instance | `aws ec2 stop-instances --instance-ids i-1234abcd` | Shut down |
+| | Reboot instance | `aws ec2 reboot-instances --instance-ids i-1234abcd` | Restart |
+| | Create key pair | `aws ec2 create-key-pair --key-name myKey > myKey.pem` | New SSH key |
+| **IAM (Access)** | List users | `aws iam list-users` | Show all users |
+| | Create user | `aws iam create-user --user-name devuser` | Adds IAM user |
+| | Attach policy | `aws iam attach-user-policy --user-name devuser --policy-arn arn:aws:iam::aws:policy/AdministratorAccess` | Grants access |
+| **CloudWatch (Monitoring)** | List metrics | `aws cloudwatch list-metrics` | Shows what's being tracked |
+| | Get CPU stats | `aws cloudwatch get-metric-statistics --metric-name CPUUtilization --namespace AWS/EC2 --start-time 2025-11-10T00:00:00Z --end-time 2025-11-11T00:00:00Z --period 3600 --statistics Average` | View CPU usage |
+| **Lambda (Serverless)** | List functions | `aws lambda list-functions` | Show deployed functions |
+| | Invoke function | `aws lambda invoke --function-name myFunction out.json` | Run function manually |
+| **CloudFormation (IaC)** | List stacks | `aws cloudformation list-stacks` | View deployed stacks |
+| | Validate template | `aws cloudformation validate-template --template-body file://template.yml` | Check YAML before deploying |
+| | Create stack | `aws cloudformation create-stack --stack-name MyStack --template-body file://template.yml` | Deploy infra |
+| | Delete stack | `aws cloudformation delete-stack --stack-name MyStack` | Tear down infra |
+| **Misc Tools** | Get caller identity | `aws sts get-caller-identity` | Confirms which user/account is active |
+| | Get service help | `aws s3 help` | Shows CLI options for that service |
+
+**Tip:** Bookmark this table — it's a "cloud survival sheet" for everyday DevOps work.
+
+---
+
+### When & Why to Use AWS CLI
+
+Think of the **AWS CLI** as your **Swiss Army knife** for cloud work — small, fast, and available everywhere.
+
+You use it when:
+- You need to **check the health** of servers.
+- You want to **move files** to or from S3 quickly.
+- You must **start, stop, or reboot** EC2 instances.
+- You're writing small **scripts or cron jobs** that talk to AWS automatically.
+- You want to **verify** what CloudFormation deployed.
+
+> The Console shows you *what exists*.
+> The CLI lets you *command it directly.*
+
+---
+
+## 3. CloudFormation — Your Infrastructure Engine
+
+### What It Does
+
+CloudFormation turns human-readable templates (YAML/JSON) into live AWS resources — EC2, S3, VPC, IAM roles, everything.
+
+You write **what you want**, AWS figures out **how to build it**.
+
+---
+
+### Core Concepts
+
+| Term | Meaning |
+|---|---|
+| **Template** | Blueprint file describing resources |
+| **Stack** | Deployed instance of a template |
+| **Change Set** | Preview before applying changes |
+| **Parameters** | Input values to reuse templates |
+| **Outputs** | Key data exported to other stacks |
+
+---
+
+### Workflow
+
+1. **Write Template**
+2. **Upload** (local or S3)
+3. **Create Stack**
+
+```bash
+aws cloudformation create-stack --stack-name WebstoreEC2Stack \
+    --template-body file://webstore-ec2.yml
+```
+
+4. **Monitor** progress in Events tab
+5. **Verify** resources in EC2 console
+6. **Delete** cleanly:
+
+```bash
+aws cloudformation delete-stack --stack-name WebstoreEC2Stack
+```
+
+---
+
+### Why Architects Love It
+
+- Reproducible environments
+- Version-controlled IaC
+- Automatic dependency ordering
+- Rollback on failure
+- Integrates with GitHub Actions / Terraform / CI-CD
+
+---
+
+## 4. Architecture Blueprint — Automation Flow
+
+```
+Developer / Engineer
+        │
+        ▼
+ ┌──────────────────────┐
+ │ AWS CLI              │  ← Manual provisioning / testing
+ └──────────┬───────────┘
+            │
+            ▼
+ ┌──────────────────────┐
+ │ AWS CloudFormation   │  ← IaC autopilot (templates)
+ └──────────┬───────────┘
+            │
+            ▼
+ ┌──────────────────────────────┐
+ │ AWS Resources                │
+ │  (EC2 | S3 | RDS | VPC | EKS)│
+ └──────────────────────────────┘
+            │
+            ▼
+   Consistent Infrastructure Ready
+```
+
+CLI = hands-on control
+CloudFormation = repeatable automation
+Together = full-spectrum DevOps efficiency.
+
+---
+
+## 5. Template Deep Dive — Webstore EC2 Stack
+
+Below is a production-ready CloudFormation template that creates a secure EC2 instance with nginx serving the webstore frontend.
+
+```yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Webstore EC2 Linux VM Stack – creates a secure EC2 instance with SSH access.
+
+Parameters:
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to SSH into the instance
+
+Resources:
+  WebstoreSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH and HTTP access
+      VpcId: !Ref AWS::NoValue        # auto-picks default VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  WebstoreEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0c02fb55956c7d316      # Amazon Linux 2 (us-east-1)
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref WebstoreSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Webstore-EC2-Instance
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          yum update -y
+          amazon-linux-extras install nginx1 -y
+          systemctl enable nginx
+          systemctl start nginx
+          echo "<h1>Welcome to Webstore EC2!</h1>" > /usr/share/nginx/html/index.html
+
+Outputs:
+  PublicIP:
+    Description: Public IP address of the instance
+    Value: !GetAtt WebstoreEC2Instance.PublicIp
+  WebURL:
+    Description: URL of the deployed web server
+    Value: !Sub "http://${WebstoreEC2Instance.PublicDnsName}"
+```
+
+**Explanation Highlights:**
+- **Security Group** → allows SSH + HTTP from anywhere.
+- **EC2 Instance** → launches Amazon Linux 2 + auto-installs Nginx.
+- **UserData** → boots with a welcome page.
+- **Outputs** → instantly give you the Public IP and URL.
+
+Deploy with:
+
+```bash
+aws cloudformation create-stack \
+  --stack-name WebstoreEC2Stack \
+  --template-body file://webstore-ec2.yml \
+  --parameters ParameterKey=KeyPairName,ParameterValue=your-keypair
+```
+
+---
+
+## 6. Real-World Use Cases & Best Practices
+
+Instead of big jargon, let's make it real.
+
+| Situation | Tool to Use | Example Scenario |
+|---|---|---|
+| **Morning Check** | AWS CLI | You start your day by checking which EC2 servers are running — `aws ec2 describe-instances`. |
+| **Quick File Upload** | AWS CLI | You push today's build logs to S3 — `aws s3 cp logs.zip s3://webstore-logs/`. |
+| **Recreate Environment** | CloudFormation | Need a test VPC + EC2 for a new feature? Run your template once and everything appears. |
+| **Clean Up Resources** | AWS CLI | Before weekend, run `aws s3 rb s3://temp-bucket --force` to clear unused data. |
+| **Disaster Recovery** | CloudFormation | Prod broke? Redeploy your saved template and get the same architecture back instantly. |
+| **Learning / Testing** | Both | Try new configs using CLI, then document successful setup as a CloudFormation YAML. |
+
+**Best Practices:**
+- Keep all templates in version control (GitHub).
+- Validate every template before running it.
+- Use tags (`--tags Key=Owner,Value=Akhil`) for tracking cost.
+- Practice deleting stacks often — it teaches clean teardown.
+
+> "CLI gives you agility; CloudFormation gives you immortality."
+> Both make sure your cloud doesn't depend on memory — only on mastery.
+
+---
+
+## 7. Quick Summary & Self-Audit
+
+| Area | Key Checks |
+|---|---|
+| **AWS CLI** | Installed + configured correctly |
+| **Access Keys** | Stored securely in credentials file |
+| **Common Commands** | S3 list, EC2 describe, IAM users |
+| **CloudFormation** | Understands Stacks, Parameters, Outputs |
+| **Template Validation** | `validate-template` passes cleanly |
+| **Stack Lifecycle** | Create → Update → Delete works error-free |
+| **Reproducibility** | Same infra works across regions |
+
+**I can:**
+- Create and delete S3 buckets from CLI.
+- Deploy the Webstore EC2 Stack via CloudFormation.
+- Explain IaC benefits to a teammate in plain English.
+
+**Automation turns good engineers into architects.**
+Use **AWS CLI** to understand how AWS thinks, then let **CloudFormation** express that understanding in code.
+When you can rebuild an entire environment with one file or one command — you've crossed from *manual operator* to *infrastructure designer.*
+
+---
+
+## What You Can Do After This
+
+- Install and configure the AWS CLI
+- Run daily EC2, S3, IAM, RDS, and CloudWatch commands confidently
+- Write a CloudFormation template that creates infrastructure from scratch
+- Deploy, update, and delete CloudFormation stacks
+- Explain when to use CLI vs CloudFormation vs Terraform
+
+---
+
+## What Comes Next
+
+→ [12. EKS](../12-eks/README.md)
+
+All the infrastructure built manually across these labs — VPC, EC2, RDS, ALB, Route 53 — comes together in EKS, where the Kubernetes cluster from your laptop moves into AWS.
+
+
+---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/12-eks/README.md
+
+[Home](../README.md) |
+[Intro](../01-intro-aws/README.md) |
+[IAM](../02-iam/README.md) |
+[VPC](../03-vpc-subnet/README.md) |
+[EBS](../04-ebs/README.md) |
+[S3](../05-s3/README.md) |
+[EC2](../06-ec2/README.md) |
+[RDS](../07-rds/README.md) |
+[Load Balancing](../08-load-balancing-auto-scaling/README.md) |
+[CloudWatch](../09-cloudwatch-sns/README.md) |
+[Route 53](../10-route53/README.md) |
+[CLI](../11-cli-cloudformation/README.md) |
+[EKS](../12-eks/README.md)
+
+---
+
+# EKS — Elastic Kubernetes Service
+
+## What This File Is About
+
+The webstore has been running on Minikube for all the Kubernetes labs. Minikube is a single-node cluster on your laptop — it is not production. EKS (Elastic Kubernetes Service) is the managed Kubernetes service that runs the same manifests you wrote for Minikube on real AWS infrastructure, inside the VPC you designed, backed by RDS instead of a postgres container, images pulled from ECR instead of Docker Hub.
+
+---
+
+## Table of Contents
+
+1. [What Is EKS](#1-what-is-eks)
+2. [Key EKS Components](#2-key-eks-components)
+3. [How EKS Fits the Webstore Architecture](#3-how-eks-fits-the-webstore-architecture)
+4. [eksctl — Create the Cluster](#4-eksctl--create-the-cluster)
+5. [ECR — Push the Webstore Image](#5-ecr--push-the-webstore-image)
+6. [Deploy the Webstore to EKS](#6-deploy-the-webstore-to-eks)
+7. [AWS Load Balancer Controller](#7-aws-load-balancer-controller)
+8. [EBS CSI Driver](#8-ebs-csi-driver)
+9. [IAM Roles for Service Accounts (IRSA)](#9-iam-roles-for-service-accounts-irsa)
+10. [Horizontal Pod Autoscaler on EKS](#10-horizontal-pod-autoscaler-on-eks)
+11. [Cleaning Up](#11-cleaning-up)
+
+---
+
+## 1. What Is EKS
+
+EKS is a **managed Kubernetes control plane**. AWS runs the API server, etcd, controller manager, and scheduler across multiple AZs — the components you inspected in the K8s architecture lab. You do not provision, patch, or operate these components. You interact with the cluster through `kubectl` exactly as you did with Minikube.
+
+You are responsible for the **worker nodes** — the EC2 instances that run your pods. EKS provides managed node groups that automate the lifecycle of these nodes: provisioning, OS patching, Kubernetes version updates, and Auto Scaling integration.
+
+The same Kubernetes manifests you wrote for the webstore on Minikube deploy identically to EKS. The cluster looks the same to `kubectl`. The pods behave the same. The difference is that the infrastructure underneath is AWS-managed, multi-AZ, and production-grade.
+
+---
+
+## 2. Key EKS Components
+
+**Managed Node Groups** — AWS manages the EC2 instances that serve as worker nodes. You choose the instance type, the desired count, and the scaling limits. AWS handles the node AMI, OS patching, and Kubernetes version upgrades. Nodes run in your private subnets inside your VPC.
+
+**ECR (Elastic Container Registry)** — the private container registry that holds your webstore-api image. In Minikube you pulled from Docker Hub. In EKS you push to ECR and pull from there. ECR is in the same AWS account — no public registry, no rate limiting, images always available.
+
+**AWS Load Balancer Controller** — a Kubernetes controller that watches for Ingress objects and creates AWS ALBs automatically. When you apply an Ingress manifest for the webstore, the controller creates an ALB, configures the listeners and target groups, and wires the health checks. You manage the Ingress manifest. AWS manages the ALB.
+
+**EBS CSI Driver** — the Container Storage Interface (CSI) driver for EBS. When you create a PersistentVolumeClaim with the `ebs-sc` StorageClass, the EBS CSI driver provisions a real EBS volume and attaches it to the correct node automatically.
+
+**IRSA (IAM Roles for Service Accounts)** — lets Kubernetes pods assume IAM roles. Instead of putting IAM credentials in a Secret, you annotate a Kubernetes ServiceAccount with an IAM role ARN. Pods using that ServiceAccount automatically get temporary credentials for that role. The webstore-api ServiceAccount gets the role that allows S3 reads and ECR pulls.
+
+**OIDC Provider** — eksctl enables this automatically. It is what makes IRSA work — the cluster's OIDC (OpenID Connect) identity provider is what allows Kubernetes service accounts to be trusted by AWS IAM.
+
+---
+
+## 3. How EKS Fits the Webstore Architecture
+
+```
+┌─────────────────────────────── AWS (us-east-1) ──────────────────────────────────┐
+│                                                                                  │
+│  EKS Control Plane (AWS managed, across multiple AZs)                            │
+│  ├── API Server                                                                  │
+│  ├── etcd                                                                        │
+│  ├── Scheduler                                                                   │
+│  └── Controller Manager                                                          │
+│                                                                                  │
+│  VPC: 10.0.0.0/16                                                                │
+│  ├── Public Subnets (us-east-1a, us-east-1b)                                     │
+│  │   └── AWS Load Balancer Controller → ALB for Ingress                          │
+│  │                                                                               │
+│  └── Private Subnets (us-east-1a, us-east-1b)                                   │
+│      ├── EKS Node Group (EC2 worker nodes)                                       │
+│      │   ├── webstore-frontend pods                                              │
+│      │   ├── webstore-api pods                                                   │
+│      │   └── System pods (CoreDNS, kube-proxy, aws-node)                        │
+│      │                                                                           │
+│      └── RDS PostgreSQL (replaces webstore-db pod + PVC)                        │
+│                                                                                  │
+│  ECR: webstore-api container images                                              │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 4. eksctl — Create the Cluster
+
+`eksctl` is the official CLI for creating and managing EKS clusters.
+
+**Install:**
+
+```bash
+brew tap weaveworks/tap
+brew install weaveworks/tap/eksctl
+```
+
+**Create a cluster:**
+
+```bash
+eksctl create cluster \
+  --name webstore \
+  --region us-east-1 \
+  --version 1.29 \
+  --nodegroup-name webstore-nodes \
+  --node-type t3.medium \
+  --nodes 2 \
+  --nodes-min 2 \
+  --nodes-max 6 \
+  --managed \
+  --vpc-private-subnets subnet-1a,subnet-1b \
+  --vpc-public-subnets subnet-pub-1a,subnet-pub-1b \
+  --with-oidc \
+  --ssh-access \
+  --ssh-public-key webstore-key
+```
+
+This takes 15–20 minutes. eksctl creates the EKS control plane, the managed node group, the necessary IAM roles, and updates your kubeconfig so `kubectl` connects to the new cluster.
+
+**Verify:**
+
+```bash
+kubectl get nodes
+kubectl get pods -A
+```
+
+---
+
+## 5. ECR — Push the Webstore Image
+
+```bash
+# Create the ECR repository
+aws ecr create-repository \
+  --repository-name webstore-api \
+  --region us-east-1
+
+# Authenticate Docker to ECR
+aws ecr get-login-password --region us-east-1 \
+  | docker login \
+    --username AWS \
+    --password-stdin 123456789012.dkr.ecr.us-east-1.amazonaws.com
+
+# Build and tag the image
+docker build -t webstore-api:v1.0 .
+docker tag webstore-api:v1.0 \
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/webstore-api:v1.0
+
+# Push to ECR
+docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/webstore-api:v1.0
+```
+
+---
+
+## 6. Deploy the Webstore to EKS
+
+The manifests you wrote for Minikube need two changes for EKS:
+
+1. The webstore-api Deployment image tag changes from the placeholder to the ECR image URL.
+2. The webstore-db is removed from Kubernetes — it is now RDS. The `DATABASE_URL` Secret is updated to point to the RDS endpoint.
+
+Everything else — Deployments, Services, ConfigMaps, Secrets, HPA — works identically.
+
+```bash
+# Update kubeconfig to point to the EKS cluster
+aws eks update-kubeconfig \
+  --region us-east-1 \
+  --name webstore
+
+# Verify connection
+kubectl cluster-info
+kubectl get nodes
+
+# Apply all webstore manifests
+kubectl apply -f k8s/
+
+# Watch rollout
+kubectl rollout status deployment/webstore-api -n webstore
+kubectl rollout status deployment/webstore-frontend -n webstore
+
+# Verify pods
+kubectl get pods -n webstore
+```
+
+---
+
+## 7. AWS Load Balancer Controller
+
+The ALB controller watches for Ingress objects and creates real AWS ALBs. Install via Helm after the cluster is running.
+
+```bash
+# Create IAM policy for the controller
+aws iam create-policy \
+  --policy-name AWSLoadBalancerControllerIAMPolicy \
+  --policy-document file://iam-policy.json
+
+# Create IAM service account
+eksctl create iamserviceaccount \
+  --cluster webstore \
+  --namespace kube-system \
+  --name aws-load-balancer-controller \
+  --attach-policy-arn arn:aws:iam::123456789012:policy/AWSLoadBalancerControllerIAMPolicy \
+  --approve
+
+# Install via Helm
+helm repo add eks https://aws.github.io/eks-charts
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=webstore \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller
+```
+
+**Webstore Ingress manifest:**
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webstore-ingress
+  namespace: webstore
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  rules:
+  - host: webstore.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: webstore-api
+            port:
+              number: 8080
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: webstore-frontend
+            port:
+              number: 80
+```
+
+---
+
+## 8. EBS CSI Driver
+
+```bash
+eksctl create iamserviceaccount \
+  --cluster webstore \
+  --namespace kube-system \
+  --name ebs-csi-controller-sa \
+  --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+  --approve
+
+eksctl create addon \
+  --cluster webstore \
+  --name aws-ebs-csi-driver \
+  --service-account-role-arn arn:aws:iam::123456789012:role/AmazonEKS_EBS_CSI_DriverRole
+```
+
+After installing, PVCs with `storageClassName: ebs-sc` automatically provision real EBS volumes.
+
+---
+
+## 9. IAM Roles for Service Accounts (IRSA)
+
+The webstore-api pods need to access S3 and ECR without hardcoded credentials. IRSA is the solution.
+
+```bash
+# Create the IAM role and service account in one command
+eksctl create iamserviceaccount \
+  --cluster webstore \
+  --namespace webstore \
+  --name webstore-api-sa \
+  --attach-policy-arn arn:aws:iam::123456789012:policy/WebstoreAPIPolicy \
+  --approve
+```
+
+Update the webstore-api Deployment to use this ServiceAccount:
+
+```yaml
+spec:
+  template:
+    spec:
+      serviceAccountName: webstore-api-sa
+      containers:
+      - name: webstore-api
+        image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/webstore-api:v1.0
+```
+
+The pods now get temporary IAM credentials automatically. No secrets, no credential rotation to manage.
+
+---
+
+## 10. Horizontal Pod Autoscaler on EKS
+
+HPA works the same on EKS as on Minikube. Install the Metrics Server first:
+
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
+
+Then apply the HPA for webstore-api:
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: webstore-api-hpa
+  namespace: webstore
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: webstore-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+```
+
+---
+
+## 11. Cleaning Up
+
+EKS clusters cost money when running. Delete the cluster when you are done with labs.
+
+```bash
+# Delete all Kubernetes resources first
+kubectl delete namespace webstore
+
+# Delete the cluster and all node groups
+eksctl delete cluster --name webstore --region us-east-1
+```
+
+---
+
+## What You Can Do After This
+
+- Create an EKS cluster with eksctl and connect kubectl to it
+- Push a container image to ECR and deploy it to EKS
+- Install the AWS Load Balancer Controller and create an Ingress that provisions an ALB
+- Install the EBS CSI Driver and provision PersistentVolumeClaims backed by EBS
+- Configure IRSA so pods assume IAM roles without credentials in Secrets
+- Deploy the full webstore stack to a production EKS cluster
+
+---
+
+## What Comes Next
+
+→ [09. Terraform — IaC Foundations](../../09.%20Terraform%20–%20IaC%20Foundations/README.md)
+
+All the infrastructure you have built manually across these AWS labs — VPC, EKS, RDS, ALB, IAM roles, Route 53 — becomes Terraform code. One `terraform apply` recreates everything from a blank AWS account.
+
+
+---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/README.md
+
+<p align="center">
+  <img src="../../assets/aws-banner.svg" alt="aws" width="100%"/>
+</p>
+
+[← devops-runbook](../../README.md)
+
+---
+
+Cloud infrastructure — taking the webstore from a local Kubernetes cluster to production on AWS.
+
+---
+
+## Why AWS — and Why Not GCP or Azure
+
+AWS has roughly 32% of the global cloud market. More DevOps job postings reference AWS than any other provider. EKS, RDS, EC2, and IAM appear in job descriptions as assumed knowledge. Learning AWS first is not a preference — it is the highest-return choice for a DevOps career path.
+
+GCP is excellent for data and machine learning workloads and is growing, but its DevOps job market is a fraction of AWS. Azure dominates in Microsoft enterprise environments. Neither is wrong — but AWS is where the entry-level DevOps interviews happen.
+
+The concepts transfer. VPC is the same mental model as every other cloud network. IAM roles and policies map to GCP service accounts and Azure managed identities. EKS is GKE is AKS. Once you understand how AWS structures its services, reading GCP or Azure documentation is a translation exercise, not a re-education.
+
+---
+
+## Prerequisites
+
+**Complete first:** [07. Observability – Monitoring & Logs](../07.%20Observability%20–%20Monitoring%20%26%20Logs/README.md)
+
+You arrive at AWS knowing how to build, deploy, and observe a containerised application on a local cluster. AWS is where you take that knowledge and apply it to managed, production-grade infrastructure. Without the foundation, the AWS services are just a list of acronyms.
+
+---
+
+## The Running Example
+
+Every file and every lab operates on the same webstore app.
+
+| Service | Local (Minikube) | AWS equivalent |
+|---|---|---|
+| webstore-frontend | nginx:1.24 pod | EC2 or EKS pod behind ALB |
+| webstore-api | nginx:1.24 pod | EKS pod, image from ECR |
+| webstore-db | postgres:15 pod + PVC | RDS PostgreSQL |
+| Cluster | Minikube | EKS |
+| Container registry | Docker Hub | ECR |
+| Load balancer | NodePort | Application Load Balancer (ALB) |
+| Monitoring | kube-prometheus-stack | CloudWatch |
+
+---
+
+## Where You Take the Webstore
+
+You arrive at AWS with the webstore running on a local cluster, deployed by ArgoCD, monitored by Prometheus and Grafana. Everything works — on your laptop.
+
+You leave with the webstore running on EKS in AWS, database on RDS PostgreSQL, a load balancer in front, images stored in ECR, and CloudWatch collecting logs and metrics. The same manifests you wrote for Minikube deploy to EKS. The infrastructure is reproducible, scalable, and production-grade.
+
+---
+
+## Phases
+
+| # | Phase | Topics | Lab |
+|---|---|---|---|
+| 01 | [Intro to AWS](./01-intro-aws/README.md) | Why cloud, regions, AZs, IaaS/PaaS/SaaS, free tier | No lab |
+| 02 | [IAM](./02-iam/README.md) | Users, groups, roles, policies, MFA, least privilege | [Lab 01](./aws-labs/01-iam-lab.md) |
+| 03 | [VPC & Subnets](./03-vpc-subnet/README.md) | VPC, subnets, routing, IGW, NAT, Security Groups, NACLs | [Lab 02](./aws-labs/02-vpc-lab.md) |
+| 04 | [EBS](./04-ebs/README.md) | Block storage, volume types, snapshots, encryption, resize | [Lab 03](./aws-labs/03-storage-lab.md) |
+| 05 | [S3](./05-s3/README.md) | Object storage, buckets, versioning, lifecycle, security | [Lab 03](./aws-labs/03-storage-lab.md) |
+| 06 | [EC2](./06-ec2/README.md) | Instances, AMIs, key pairs, security groups, user data, metadata | [Lab 04](./aws-labs/04-ec2-lab.md) |
+| 07 | [RDS](./07-rds/README.md) | Managed PostgreSQL, Multi-AZ, backups, migrate from container | [Lab 05](./aws-labs/05-rds-lab.md) |
+| 08 | [Load Balancing & Auto Scaling](./08-load-balancing-auto-scaling/README.md) | ALB, target groups, health checks, ASG, scaling policies | [Lab 06](./aws-labs/06-alb-asg-lab.md) |
+| 09 | [CloudWatch & SNS](./09-cloudwatch-sns/README.md) | Metrics, logs, alarms, dashboards, SNS notifications | [Lab 07](./aws-labs/07-cloudwatch-lab.md) |
+| 10 | [Route 53](./10-route53/README.md) | DNS, hosted zones, record types, routing policies | [Lab 08](./aws-labs/08-route53-lab.md) |
+| 11 | [CLI & CloudFormation](./11-cli-cloudformation/README.md) | AWS CLI setup, daily commands, CloudFormation templates | [Lab 09](./aws-labs/09-cli-lab.md) |
+| 12 | [EKS](./12-eks/README.md) | eksctl, ECR, ALB controller, EBS CSI, IRSA, HPA | [Lab 10](./aws-labs/10-eks-lab.md) |
+
+**Extras** → [EFS](./extras/01-efs/README.md) · [Elastic Beanstalk](./extras/02-elastic-beanstalk/README.md) · [Lambda](./extras/03-lambda/README.md) — read when a project needs them.
+
+---
+
+## Labs
+
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 01](./aws-labs/01-iam-lab.md) | IAM | Create admin user, DevOps group, attach policies, enable MFA, test least privilege |
+| [Lab 02](./aws-labs/02-vpc-lab.md) | VPC & Subnets | Build the webstore VPC — public subnets for ALB, private subnets for API and DB |
+| [Lab 03](./aws-labs/03-storage-lab.md) | EBS, S3 | Attach a volume, resize it, create snapshots, create S3 buckets with lifecycle rules |
+| [Lab 04](./aws-labs/04-ec2-lab.md) | EC2 | Launch webstore-api server with IAM role, user data bootstrap, security groups |
+| [Lab 05](./aws-labs/05-rds-lab.md) | RDS | Create RDS PostgreSQL, dump webstore-db from container, restore to RDS |
+| [Lab 06](./aws-labs/06-alb-asg-lab.md) | Load Balancing & Auto Scaling | Create ALB, target group, health checks, ASG with target tracking policy |
+| [Lab 07](./aws-labs/07-cloudwatch-lab.md) | CloudWatch & SNS | Create dashboard, set CPU and 5XX alarms, wire to SNS email notification |
+| [Lab 08](./aws-labs/08-route53-lab.md) | Route 53 | Create hosted zone, Alias A record pointing webstore.com to ALB |
+| [Lab 09](./aws-labs/09-cli-lab.md) | CLI & CloudFormation | Configure CLI, run daily commands, deploy and tear down a CloudFormation stack |
+| [Lab 10](./aws-labs/10-eks-lab.md) | EKS | Create EKS cluster, push image to ECR, deploy webstore, configure Ingress and HPA |
+
+---
+
+## What You Can Do After This
+
+- Design and build a production-grade VPC with multi-tier subnets and security groups
+- Launch EC2 instances with correct IAM roles, user data, and security groups
+- Run a managed PostgreSQL database on RDS with automated backups and Multi-AZ
+- Put applications behind an ALB with health checks and Auto Scaling
+- Monitor infrastructure with CloudWatch alarms and SNS notifications
+- Set up Route 53 DNS for a real domain pointing to an ALB
+- Deploy a full Kubernetes workload to EKS and expose it through an ALB Ingress
+- Use the AWS CLI to manage infrastructure from the terminal
+
+---
+
+## How to Use This
+
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
+
+---
+
+## What Comes Next
+
+→ [09. Terraform – IaC Foundations](../09.%20Terraform%20–%20IaC%20Foundations/README.md)
+
+You just built AWS infrastructure manually — clicking in the console and running CLI commands. Terraform lets you define all of that as code. The same VPC, EKS cluster, RDS instance, and IAM roles become a set of `.tf` files that can be version controlled, reviewed in a PR, and applied in one command.
+
+
+---
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/extras/01-efs/README.md
 
 [Home](../README.md) | 
 [Intro to AWS](../01-intro-aws/README.md) | 
@@ -22510,9 +26552,9 @@ Internet
 
 </details>
 ---
+
 ---
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 06-s3
----
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/extras/02-elastic-beanstalk/README.md
 
 [Home](../README.md) | 
 [Intro to AWS](../01-intro-aws/README.md) | 
@@ -22530,2159 +26572,98 @@ Internet
 [Route 53](../13-route53/README.md) | 
 [CLI + CloudFormation](../14-cli-cloudformation/README.md)
 
-# AWS S3 (Simple Storage Service)
+# AWS Elastic Beanstalk  
 
-EBS works great inside one zone, but sometimes data needs to travel — backups, media, global access.
-That’s where S3 (Simple Storage Service) takes over.
-Instead of local disks, it’s like a giant warehouse in the cloud — infinite shelves where any app can drop a file and pick it from anywhere on the planet.
-
----
-
-## Table of Contents
-1. [Why Do We Need S3?](#1-why-do-we-need-s3)
-2. [Analogy – The Infinite Warehouse](#2-analogy--the-infinite-warehouse)
-3. [Core Concept – Buckets and Objects](#3-core-concept--buckets-and-objects)
-4. [Bucket Naming Rules](#4-bucket-naming-rules)
-5. [Static Website Hosting](#5-static-website-hosting)
-6. [Versioning](#6-versioning)
-7. [Storage Classes with Scenarios](#7-storage-classes-with-scenarios)
-8. [Security & Access Control](#8-security--access-control)
-9. [Lifecycle Management](#9-lifecycle-management)
-10. [Encryption & Consistency](#10-encryption--consistency)
-11. [Real Example – Webstore Media Flow](#11-real-example--webstore-media-flow)
-12. [AWS CLI Examples](#12-aws-cli-examples)
-13. [Quick Command Summary](#13-quick-command-summary)
+## Table of Contents  
+1. [Why do we need Elastic Beanstalk?](#1)  
+2. [The Problem Without Beanstalk](#2)  
+3. [Solution – What Beanstalk Does](#3)  
+4. [Benefits](#4)  
+5. [Architecture Diagram](#5)  
+6. [Theory & Notes](#6)  
+7. [Real Examples](#7)  
+8. [Practical Use Cases](#8)  
+9. [Quick Command Summary](#9)  
 
 ---
 
 <details>
-<summary><strong>1. Why Do We Need S3?</strong></summary>
+<summary><strong>1. Why do we need Elastic Beanstalk?</strong></summary>
 
-EBS volumes are reliable but tied to one instance in one zone.  
-They’re perfect for operating systems or databases — not for global sharing.  
+Deploying an application manually involves:
+- Launching EC2 instances  
+- Setting up Load Balancer and Auto Scaling  
+- Managing IAM roles, networking, and health checks  
+- Configuring CloudWatch metrics  
 
-When applications grow, you need a place where:
-- Any service can store or fetch data, anytime.
-- Capacity expands automatically.
-- Costs depend on how much you store.
+This takes time, effort, and introduces room for error.  
 
-That’s **Amazon S3** — an object-storage service that acts like a limitless data vault.  
-You can store photos, backups, code, logs, or even full websites — pay only for what you use.
+**Elastic Beanstalk (EB)** automates all of this — you just upload your code, and AWS handles provisioning, deployment, scaling, and monitoring.
 
 </details>
 
 ---
 
 <details>
-<summary><strong>2. Analogy – The Infinite Warehouse</strong></summary>
+<summary><strong>2. The Problem Without Beanstalk</strong></summary>
 
-Think of S3 as an **endless warehouse** in the cloud.  
-Each **bucket** is a storage room with its own label.  
-Every file you drop inside becomes an **object**, tagged with a unique barcode (its URL).
+Without Beanstalk, developers must:  
+1. Launch EC2 and install web servers manually  
+2. Attach and configure a Load Balancer  
+3. Create Auto Scaling Groups and set policies  
+4. Manually upload and update code  
+5. Configure CloudWatch alarms and logging  
 
-You can walk in, store or retrieve any object from anywhere in the world.  
-Unlike an EBS disk, this warehouse has no walls, no cables — just infinite shelves that never fill up.
-
-</details>
-
----
-
-<details>
-<summary><strong>3. Core Concept – Buckets and Objects</strong></summary>
-
-- You create **buckets** to organize data. Each bucket name must be globally unique.  
-- Inside a bucket, every uploaded **object** is stored with:
-  - **Key** → the file name / path  
-  - **Value** → file data  
-  - **Metadata** → object info  
-  - **Version ID** (if versioning is on)
-
-S3 automatically replicates data across devices in the same region for durability (11 nines).
-
-Example URL:
-```
-
-[https://my-bucket.s3.amazonaws.com/image.png](https://my-bucket.s3.amazonaws.com/image.png)
-
-```
-
-💡 *Architect’s Note:*  
-S3 is a **global service**, but buckets are **region-specific**.  
-Pick regions closer to your users to reduce latency.
+Each of these pieces requires coordination and monitoring.  
+Maintaining consistency across environments (dev, staging, prod) becomes difficult.
 
 </details>
 
 ---
 
 <details>
-<summary><strong>4. Bucket Naming Rules</strong></summary>
+<summary><strong>3. Solution – What Beanstalk Does</strong></summary>
 
-| Rule | Description |
-|------|--------------|
-| Length | 3 – 63 characters |
-| Characters | a-z, 0-9, period (.), hyphen (-) |
-| Must start/end with | Letter or number |
-| Global uniqueness | No two buckets share the same name |
-| Forbidden | Uppercase, underscores, or spaces |
+Elastic Beanstalk is a **Platform-as-a-Service (PaaS)** that automates environment setup and management.
 
-💡 Tip: For websites, match your bucket name to your domain (e.g., `webstore-media.com`).
+You upload your application bundle (ZIP / Git repo).  
+Beanstalk automatically:  
+- Provisions EC2, ALB, and Auto Scaling Groups  
+- Configures networking, IAM, and security groups  
+- Stores versions in S3  
+- Monitors health using CloudWatch  
+- Handles rolling updates and rollback on failure  
 
-</details>
+You still retain **full access** to all underlying AWS resources.   
+   
+**Service Type:** Platform as a Service (PaaS)      
+**Comparison of Cloud Service Models**   
+| Model | Full Form | Example AWS Services | Responsibility |
+|--------|------------|----------------------|----------------|
+| IaaS | Infrastructure as a Service | EC2, VPC, S3, RDS | You manage OS, runtime, app |
+| PaaS | Platform as a Service | Elastic Beanstalk | AWS manages infra, you manage code |
+| SaaS | Software as a Service | Zoom, Google Meet | AWS/vendor manages everything |
 
----
-
-<details>
-<summary><strong>5. Static Website Hosting</strong></summary>
-
-S3 can host **static websites** — sites made of HTML, CSS, and JS files that look identical for all users.
-
-**Steps:**
-1. Create a bucket (often named after your domain).  
-2. Upload your website files (`index.html`, `error.html`).  
-3. Enable **Static Website Hosting** under *Properties*.  
-4. Provide the index and error documents.  
-5. Make objects publicly readable.  
-6. Access your site via the generated endpoint URL.
-
-Example endpoint:  
-`http://webstore-website.s3-website-us-east-1.amazonaws.com`
-
-📘 *Modern tip:* For production, use **AWS Amplify** or **CloudFront** for performance and HTTPS.
+   
+<img src="images/service-control.jpg" alt="Elastic Beanstalk Architecture Overview" width="600" height="375" />
 
 </details>
 
 ---
 
 <details>
-<summary><strong>6. Versioning</strong></summary>
-
-Think of versioning as an **undo button** for your bucket.  
-When enabled, every new upload of the same object keeps the previous version rather than replacing it.
-
-**Default:** Disabled (new file overwrites the old one).  
-**Enabled:** S3 preserves all versions.  
-**Suspended:** Keeps existing versions but stops new ones.
-
-**Why it matters in DevOps:**  
-- Recover from accidental deletes or overwrites.  
-- Track configuration file history or deployment artifacts.  
-- Combine with Lifecycle policies to expire old versions automatically.
-
-</details>
-
----
-
-<details>
-<summary><strong>7. Storage Classes with Scenarios</strong></summary>
-
-Different data deserves different storage costs.  
-Here’s how each S3 storage class fits a real-world use case:
-
-| Storage Class | When to Use | Real Scenario |
-|----------------|-------------|---------------|
-| **Standard** | Frequently accessed data | Website images, app assets, or user uploads accessed every day. |
-| **Intelligent-Tiering** | Unknown or changing access patterns | Logs and reports whose popularity changes — S3 auto-moves them between hot/cold tiers. |
-| **Standard-IA (Infrequent Access)** | Accessed once or twice a month | Monthly analytics exports, historical sales reports. |
-| **One Zone-IA** | Rarely used and easily reproducible | Cached data or thumbnails that can be recreated anytime. |
-| **Glacier Instant Retrieval** | Archives needed quarterly with instant access | Marketing footage or past project files that must be instantly restored. |
-| **Glacier Flexible Retrieval** | Long-term archives, retrieved occasionally | Tax filings or compliance documents you access once a year. |
-| **Glacier Deep Archive** | Long-term retention, rarely accessed | 7-year legal backups or raw sensor data for audit purposes. |
-| **Reduced Redundancy** | Legacy option (not recommended) | Old, non-critical assets; replaced by Standard class today. |
-
-🧭 *Architect’s rule:* Match **frequency of access** with **cost of storage** —  
-frequent = Standard; rare = Glacier.
-
-<summary><strong>7.1  Pricing and Bucket Design Strategy</strong></summary>
-
-### 💰 How S3 Billing Actually Works
-S3 pricing depends on **what you store and how you use it**, not on how many buckets you create.
-
-| Charged For | Example |
-|--------------|----------|
-| **Storage (GB per month)** | Total size of all objects in all buckets |
-| **Requests** | PUT / GET / COPY / DELETE calls made to S3 |
-| **Data Transfer Out** | Data leaving S3 to the Internet or another AWS Region |
-| **Optional Features** | Replication, Inventory, Analytics, Object Lock, etc. |
-
-➡️ You **do not** pay for:  
-- Number of buckets  
-- Number of folders  
-- How many EC2 instances access them  
-
-If you store **1 TB** of data—whether it lives in one bucket or ten—the cost is identical.
-
----
-
-### 🧩 Multiple Buckets vs One Big Bucket
-
-| Approach | Pros | Notes |
-|-----------|------|-------|
-| **Single bucket with folders** | Simpler to manage, one policy to maintain | Harder to apply different lifecycle or security rules |
-| **Separate buckets per data type** | Clear boundaries for policy and lifecycle; easy cost breakdown | Slightly more management overhead, but no extra charges |
-
-💬 **Example:**  
-- `webstore-media` → movies & shows (Standard → IA)  
-- `webstore-logs`   → app logs (Intelligent-Tiering → Glacier)  
-- `webstore-backups` → database exports (Deep Archive)
-
-All together they cost the same as one huge bucket—only the **usage** matters.
-
----
-
-### ⚙️ EC2 and S3 Interaction Costs
-S3 isn’t “attached” like EBS; EC2 accesses it via the S3 API (HTTPS).
-
-| Scenario | Cost |
-|-----------|------|
-| EC2 ↔ S3 in same region | Free for inbound and most outbound traffic |
-| EC2 ↔ S3 cross-region | Inter-region data transfer fees apply |
-| EC2 ↔ S3 via Internet (no VPC endpoint) | Charged as Internet egress per GB |
-
----
-
-### 🧭 Architect’s Guideline
-- Use **multiple buckets** if you need different security or retention rules.  
-- Use **one bucket with folders** for simpler projects.  
-- Always keep S3 and EC2 in the same region to avoid transfer charges.  
-- Tag buckets to track cost by project or environment.
-
-**Summary:**  
-> S3 billing cares about bytes, requests, and transfers — not bucket count.  
-> Design buckets for clarity, not for cost.
-
-</details>
-
----
-
-<details>
-<summary><strong>8. Security & Access Control</strong></summary>
-
-S3 security is multi-layered:
-
-1. **IAM Policies** → Who can access S3 resources.  
-2. **Bucket Policies** → What specific actions are allowed or denied at bucket level.  
-3. **ACLs** → Object-level access (legacy, rarely used).  
-4. **Block Public Access** → Global safeguard against accidental exposure.  
-5. **Encryption** → Protects data both at rest (AES-256 / KMS) and in transit (HTTPS).
-
-💡 Always use **IAM roles** for EC2 or Lambda to grant temporary, secure access instead of embedding keys.
-
-</details>
-
----
-
-<details>
-<summary><strong>9. Lifecycle Management</strong></summary>
-
-As data ages, its value often drops.  
-**Lifecycle rules** let you automate storage transitions and deletions.
-
-Example policy ideas:
-- Move logs to **Glacier** after 30 days.  
-- Delete old object versions after 90 days.  
-- Permanently remove expired data after 1 year.
-
-This keeps S3 lean, cost-efficient, and self-maintaining.
-
-</details>
-
----
-
-<details>
-<summary><strong>10. Encryption & Consistency</strong></summary>
-
-- **At Rest:** S3 encrypts objects with AES-256 (SSE-S3) or AWS KMS (SSE-KMS).  
-- **In Transit:** Uses HTTPS/TLS for secure uploads and downloads.  
-- **Data Consistency:** Offers strong read-after-write consistency for all PUT and DELETE operations.
-
-These features make S3 safe for both personal data and enterprise-grade workloads.
-
-</details>
-
----
-
-<details>
-<summary><strong>11. Real Example – Webstore Media Flow</strong></summary>
-
-In the **webstore app**, every movie file sits inside an S3 bucket — secure, versioned, and globally accessible.  
-When a user presses “Play,” the app fetches metadata (title, rating, genre) from **RDS**,  
-then streams the video directly from **S3** through a pre-signed URL.  
-
-This separation keeps:
-- **RDS** focused on lightweight queries,  
-- **S3** handling heavy media storage,  
-- **EC2** running business logic.
-
-That’s the trio powering most modern streaming platforms.
-
-</details>
-
----
-
-<details>
-<summary><strong>12. AWS CLI Examples</strong></summary>
-
-```bash
-# Upload a file
-aws s3 cp song.mp3 s3://webstore-media/audio/song.mp3
-
-# Download a file
-aws s3 cp s3://webstore-media/audio/song.mp3 ./downloads/
-
-# Sync local folder to bucket
-aws s3 sync ./media s3://webstore-media/
-
-# Remove an object
-aws s3 rm s3://webstore-media/old-promo.mp4
-````
-
-</details>
-
----
-
-<details>
-<summary><strong>13. Quick Command Summary</strong></summary>
-
-| Command                           | Description                |
-| --------------------------------- | -------------------------- |
-| `aws s3 mb s3://bucket`           | Make a new bucket          |
-| `aws s3 ls`                       | List buckets               |
-| `aws s3 cp file s3://bucket`      | Upload object              |
-| `aws s3 rm s3://bucket/file`      | Delete object              |
-| `aws s3 sync local/ s3://bucket/` | Sync folders               |
-| `aws s3 rb s3://bucket --force`   | Remove bucket and contents |
-
-</details>
-
----
-
-**In short:**
-S3 is not just “cloud storage” — it’s the backbone of the Internet’s data layer.
-While EC2 runs your applications, **S3 remembers everything** — safely, infinitely, and affordably.
----
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 07-ec2
----
-
-[Home](../README.md) | 
-[Intro to AWS](../01-intro-aws/README.md) | 
-[IAM](../02-iam/README.md) | 
-[VPC & Subnet](../03-vpc-subnet/README.md) | 
-[EBS](../04-ebs/README.md) | 
-[EFS](../05-efs/README.md) | 
-[S3](../06-s3/README.md) | 
-[EC2](../07-ec2/README.md) | 
-[RDS](../08-rds/README.md) | 
-[Load Balancing & Auto Scaling](../09-Load-balancing-auto-scaling/README.md) | 
-[CloudWatch & SNS](../10-cloudwatch-sns/README.md) | 
-[Lambda](../11-lambda/README.md) | 
-[Elastic Beanstalk](../12-elastic-beanstalk/README.md) | 
-[Route 53](../13-route53/README.md) | 
-[CLI + CloudFormation](../14-cli-cloudformation/README.md)
-
-# AWS EC2 – Elastic Compute Cloud
-
-We now understand storage — both local (EBS) and global (S3).
-But storage by itself doesn’t process anything.
-We need the engine that runs our code and powers our apps.
-That engine is EC2 (Elastic Compute Cloud) — the virtual machine that ties IAM, VPC, and storage into one working system.
-
-## Table of Contents
-
-1. [EC2 Overview & Purpose](#1-ec2-overview--purpose)  
-2. [Billing & Pricing Models](#2-billing--pricing-models)  
-3. [AMI & Instance Types](#3-ami--instance-types)  
-4. [EC2 Lifecycle & States](#4-ec2-lifecycle--states)  
-5. [Key Pairs & Security Groups](#5-key-pairs--security-groups)  
-6. [Understanding VPC & Subnets](#6-understanding-vpc--subnets)  
-7. [IP Concepts (Private, Public, Elastic, ENI)](#7-ip-concepts-private-public-elastic-eni)  
-8. [Storage (EBS, Snapshots, FSR, Archive, Cross-AZ/Region Patterns)](#8-storage-ebs-snapshots-fsr-archive-cross-azregion-patterns)  
-9. [Web Hosting (httpd) & User Data](#9-web-hosting-httpd--user-data)  
-10. [Instance Metadata & Identity (IMDSv2, Signed Docs, Role Creds)](#10-instance-metadata--identity-imdsv2-signed-docs-role-creds)  
-11. [Networking Foundations](#11-networking-foundations)  
-12. [Load Balancer (with Health Checks)](#12-load-balancer-with-health-checks)  
-13. [Auto Scaling & Monitoring](#13-auto-scaling--monitoring)
-
----
-
-<details>
-<summary><strong>1. EC2 Overview & Purpose</strong></summary>
-
-### What is EC2?
-
-EC2 stands for **Elastic Compute Cloud**, AWS’s service for creating virtual machines in the cloud.
-“Elastic” means you can increase or decrease compute capacity on demand — like stretching or shrinking a rubber band depending on workload.   
-It allows you to rent compute capacity from AWS instead of owning physical servers.  
-You decide how much **CPU**, **memory**, and **storage** you need — and can scale up or down anytime.
-
-**Use Cases:**
-- Hosting websites and APIs  
-- Running databases or backend servers  
-- Testing and development environments  
-- Machine learning workloads  
-
-**Analogy:**  
-Think of AWS as a massive data center. EC2 lets you rent one computer inside it — and you can turn it on, off, or resize it anytime.
-
-📸 **Image:** [AWS EC2 Concepts](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts.html)
-
-</details>
-
----
-
-<details>
-<summary><strong>2. Billing & Pricing Models</strong></summary>
-
-### EC2 Billing Basics
-
-You pay for the **time your instance is running**:
-- **Linux:** billed **per second** (minimum 60 seconds)  
-- **Windows:** billed **per hour**
-
-**Example:**  
-Run a Linux instance for 2 minutes 15 seconds → billed for **135 seconds**.  
-Windows instances → billed for the full **hour** even if used for 5 minutes.
-
----
-
-### Free Tier
-
-AWS Free Tier gives:
-- **750 hours/month for 12 months**  
-- Enough to run one small instance continuously  
-
-**Instance types:**  
-- `t2.micro` (older, available in Asia regions)  
-- `t3.micro` (newer, available in US/EU regions)  
-
----
-
-### Pricing Models
-
-| Model | Description | When to Use |
-|-------|--------------|-------------|
-| **On-Demand** | Pay by second/hour. No commitment. | Testing, short workloads |
-| **Reserved Instances (RI)** | 1–3 year commitment for up to 72% discount. | Long-running production workloads |
-| **Spot Instances** | Use spare AWS capacity, up to 90% cheaper. | Fault-tolerant workloads |
-| **Savings Plans** | Commit to $/hour usage, flexible across services. | Predictable workloads |
-| **Dedicated Hosts** | Physical server reserved just for you. | Compliance or licensing needs |
-
-> 💡 **Note:**  
-> - **Linux instances** are billed **per-second** (minimum 60 s).  
-> - **Windows instances** are billed **per hour**.  
-> - **Public IPv4 addresses** are now **billable** outside the Free Tier.  
->   The Free Tier covers **750 hours / month** of one public IPv4; additional or idle ones incur charges.  
-> - **Elastic IP (EIP)** addresses are **free while attached** to a running instance, but **billed when idle** (allocated but unused).
-
-📸 **Image:** [AWS EC2 Pricing](https://aws.amazon.com/ec2/pricing/)
-
-</details>
-
----
-
-<details>
-<summary><strong>3. AMI & Instance Types</strong></summary>
-
-### Amazon Machine Image (AMI)
-
-An AMI is a **template** used to launch EC2 instances.  
-It includes:
-- Operating System (Linux, Windows, Ubuntu, etc.)
-- Preinstalled software (optional)
-- Configurations and permissions  
-
-**Examples:**
-- Ubuntu Server AMI → ready-to-use Linux machine  
-- Windows Server AMI → preconfigured Windows environment  
-
----
-
-### Instance Types
-
-| Family | Optimized For | Example | Use Case |
-|---------|----------------|----------|-----------|
-| **General Purpose** | Balanced CPU/RAM | `t3.micro` | Web servers |
-| **Compute Optimized** | High CPU | `c5.large` | Batch processing |
-| **Memory Optimized** | High RAM | `r5.large` | Databases |
-| **Storage Optimized** | High I/O | `i3.large` | Data warehousing |
-| **Accelerated (GPU)** | Graphics / ML | `p3.2xlarge` | AI/ML workloads |
-
-**Analogy:**  
-Each instance type is like a car built for a purpose — a sports car for speed, a truck for heavy loads, etc.
-
-📸 **Image:** [AWS Instance Types](https://aws.amazon.com/ec2/instance-types/)
-
-</details>
-
----
-
-<details>
-<summary><strong>4. EC2 Lifecycle & States</strong></summary>
-
-### Lifecycle Stages
-
-| State | Description |
-|--------|--------------|
-| **Pending** | Preparing resources and booting |
-| **Running** | Fully operational and billable |
-| **Stopping** | OS shutting down gracefully |
-| **Stopped** | Not running, storage billed but compute stops |
-| **Terminated** | Deleted permanently |
-
-**Analogy:**  
-Think of EC2 like a laptop:  
-- Booting → Pending  
-- Working → Running  
-- Sleep → Stopped  
-- Factory reset → Terminated  
-
-📸 **Image:**  
-<img src="images/EC2_instance_lifecycle.png" alt="EC2 Lifecycle" width="550"/>
-
-</details>
-
----
-
-<details>
-<summary><strong>5. Key Pairs & Security Groups</strong></summary>
-
-### Key Pair Authentication
-
-When you create an EC2 instance, AWS uses **public-key cryptography** to ensure secure access — just like how every home has its own unique lock and key.
-
-**Analogy:**  
-If your **EC2 instance is your home**:
-- The **public key** is the **lock** installed on the home’s door (AWS automatically adds it to your instance).  
-- The **private key file** (`.pem` or `.ppk`) that **you download** is the **key** that fits that lock.  
-
-You need this private key every time you want to enter (connect via SSH or RDP).  
-If the key doesn’t match the lock → you can’t get inside.
-
----
-
-#### Example: Connecting to EC2 (Linux/macOS)
-
-```bash
-# Step 1: Secure your private key
-chmod 400 mykey.pem
-
-# Step 2: Connect to your EC2 instance using SSH
-ssh -i mykey.pem ec2-user@<Public-IP>
-````
-
-If the **private key** matches the **public key lock** on the instance:
-✅ Access granted — you’ve entered your EC2 “home.”
-
-If not:
-❌ Permission denied — wrong or missing key.
-
-📸 **Image:** [AWS EC2 Key Pairs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html)
-
----
-
-### Security Groups (SG)
-
-A Security Group acts as a **virtual firewall**.
-
-* **Inbound rules** → what traffic can enter
-* **Outbound rules** → what traffic can exit
-* **Stateful** → return traffic automatically allowed
-
-| Protocol | Port | Use Case           |
-| -------- | ---- | ------------------ |
-| SSH      | 22   | Remote login       |
-| HTTP     | 80   | Web traffic        |
-| HTTPS    | 443  | Secure web traffic |
-
-📸 **Image:** [VPC Security Groups](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html)
-
-</details>
-
----
-
-<details>
-<summary><strong>6. Understanding VPC & Subnets</strong></summary>
-
----
-
-## 🌍 AWS as a Planet – The Big Picture
-
-Before learning about IPs, it’s important to understand **where** everything in AWS lives.
-
-Think of **AWS** as a **digital planet** made up of continents (Regions) and cities (Availability Zones).  
-On this planet, every user can carve out their own **private island**, completely isolated from others — that island is your **VPC (Virtual Private Cloud)**.
-
----
-
-### 🏝️ 1. What is a VPC?
-
-A **VPC (Virtual Private Cloud)** is your **own private island** on the AWS planet.  
-It’s a completely secure and customizable environment where you host your AWS resources such as EC2 instances, databases, and load balancers.
-
-Inside this island, you control:
-- **Borders:** IP address range (e.g., `10.0.0.0/16`)  
-- **Security:** Who can enter or leave (Security Groups, NACLs, Route Tables)  
-- **Connectivity:** Whether to open your island to the ocean (Internet) or stay isolated  
-
-**Analogy:**  
-> Think of a VPC as your **private country or island** in the AWS world.  
-> You make the rules, build the infrastructure, and decide who can visit or communicate.
-
----
-
-### 🧱 2. What is a Subnet?
-
-A **Subnet** is a smaller **district or region** inside your private island (VPC).  
-You divide your island into multiple subnets to separate workloads based on their accessibility.
-
-Each subnet exists within one **Availability Zone (AZ)** — meaning if you have 3 AZs in your AWS Region, your island can have 3 major districts (subnets) across them.
-
-| Subnet Type | Analogy | Connectivity | Common Use |
-|--------------|----------|--------------|-------------|
-| **Public Subnet** | Coastal city with open ports | Connected to the **Internet Gateway (IGW)** | Web servers, Bastion hosts |
-| **Private Subnet** | Inland city with guarded roads | No direct internet connection (internal only) | Databases, Application servers |
-
----
-
-### 🧩 3. How They Work Together
-
-1. The **VPC** provides your island (the overall network boundary).  
-2. You divide it into **Subnets** — each district serving a purpose (public or private).  
-3. You connect a **Public Subnet** to the **Internet Gateway** — allowing outside traffic to visit.  
-4. You keep **Private Subnets** isolated — only accessible through internal connections.
-
----
-
-### 💡 Planet Analogy Summary
-
-| AWS Concept | Real-World Analogy | Description |
-|--------------|--------------------|--------------|
-| **AWS Cloud** | The entire planet | Global infrastructure shared by all AWS users |
-| **Region** | Continent | Large geographic area (e.g., North America, Asia) |
-| **Availability Zone (AZ)** | City on a continent | Data center cluster within a region |
-| **VPC** | Private island or country | Your own isolated network on the AWS planet |
-| **Subnet** | District or region on your island | Divides your island into zones for specific use |
-| **Public Subnet** | Coastal city with ports | Internet-facing zone for public services |
-| **Private Subnet** | Inland city or lab | Internal-only zone for secure data storage |
-
----
-
-### 🖼️ Visual Diagram
-
-```
-                🌍 AWS Planet
-                       │
-          ┌────────────┴────────────┐
-          │                         │
-  (Other Users’ Islands)     🏝️ Your VPC (Private Island)
-                                     │
-          ┌──────────────────────────┴──────────────────────────┐
-          │                                                     │
- 🌊 Public Subnet (Coastal City)                     🏞️ Private Subnet (Inland City)
-  - Connected to Internet Gateway                    - No direct internet access
-  - Hosts Web Servers                                - Hosts Databases & Internal Apps
-  - Has Public & Private IPs                         - Has only Private IPs
-```
-
----
-
-### 🧠 One-Line Takeaway
-
-> **AWS is the Planet 🌍**  
-> **VPC is your Private Island 🏝️**  
-> **Subnets are the Districts or Zones on that Island 🧱**  
-> **Public Subnets face the sea (Internet Gateway), while Private Subnets stay inland (internal communication).**
-
-📸 **Reference:**  
-[AWS VPC Overview – Official Documentation](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html)
-
----
-
-</details>
-
----
-
-<details>
-<summary><strong>7. IP Concepts (Private, Public, Elastic, ENI)</strong></summary>
-
-## 🌐 IP Concepts – Addresses on Your Island
-
-Every EC2 instance inside your **VPC (Private Island)** needs a way to communicate — both **within the island** and **with the outside world**.  
-That’s where **IP addresses** come in.  
-
-Each EC2 instance can have:
-- **Private IP** → used within your island (local communication)
-- **Public IP** → used to connect with the outside ocean (internet)
-- **Elastic IP** → a permanent public address (reserved port)
-- **ENI (Elastic Network Interface)** → the network card that holds these addresses
-
----
-
-### 🧩 1. Private IP – The House Address Inside the Island
-
-Whenever you build a house (launch an EC2 instance) on your island, AWS automatically assigns it a **Private IP address**.  
-
-This address is used for **internal communication** —  
-for example, your bakery (web server) talking to your storage warehouse (database) — all within your fenced island.  
-
-A Private IP **stays the same** even if you restart the house’s power (stop/start the instance),  
-but it is **released permanently** if you demolish the house (terminate the instance).  
-
-Private IPs are **free of cost** and **not visible from the ocean (internet)** — they work only within your island’s local boundaries.
-
-📘 **Example**
-```
-
-Instance A → Private IP: 10.0.0.5
-Instance B → Private IP: 10.0.0.8
-
-```
-
-Both houses can exchange letters (data) freely because they live inside the same fenced island (VPC).
-
-💡 **Analogy:**  
-A **Private IP** is your **house address inside the island** — neighbors can visit you,  
-but no ship sailing on the ocean can see or reach you.
-
-📸 **Image:** [Private IP Addressing in EC2](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-ip-addressing.html)
-
----
-
-### 🌊 2. Public IP – The Dock Facing the Ocean
-
-When you build something on your island that the world should reach — like a tourist information center or a shop — you place it on the **coastline** (Public Subnet).  
-AWS then assigns it a **Public IP address** connected to an **Internet Gateway (IGW)**.
-
-This Public IP allows visitors (users on the internet) to find and access your service.
-
-However, this dock address is **temporary (dynamic)** —  
-if you close the port and reopen it (stop/start your instance), the city assigns a **new dock number** next time.  
-If you shut down the port completely (terminate the instance), the old number is gone forever.
-
-Public IPs are billed under AWS’s **Public IPv4** pricing, but the **Free Tier** covers 750 hours per month.
-
-📘 **Example**
-```
-
-Private IP: 10.0.0.12
-Public IP: 3.120.55.23
-
-````
-
-Connect using SSH:
-```bash
-ssh -i mykey.pem ec2-user@3.120.55.23
-````
-
-After restarting, AWS might give you a new address, like `13.210.40.50`.
-
-💡 **Analogy:**
-A **Public IP** is your **temporary dock number** — ships (internet users) can reach you through it,
-but if you rebuild or move your dock, the number changes.
-
-📸 **Image:** [Public IPv4 Addressing in EC2](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-ip-addressing.html)
-
----
-
-### ⚓ 3. Elastic IP – The Permanent Trade Port
-
-Sometimes, you don’t want your dock number (Public IP) to change — especially if you run a permanent business on your island, like a trading company (production server).
-That’s where an **Elastic IP (EIP)** comes in.
-
-An Elastic IP is a **static (permanent) public IPv4 address** that you reserve manually.
-It stays the same even if your instance stops, restarts, or moves.
-You can **detach it** from one instance and **reassign it** to another anytime.
-
-Elastic IPs are **free while attached**, but **billed if idle** (when allocated but unused).
-
-📘 **Example**
-
-```
-Elastic IP: 18.220.45.90
-Associated Instance: EC2-Web-Server
-```
-
-Even after restart:
-
-```
-Elastic IP: 18.220.45.90 ✅ (Permanent)
-```
-
-💡 **Analogy:**
-An **Elastic IP** is your **island’s registered trade port** —
-a permanent harbor number used for global trade.
-Even if you rebuild your warehouse or relocate offices, ships (clients) always find you through the same port number.
-
-📸 **Image:** [Elastic IP in EC2](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-ip-addressing.html)
-
----
-
-### 🛰️ 4. ENI (Elastic Network Interface) – The Island’s Communication Hub
-
-An **ENI** is like the **communication control center** of each building on your island.
-It’s a **virtual network card** that stores your Private IP, Public IP (if any), and connection rules (Security Groups).
-
-You can **attach or detach** ENIs between instances, like swapping communication panels between buildings.
-They’re essential for fault-tolerant or multi-network designs.
-
-💡 **Analogy:**
-An **ENI** is the **telecom hub** in your building —
-it manages all your phone lines, radios, and ports, connecting you to other buildings or even other islands.
-
-📸 **Image:** [Elastic Network Interface (ENI)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html)
-
----
-
-### 🧭 Comparison Summary
-
-| IP Type        | Role on the Island      | Persistence         | Cost                             | Analogy                           |
-| -------------- | ----------------------- | ------------------- | -------------------------------- | --------------------------------- |
-| **Private IP** | Internal communication  | Persists on restart | Free                             | House address inside the island   |
-| **Public IP**  | Internet-facing access  | Changes on restart  | Free (within 750 hrs/mo)         | Temporary dock number             |
-| **Elastic IP** | Permanent global access | Fixed and reusable  | Free if attached; billed if idle | Registered trade port             |
-| **ENI**        | Network connector       | N/A                 | Free                             | Communication hub in the building |
-
----
-
-### 🖼️ Visual Diagram
-
-```
-🌍 AWS Planet
-│
-└── 🏝️ Your VPC (Private Island)
-     │
-     ├── 🌊 Public Subnet (Coastal City)
-     │     ├── EC2 Instance with Public IP (Dock Access)
-     │     └── EC2 Instance with Elastic IP (Permanent Port)
-     │
-     └── 🏞️ Private Subnet (Inland City)
-           ├── EC2 Instance with Private IP (Internal Roads)
-           └── ENI (Communication Hub connecting everything)
-```
-
-
-                    ┌────────────────────────────┐
-                    │       Internet User        │
-                    │ (e.g., You on a Laptop)    │
-                    └──────────────┬─────────────┘
-                                   │
-                     Uses Public IP or Elastic IP
-                                   │
-                      (Example: 3.120.55.23 or 18.220.45.90)
-                                   │
-                     ┌─────────────▼──────────────┐
-                     │   Internet Gateway (IGW)   │
-                     │  Bridges Internet <-> VPC  │
-                     └─────────────┬──────────────┘
-                                   │
-                           Public Subnet
-                                   │
-                  ┌────────────────┴────────────────┐
-                  │                                 │
-          ┌───────▼───────┐                 ┌───────▼───────┐
-          │  EC2 Instance │                 │  EC2 Instance │
-          │   Web Server  │                 │   Database    │
-          │               │                 │               │
-          │ Public IP: 3.120.55.23          │ No Public IP  │
-          │ Elastic IP: 18.220.45.90 (opt)  │ Private Only  │
-          │ Private IP: 10.0.0.12           │ Private IP: 10.0.0.8 │
-          └──────────────────────────────────────────────────────┘
-                                   │
-                      Communicate privately via VPC
-                                   │
-                         (10.0.0.12 ↔ 10.0.0.8)
-
-📸 **Reference:**
-[AWS EC2 Networking – IP Addressing](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-ip-addressing.html)
-
-</details>
-
----
-
-<details>
-<summary><strong>8. Storage (EBS, Snapshots, Cross-AZ/Region Copy)</strong></summary>
-
----
-
-## Elastic Block Store (EBS)
-
-EBS is the **hard disk** of your EC2 instance.  
-Even if you stop or restart the machine, the data stays safe — that’s what makes it **persistent**.
-
-Each EBS volume acts like one **virtual drive** attached to your instance.  
-You can remove it, re-attach it, or copy it to another zone.
-
-| Type        | Description        | Best For |
-|-------------|--------------------|----------|
-| **gp3**     | Balanced SSD       | General workloads |
-| **io2/io1** | High IOPS SSD      | Databases, latency-sensitive apps |
-| **st1**     | Throughput HDD     | Big sequential data like logs, analytics |
-| **sc1**     | Cold HDD           | Rarely accessed, archive data |
-
-💡 **Analogy:**  
-Think of EBS as a **warehouse of shelves** on your island.  
-Each shelf (volume) holds your goods (data).  
-You can move shelves between shops (instances) — but only inside the **same district (Availability Zone)**.
-
-📸 **Reference:** [Amazon EBS Volumes](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volumes.html)
-
----
-
-## Snapshots
-
-A **snapshot** is a photograph of your shelf at a certain moment.  
-AWS stores it in S3 internally, so you can rebuild the same shelf whenever needed.
-
-```
-EBS Volume → Snapshot → New Volume
-```
-
-- First snapshot = full copy  
-- Next ones = only changed blocks (incremental)  
-- You can restore, copy, or automate them with **Lifecycle Manager**
-
-💡 **Analogy:**  
-Take a **photo of your warehouse shelf** today.  
-If something breaks tomorrow, you can rebuild an identical shelf using that photo.
-
-📸 **Reference:** [EBS Snapshots](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSSnapshots.html)
-
----
-
-## Cross-AZ or Cross-Region Copy
-
-**Within same Region (Cross-AZ):**
-
-1. Take a snapshot of volume in `us-east-1a`  
-2. Create a new volume from it in `us-east-1b`  
-3. Attach it to an instance there  
-
-**Between Regions:**
-
-1. Copy snapshot to another region  
-2. Create volume from that copy  
-3. Attach it to an instance in that region  
-
-💡 **Analogy:**  
-You take the photo of your shelf, fly it to another **city (AZ)** or even another **continent (Region)**,  
-and rebuild the same shelf there.
-
-📸 **Reference:** [Copy Snapshots](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-copy-snapshot.html)
-
-</details>
-
----
-
-<details>
-<summary><strong>9. Web Hosting (httpd) & User Data</strong></summary>
-
----
-
-## Hosting a Simple Website on EC2
-
-You can turn your EC2 into a small web server using **Apache HTTPD**.
-
-**Step 1 – Install Apache**
-
-```bash
-sudo yum install -y httpd
-````
-
-**Step 2 – Start the service**
-
-```bash
-sudo systemctl start httpd
-sudo systemctl enable httpd
-```
-
-**Step 3 – Allow Traffic**
-
-In your Security Group, open:
-
-* **HTTP (80)**
-* **HTTPS (443)**
-
-**Step 4 – Create a Web Page**
-
-```bash
-cd /var/www/html
-sudo bash -c 'echo "<h1>Webstore DevOps Learning</h1>" > index.html'
-```
-
-Now visit `http://<Public-IP>` in your browser.
-
-💡 **Analogy:**
-Your EC2 is a **café**, and Apache is the **waiter** serving pages to visitors who walk in through the **front door (port 80/443)**.
-
-📸 **Reference:** [Install LAMP on EC2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/install-LAMP.html)
-
----
-
-## User Data – Automation on First Boot
-
-**User Data scripts** run only once when a new instance starts.
-They’re used for quick setup — installing software or creating files automatically.
-
-```bash
-#!/bin/bash
-yum install -y httpd
-echo "<h1>Webstore App – 1</h1>" > /var/www/html/index.html
-systemctl enable httpd
-systemctl start httpd
-```
-
-💡 **Analogy:**
-This is like your **“opening-day checklist”** pinned to the café door —
-each new branch runs it automatically before serving customers.
-
-📸 **Reference:** [EC2 User Data](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html)
-
-</details>
-
----
-
-<details>
-<summary><strong>10. Instance Metadata & Identity Document</strong></summary>
-
----
-
-## Instance Metadata – Facts About Your Instance
-
-This is a local HTTP endpoint inside every EC2 that gives information about itself.
-It’s only reachable **from within** the instance.
-
-```bash
-curl http://169.254.169.254/latest/meta-data/
-```
-
-Examples:
-
-* `public-ipv4`
-* `instance-id`
-* `security-groups`
-* `ami-id`
-
-💡 **Analogy:**
-Inside your house, there’s a **cabinet with blueprints** — it shows everything about the house,
-but no outsider can open it.
-
----
-
-## IMDSv2 (Security Upgrade)
-
-Newer version of metadata service uses **session tokens** for safety.
-AWS recommends **enforcing IMDSv2 only**.
-
-```bash
-TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" \
-  -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
-
-curl -H "X-aws-ec2-metadata-token: $TOKEN" \
-  http://169.254.169.254/latest/meta-data/
-```
-
----
-
-## Instance Identity Document
-
-Signed JSON document that proves which instance you are.
-
-```bash
-curl http://169.254.169.254/latest/dynamic/instance-identity/document
-```
-
-Shows:
-
-* Region
-* Instance ID
-* AMI ID
-* Account ID
-
-💡 **Analogy:**
-It’s your **government-issued house deed** — official proof of who you are on the island.
-
-📸 **Reference:** [Instance Metadata Docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html)
-
-</details>
-
----
-
-<details>
-<summary><strong>11. Networking Foundations</strong></summary>
-
-Networking concepts — DNS, TCP/UDP, the 3-way handshake, OSI layers, stateful vs stateless firewalls — are covered in full in the Networking notes before this series.
-
-→ [Networking Fundamentals](../../03.%20Networking%20–%20Foundations/README.md)
-
-Key concepts used in EC2:
-- Security Groups = stateful firewall → [Firewalls & Security](../../03.%20Networking%20–%20Foundations/09-firewalls/README.md)
-- Subnets and CIDR → [Subnets & CIDR](../../03.%20Networking%20–%20Foundations/05-subnets-cidr/README.md)
-- NAT Gateway → [NAT & Translation](../../03.%20Networking%20–%20Foundations/07-nat/README.md)
-- DNS and Route 53 → [DNS](../../03.%20Networking%20–%20Foundations/08-dns/README.md)
-
-</details>
-
----
-
-<details>
-<summary><strong>12. Load Balancer (with Health Checks)</strong></summary>
-
----
-
-## Why do we need a Load Balancer?
-
-One server works until traffic grows. Then it slows, crashes, or becomes a single point of failure.  
-A **Load Balancer (LB)** sits in front and **spreads requests** across many servers.
-
-**Analogy:** A traffic police officer at a busy junction, sending cars into free lanes so no lane jams.
-
----
-
-## How it works (simple view)
-
-1. Users hit the **LB** (one public endpoint).
-2. LB forwards each request to **healthy** EC2 instances.
-3. **Health checks** run constantly. If an instance fails, LB stops sending traffic there.
-
-**Common algorithm:**  
-- **Round Robin** = 1st request → Server A, 2nd → Server B, 3rd → Server C, then back to A…
-
-```
-
-```
-     Internet Users
-            │
-            ▼
-     +---------------+
-     | Load Balancer |
-     +---------------+
-        │     │     │
-        ▼     ▼     ▼
-     EC2 A  EC2 B  EC2 C
-```
-
-```
-
----
-
-## Health checks (must-have)
-
-- Path/port the LB probes, e.g., `HTTP:80 /healthz` → expect **200 OK**  
-- Thresholds: how many passes/fails before “healthy/unhealthy”  
-- Purpose: remove bad instances automatically
-
----
-
-## Types of AWS Load Balancers
-
-| Type | OSI Layer | Best For | Highlights |
-|-----|-----------|----------|------------|
-| **Application (ALB)** | Layer 7 | HTTP/HTTPS web apps | Path/host routing, headers, cookies, WebSockets, TLS termination with ACM |
-| **Network (NLB)** | Layer 4 | Extreme performance TCP/UDP | Very low latency, static IP/EIP per AZ, TLS pass-through/termination |
-| **Gateway (GWLB)** | Layer 3 | Firewalls / inspection | Transparent appliance insertion |
-| **Classic (CLB)** | 4/7 | Legacy only | Old gen—prefer ALB/NLB for new apps |
-
-**Good defaults for web apps (ALB):**
-- Redirect **HTTP → HTTPS**
-- **TLS** termination at ALB (managed certs via **ACM**)
-- Health check on `/healthz`
-- Consider **AWS WAF** and **access logs**
-
-📸 **Reference:**  
-[AWS Elastic Load Balancing](https://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/what-is-load-balancing.html)
-
-</details>
-
----
-
-<details>
-<summary><strong>13. Auto Scaling & Monitoring</strong></summary>
-
----
-
-## Why Auto Scaling?
-
-Traffic changes all day.  
-- If you size for peak all the time → **waste money**.  
-- If you size small → **downtime** during spikes.
-
-**Auto Scaling** grows and shrinks capacity automatically.
-
-**Analogy:** Open extra billing counters when the line gets long; close them when the store is empty.
-
----
-
-## Core building blocks
-
-1. **Launch Template**  
-   - The “recipe” for new instances (AMI, type, SGs, User Data, IAM role)
-2. **Auto Scaling Group (ASG)**  
-   - Controls **Min / Desired / Max** instance counts
-3. **Scaling Policies**  
-   - **Target tracking**: keep a metric steady (e.g., CPU ~ 60%)  
-   - **Step scaling**: thresholds add/remove in steps  
-   - **Scheduled**: time-based (e.g., weekdays 9 AM scale up)
-4. **Health checks**  
-   - Replace unhealthy instances (EC2/ELB health)
-5. **Lifecycle hooks** (optional)  
-   - Run scripts before instance joins/leaves (warm-up, drain, save logs)
-
-```
-
-```
-        Internet Users
-              │
-              ▼
-       [ Load Balancer ]
-              │
-  ┌───────────┴───────────┐
-  ▼                       ▼
-```
-
-[ EC2 ]                 [ EC2 ]
-▲                       ▲
-└──────────┬────────────┘
-│
-Auto Scaling Group
-Min=2  Desired=2  Max=6
-↑ Add when metric rises (scale out)
-↓ Remove when metric falls (scale in)
-
-```
-
----
-
-## Monitoring (keep an eye)
-
-- **CloudWatch Metrics**: CPU, Network, ELB TargetResponseTime, RequestCountPerTarget, custom app metrics  
-- **CloudWatch Alarms**: trigger scaling or alerts  
-- **CloudWatch Logs**: ship system/app logs  
-- **Dashboards**: single pane of health
-
----
-
-## A simple, safe starting pattern
-
-- Put instances in **multiple AZs** behind an **ALB**  
-- ASG: **Min=2**, Desired starts at 2, **Max** sized for spikes  
-- **Target tracking** on CPU (e.g., 50–60%) or ALB metrics (RequestCountPerTarget)  
-- Health check grace period during warm-up  
-- Use **Instance Refresh** for rolling updates (new AMI/LT)
-
-📸 **References:**  
-[Amazon EC2 Auto Scaling](https://docs.aws.amazon.com/autoscaling/ec2/userguide/what-is-amazon-ec2-auto-scaling.html)  
-[Amazon CloudWatch](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html)
-
-</details>
----
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 08-rds
----
-
-[Home](../README.md) | 
-[Intro to AWS](../01-intro-aws/README.md) | 
-[IAM](../02-iam/README.md) | 
-[VPC & Subnet](../03-vpc-subnet/README.md) | 
-[EBS](../04-ebs/README.md) | 
-[EFS](../05-efs/README.md) | 
-[S3](../06-s3/README.md) | 
-[EC2](../07-ec2/README.md) | 
-[RDS](../08-rds/README.md) | 
-[Load Balancing & Auto Scaling](../09-Load-balancing-auto-scaling/README.md) | 
-[CloudWatch & SNS](../10-cloudwatch-sns/README.md) | 
-[Lambda](../11-lambda/README.md) | 
-[Elastic Beanstalk](../12-elastic-beanstalk/README.md) | 
-[Route 53](../13-route53/README.md) | 
-[CLI + CloudFormation](../14-cli-cloudformation/README.md)
-
-# AWS RDS – Relational Database Service
-
-EC2 gives us compute power, but most real-world apps also need a structured place to store and query data — not just flat files.
-RDS (Relational Database Service) fills that role.
-Think of EC2 as your kitchen where code runs, and RDS as the organized pantry where recipes and ingredients stay safe and ready to use.
-
-## Table of Contents
-1. [Why Do We Need Databases?](#1-why-do-we-need-databases)
-2. [Challenges with On-Premises Databases](#2-challenges-with-on-premises-databases)
-3. [What Is Amazon RDS?](#3-what-is-amazon-rds)
-4. [Core Components](#4-core-components)
-5. [Key Features](#5-key-features)
-6. [How Backups Actually Work (Behind the Scenes)](#6-how-backups-actually-work-behind-the-scenes)
-7. [RDS in DevOps](#7-rds-in-devops)
-
----
-
-<details>
-<summary><strong>1. Why Do We Need Databases?</strong></summary>
-  
-Every application — whether it’s a food delivery app or a movie streaming site — needs a place to **store and recall information safely**.  
-That’s what a **database** does: it holds your data even after your system restarts.
-
-Without a database, your app would forget everything — like a restaurant that loses all its orders the moment the power goes out.
-
----
-
-### The Restaurant Analogy
-  
-Let’s imagine your application is a restaurant.
-
-* The **chef** is your **database engine** (MySQL, PostgreSQL, Oracle, etc.) — cooking up the data and serving results.  
-* The **manager** is **AWS RDS** — taking care of the kitchen, groceries, cleaning, and overall maintenance.  
-* And you — the **owner (application)** — just focus on serving customers and taking new orders.
-
-You don’t worry about whether the gas is filled or the ingredients are fresh — that’s RDS’s job.
-
-| Role             | Real-World Task                          | AWS Equivalent                              |
-| ---------------- | ---------------------------------------- | ------------------------------------------- |
-| You (Owner/App)  | Take customer orders                     | Application sending queries                 |
-| Chef (DB Engine) | Cook food                                | Process and store data                      |
-| Manager (RDS)    | Keep kitchen running, handle maintenance | Manage infrastructure, backups, and scaling |
-
-So RDS basically keeps your “data kitchen” running, while you focus on your customers.
-
-</details>
-
----
-
-<details>
-<summary><strong>2. Challenges with On-Premises Databases</strong></summary>
-  
-Before cloud services existed, companies had to host databases on **physical servers**.  
-That sounds fine until you realize what it really meant:
-
-* You had to **buy and maintain hardware**.  
-* You were responsible for **installing, patching, and updating** the database software.  
-* **Scaling** was a nightmare — if your app suddenly went viral, you couldn’t just “add capacity” overnight.  
-* **Backups and failovers** had to be handled manually.  
-* And if a server crashed — well, good luck restoring it quickly.
-
-So instead of building your product, you’d be stuck doing IT housekeeping.
-
-</details>
-
----
-
-<details>
-<summary><strong>3. What Is Amazon RDS?</strong></summary>
-  
-That’s exactly where **Amazon RDS (Relational Database Service)** steps in.  
-
-RDS is a **fully managed service** that handles all the heavy lifting — setup, maintenance, scaling, patching, and backups — while you focus on using the database, not running it.
-
-You just choose:
-
-* which **engine** you want (MySQL, PostgreSQL, Oracle, SQL Server, or MariaDB),  
-* how big your instance should be,  
-* and AWS does the rest.
-
-So you focus on your app, and RDS quietly takes care of the kitchen.
-
----
-
-### Quick Architecture View
-
-📘 **Reference Diagram:**  
-[AWS RDS Architecture](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/images/Amazon-RDS-concept.png)
-
-```
-
-Application (EC2 / Lambda)
-↓
-Security Group (Port 3306 for MySQL)
-↓
-RDS Instance
-↓
-Automated Backups + Multi-AZ Replicas
-
-```
-
-In short — your app connects to RDS, and AWS makes sure your data stays available, secure, and recoverable.
-
-</details>
-
----
-
-<details>
-<summary><strong>4. Core Components</strong></summary>
-  
-When you launch an RDS instance, AWS silently builds several moving parts underneath.  
-Here’s what they are and how they fit together:
-
----
-
-### 1. DB Instance
-This is the actual **compute environment** where your database runs — like a virtual machine with CPU, RAM, and storage.  
-You can scale it vertically (change instance type) or horizontally (add replicas).
-
----
-
-### 2. DB Engine
-This defines which database technology is powering your instance.  
-Options include MySQL, PostgreSQL, Oracle, SQL Server, and MariaDB.  
-Each has its own pricing and features, but RDS handles all of them in a similar way.
-
----
-
-### 3. Endpoint
-Every RDS instance gets a **unique DNS endpoint**.  
-That’s your connection string — your app uses it instead of an IP.
-
-Example:
-```
-
-mydb.xxxxx.ap-south-1.rds.amazonaws.com
-
-```
-
-Even during a failover or maintenance, the endpoint always points to the correct active instance.
-
----
-
-### 4. Storage Type
-RDS storage comes from **EBS (Elastic Block Store)**.  
-You can pick:
-
-* **gp3 (General Purpose SSD)** – cost-effective and balanced performance.  
-* **io2 (Provisioned IOPS SSD)** – high-speed, low-latency storage for heavy workloads.
-
-You can increase storage size anytime — no downtime required.
-
----
-
-### 5. Security Group
-This acts as a **firewall** controlling who can access your database.
-
-| Engine     | Port |
-| ---------- | ---- |
-| MySQL      | 3306 |
-| PostgreSQL | 5432 |
-
-Always restrict access to specific IPs or your EC2 instances only.
-
----
-
-| Component          | Description                                       |
-| ------------------ | ------------------------------------------------- |
-| **DB Instance**    | The environment where the database runs           |
-| **DB Engine**      | MySQL, PostgreSQL, Oracle, SQL Server, etc.       |
-| **Endpoint**       | DNS name used by apps to connect                  |
-| **Storage Type**   | SSD-backed storage (gp3 / io2)                    |
-| **Security Group** | Firewall controlling inbound and outbound traffic |
-
-</details>
-
----
-
-<details>
-<summary><strong>5. Key Features</strong></summary>
-  
-RDS is designed to make your life easier — handling everything you’d normally spend hours on.
-
----
-
-### 1. Automated Backups
-RDS automatically takes **daily snapshots** and transaction log backups.  
-You can roll back to **any specific second** within your backup retention window.  
-Perfect for accidental deletions or human errors.
-
----
-
-### 2. Multi-AZ Deployment
-RDS creates a **standby replica** in another Availability Zone.  
-If the primary database fails, RDS automatically switches over to the standby.  
-This means zero manual recovery and almost no downtime.
-
----
-
-### 3. Read Replicas
-For apps with lots of read requests (like dashboards or analytics), you can create **read-only copies**.  
-They help distribute the load and improve performance.
-
----
-
-### 4. Monitoring with CloudWatch
-You can monitor CPU, memory, connections, and IOPS in real time.  
-Set alarms or automation to scale when performance metrics go high.
-
----
-
-### 5. Fully Managed by AWS
-AWS takes care of everything — patching, scaling, failovers, and security updates.  
-You only pay for what you use.
-
-| Feature                   | What It Does                                    |
-| ------------------------- | ----------------------------------------------- |
-| **Automated Backups**     | Daily snapshots + point-in-time restore         |
-| **Multi-AZ Deployment**   | Creates standby DB in another AZ for failover   |
-| **Read Replicas**         | Distribute read traffic and improve performance |
-| **CloudWatch Monitoring** | Tracks performance metrics                      |
-| **Fully Managed**         | AWS handles all the maintenance tasks           |
-
-</details>
-
----
-
-<details>
-<summary><strong>6. How Backups Actually Work (Behind the Scenes)</strong></summary>
-  
-### How RDS Backups Work in Action
-
-Let’s say you create a **MySQL RDS instance** named `myapp-db` in the **Mumbai (ap-south-1)** region.
-
----
-
-### **1. Primary Storage (EBS)**
-
-When you launch the database:
-
-* AWS automatically attaches **EBS (Elastic Block Store)** volumes behind the scenes to store your DB files.
-* These volumes hold your actual data — tables, indexes, logs, configurations.
-* You don’t see or manage them; RDS abstracts them away.
-
-📦 **Service involved:**
-**Amazon EBS** (RDS uses it internally for database storage)
-
----
-
-### **2. Automated Backups Start**
-
-When you enable automated backups (default setting):
-
-* RDS quietly takes **EBS snapshots** of your database storage volume once every 24 hours.
-* These are **incremental snapshots** — meaning only the changed data blocks are stored after the first backup.
-
-📦 **Service involved:**
-**Amazon EBS + Amazon S3**
-→ Snapshots are EBS-level backups **stored inside Amazon S3** (you don’t see them directly in S3 console, but they live there).
-
----
-
-### **3. Transaction Logs (Point-in-Time Recovery)**
-
-Throughout the day, RDS continuously uploads **transaction logs** (the history of every write or change) to S3.
-These logs allow **point-in-time recovery**, meaning you can restore your DB to *any exact second* before failure.
-
-📦 **Service involved:**
-**Amazon S3** (stores binary logs securely and redundantly)
-
----
-
-### **4. Restore from Backup**
-
-Imagine something goes wrong — your app accidentally drops a table.
-You go to:
-**AWS Console → RDS → Databases → Restore to Point in Time.**
-
-You choose a timestamp, like:
-
-```
-12th Oct, 2025 – 14:22:05
-```
-
-AWS then:
-
-1. Fetches the relevant **EBS snapshot** from S3.
-2. Replays all **transaction logs** up to that exact second.
-3. Creates a **new RDS instance** (`myapp-db-restore`) with recovered data.
-
-Your original DB stays untouched.
-
-📦 **Services involved:**
-
-* **Amazon RDS** → Orchestrates the recovery process.
-* **Amazon S3** → Provides the stored backups and logs.
-* **Amazon EBS** → Creates new volumes for the restored DB.
-
----
-
-### **5. Monitoring and Logging (Simplified View)**
-
-Once your backups and restores are running, AWS gives you two “watchers” that keep an eye on everything — one for **performance**, and one for **activity history**.
-
----
-
-#### a) CloudWatch → Performance Monitor  
-- **Think of this as a health meter for your database.**  
-- It constantly measures things like:
-  - CPU usage  
-  - Storage space used  
-  - Number of connections  
-  - Backup duration and progress  
-
-You can open **CloudWatch → Metrics → RDS** in the console and actually see live graphs.  
-If something goes wrong (for example, CPU > 90% for 5 minutes),  
-you can set an **alarm** so AWS notifies you or even runs an action (like scaling).
-
-**Purpose:** lets you know if your database or backups are slowing down, filling up, or overloading — before it becomes a problem.
-
----
-
-#### b) CloudTrail → Activity History  
-- **This keeps a diary of what actions were taken and by whom.**  
-- Example: if someone runs  
-  - “CreateSnapshot”  
-  - “DeleteDBInstance”  
-  - “RestoreDBInstanceFromBackup”  
-  you’ll see exactly when and who did it.
-
-It’s mainly for **security and auditing** — so you can trace changes if something unexpected happens.
-
-**Purpose:** proves accountability and helps investigate any wrong action or failure later.
-
----
-
-### **6. Cross-Region Backups (Optional, for Extra Safety)**
-
-If you enable it, AWS can make **a copy of your snapshots** and send them to another region — say your main DB is in Mumbai (ap-south-1), the copy could go to N. Virginia (us-east-1).
-
-Why this matters:
-- If an entire region faces an outage or disaster, your data is still safe elsewhere.  
-- You can even launch an RDS instance from that copy in the other region and keep your app running.
-
-You can set this up once — RDS automates the rest.
-
----
-
-### **7. The Big Picture (Tie Everything Together)**
-  
-Here’s what’s happening overall:
-
-1. **Your RDS instance** stores live data on **EBS volumes**.  
-2. **Automated backups** take **EBS snapshots** daily and save them in **S3**.  
-3. **Transaction logs** continuously flow into **S3** so you can rewind to any second.  
-4. **When you restore**, RDS combines the latest snapshot + those logs to rebuild your data on new EBS volumes.  
-5. **CloudWatch** keeps you informed about performance and backup health.  
-6. **CloudTrail** keeps an action log for auditing.  
-7. Optionally, **S3** replicates your snapshots to another region for disaster recovery.  
-
-Visually:
-
-```
-
-RDS Instance (EBS)
-│
-├──> Daily Snapshots ──> Amazon S3
-├──> Transaction Logs ─> Amazon S3
-│
-├──> Monitoring ───────> CloudWatch
-├──> Activity Logs ────> CloudTrail
-└──> Optional Copies ──> S3 (Other Region)
-
-```
-
----
-
-### In Short
-- **EBS** = live database storage.  
-- **S3** = safe long-term backup vault.  
-- **CloudWatch** = performance dashboard.  
-- **CloudTrail** = security history log.  
-
-Together, these services make RDS backups automatic, trackable, and easy to recover.
-
-### **Realistic Example**
-
-Your production app (say, `food-ordering-app`) uses RDS for orders.
-
-Scenario:
-
-* At 3:15 PM, a wrong SQL command deletes the “customers” table.
-* You open RDS → click “Restore to point in time” → select 3:14:59 PM.
-* AWS automatically restores from your latest backup snapshot + replay logs →
-  **new DB instance appears with all data intact**.
-* You reconnect your app to the new endpoint, and everything resumes normally.
-
----
-
-**In short:**
-
-* RDS uses **EBS** for live data,
-* **S3** for backups and logs,
-* **CloudWatch** for monitoring,
-* **CloudTrail** for auditing, and
-* all of it is managed by **RDS itself** — no manual coordination needed.
-
-</details>
-
----
-
-<details>
-<summary><strong>7. RDS in DevOps</strong></summary>
-  
-In a DevOps workflow, RDS acts as your **database backbone** — reliable, monitored, and automated.
-
-* **Infrastructure as Code (IaC):** Create and manage RDS using Terraform or CloudFormation.  
-* **Automation:** Integrate snapshots and restore operations into CI/CD pipelines.  
-* **Monitoring:** Push CloudWatch metrics into Grafana or custom dashboards.  
-* **Security:** Use IAM roles, KMS encryption, and TLS connections.  
-* **Reliability:** Multi-AZ and PITR protect against failures and human mistakes.
-
-In short — RDS gives your application the confidence to scale, fail, recover, and still stay online.
-
-</details>
----
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 09-Load-balancing-auto-scaling
----
-
-[Home](../README.md) | 
-[Intro to AWS](../01-intro-aws/README.md) | 
-[IAM](../02-iam/README.md) | 
-[VPC & Subnet](../03-vpc-subnet/README.md) | 
-[EBS](../04-ebs/README.md) | 
-[EFS](../05-efs/README.md) | 
-[S3](../06-s3/README.md) | 
-[EC2](../07-ec2/README.md) | 
-[RDS](../08-rds/README.md) | 
-[Load Balancing & Auto Scaling](../09-Load-balancing-auto-scaling/README.md) | 
-[CloudWatch & SNS](../10-cloudwatch-sns/README.md) | 
-[Lambda](../11-lambda/README.md) | 
-[Elastic Beanstalk](../12-elastic-beanstalk/README.md) | 
-[Route 53](../13-route53/README.md) | 
-[CLI + CloudFormation](../14-cli-cloudformation/README.md)
-
-# AWS Load Balancer & Auto Scaling – Resilience and Scaling in Action
-
-Once our app is up, we hit the next challenge — growth.
-More users mean more requests, and one EC2 can’t handle them forever.
-This is where Load Balancers and Auto Scaling come in: one spreads the traffic, the other adds or removes servers automatically.
-Together they make your system stable, fast, and cost-smart.
-
-## Table of Contents
-1. [Why We Need Load Balancing & Auto Scaling](#1-why-we-need-load-balancing--auto-scaling)
-2. [Load Balancer – The Traffic Director](#2-load-balancer--the-traffic-director)
-3. [AWS Load Balancer Types (Deep Clarity + Scenarios)](#3-aws-load-balancer-types-deep-clarity--scenarios)
-4. [Health Checks Explained](#4-health-checks-explained)
-5. [Auto Scaling – The Self-Healing Mechanism](#5-auto-scaling--the-self-healing-mechanism)
-6. [Scaling Policies](#6-scaling-policies)
-7. [Monitoring with CloudWatch](#7-monitoring-with-cloudwatch)
-8. [Recommended Architecture Pattern](#8-recommended-architecture-pattern)
-9. [Cost Awareness](#9-cost-awareness)
-10. [Benefits Recap](#10-benefits-recap)
-11. [Hands-On Pointers](#11-hands-on-pointers)
-12. [References](#12-references)
-
----
-
-<details>
-<summary><strong>1. Why We Need Load Balancing & Auto Scaling</strong></summary>
-
-When an application runs on a single EC2 instance, it’s vulnerable — if that instance fails, users face downtime.  
-As traffic grows, that single instance also becomes a bottleneck.
-
-**Load Balancing** prevents overload by distributing requests across multiple servers.  
-**Auto Scaling** ensures the number of servers adjusts automatically with demand.
-
-Together, they create systems that are:
-- **Highly available** – no single point of failure  
-- **Scalable** – adapt to load changes  
-- **Cost-efficient** – run only what’s needed  
-
-**Analogy:**  
-Think of a restaurant during lunch hour. The manager (Load Balancer) sends customers evenly to free tables,  
-and when the rush increases, new waiters are called in (Auto Scaling).  
-When it’s quiet again, the extra waiters leave — smooth, efficient, and balanced.
-
-</details>
-
----
-
-<details>
-<summary><strong>2. Load Balancer – The Traffic Director</strong></summary>
-
-### Purpose
-A Load Balancer acts as a **single entry point** for all users, forwarding requests to backend EC2 instances that are healthy and available.
-
-### How It Works
-1. Users connect to the LB’s DNS name.  
-2. The LB routes each request to a **Target Group** (group of EC2 instances or IPs).  
-3. Constant **Health Checks** decide which targets are fit to receive traffic.  
-4. The LB automatically stops sending traffic to unhealthy instances.
-
-### Core Concepts
-
-| Term | Description |
-|------|--------------|
-| **Listener** | Defines protocol and port (e.g., HTTP 80 → Target Group A) |
-| **Target Group** | Pool of EC2 targets behind the LB |
-| **Rule** | Conditions (path/host/header) used for routing |
-| **Cross-Zone LB** | Balances traffic across AZs for fault tolerance |
-| **Sticky Sessions** | Keeps a client bound to the same target |
-| **TLS Termination** | LB handles HTTPS encryption via ACM certificate |
-| **Access Logs** | Store detailed connection data to S3 |
-
-### Simple Architecture
-
-```
-
-Internet Users
-│
-▼
-+------------------+
-|  Load Balancer   |
-+------------------+
-│     │     │
-▼     ▼     ▼
-EC2-A EC2-B EC2-C
-
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>3. AWS Load Balancer Types (Deep Clarity + Scenarios)</strong></summary>
-
-Each LB type works at a specific **OSI layer** and fits different needs.
-
-| Type | OSI Layer | Think of It As | Ideal For | Why It Fits Best |
-|------|------------|----------------|------------|------------------|
-| **Application LB (ALB)** | Layer 7 | Smart receptionist who understands full sentences | Web apps (HTTP/HTTPS) | Routes by path/host, supports cookies, redirects, WebSockets, and integrates with ACM & WAF. |
-| **Network LB (NLB)** | Layer 4 | Bouncer who checks connection tickets | Gaming, IoT, low-latency or fixed-IP workloads | Handles millions of TCP/UDP connections with static IPs and TLS pass-through. |
-| **Gateway LB (GWLB)** | Layer 3 | Security checkpoint inspecting every packet | Firewalls, intrusion detection, network inspection | Transparently inserts appliances into traffic flow. |
-| **Classic LB (CLB)** | Layer 4/7 | Old front-desk operator | Legacy EC2 stacks | Simple, but lacks advanced routing and metrics — migrate to ALB/NLB. |
-
----
-
-#### Real-World Scenarios
-
-| Scenario | Best LB | Why This Works |
-|-----------|----------|----------------|
-| Multi-path web app (`/`, `/api`, `/login`) | **ALB** | Path-based routing, SSL termination, WAF support. |
-| Multiplayer gaming needing static IPs | **NLB** | TCP/UDP speed, minimal latency. |
-| Deploying network firewalls (FortiGate, Palo Alto) | **GWLB** | Inserts inspection appliances inline transparently. |
-| Legacy monolith (pre-2016) | **CLB → ALB recommended** | Backward compatible, but ALB adds performance & logs. |
-
----
-
-#### OSI Layer Quick View
-
-| Layer | Understands | Example Decision |
-|--------|--------------|------------------|
-| **L3 (GWLB)** | IP Packets | “Route 10.0.0.0/16 through firewall.” |
-| **L4 (NLB)** | Ports & Protocols | “If TCP 443 → EC2-A.” |
-| **L7 (ALB)** | Full HTTP/HTTPS requests | “If path = /api → Target Group 2.” |
-
----
-
-#### Choosing Quickly
-
-| Goal | Choose |
-|------|---------|
-| Smart routing (URLs, headers) | **ALB** |
-| Ultra-low latency or static IP | **NLB** |
-| Security inspection | **GWLB** |
-| Legacy support | **CLB** |
-
-</details>
-
----
-
-<details>
-<summary><strong>4. Health Checks Explained</strong></summary>
-
-Health Checks are what keep your Load Balancer smart — it constantly asks,  
-“Are you okay?” to each target before sending traffic.
-
-**Parameters to Configure**
-- **Protocol & Path** → `HTTP:80 /healthz` or `TCP:22`  
-- **Healthy Threshold** → How many successes before marking healthy  
-- **Unhealthy Threshold** → Failures before removing instance  
-- **Interval** → Frequency of checks  
-- **Timeout** → Wait time before declaring failure  
-
-**Goal:** keep traffic flowing only to **healthy** instances automatically.
-
-</details>
-
----
-
-<details>
-<summary><strong>5. Auto Scaling – The Self-Healing Mechanism</strong></summary>
-
-When traffic rises, add servers; when it drops, remove them.  
-That’s what Auto Scaling does — **scale dynamically without manual control.**
-
-### Core Components
-
-| Component | Description |
-|------------|-------------|
-| **Launch Template** | Blueprint defining AMI, instance type, SGs, IAM role, User Data |
-| **Auto Scaling Group (ASG)** | Logical group controlling instance count (Min/Desired/Max) |
-| **Scaling Policies** | Define how and when scaling occurs |
-| **Health Checks** | Replace unhealthy instances automatically |
-| **Lifecycle Hooks** | Trigger actions before join/after terminate (warm-up, drain, save logs) |
-
-### Analogy
-Like a supermarket opening more checkout counters when queues form  
-and closing them when the rush ends — smooth, elastic, cost-efficient.
-
-</details>
-
----
-
-<details>
-<summary><strong>6. Scaling Policies</strong></summary>
-
-| Policy Type | Trigger | Example |
-|--------------|----------|----------|
-| **Target Tracking** | Maintain a steady metric | Keep CPU ≈ 60 % |
-| **Step Scaling** | Adjust by threshold steps | +1 instance @ 70 %, +2 @ 90 % |
-| **Simple Scaling** | One threshold → one action | Add 1 instance when CPU > 80 % |
-| **Scheduled Scaling** | Time-based automation | Weekdays 9 AM scale out, 5 PM scale in |
-
-**Behind the Scenes**
-- Scaling uses **CloudWatch Alarms** to detect thresholds.  
-- ASG then launches or terminates instances based on that metric.
-
-</details>
-
----
-
-<details>
-<summary><strong>7. Monitoring with CloudWatch</strong></summary>
-
-**CloudWatch** provides full observability:
-
-| Type | Use |
-|------|-----|
-| **Metrics** | CPU, Network, RequestCountPerTarget, TargetResponseTime |
-| **Alarms** | Trigger actions or notifications |
-| **Logs** | Collect system/app logs |
-| **Dashboards** | Unified view of health and scaling metrics |
-
-Combine these with scaling policies for a closed feedback loop:  
-*Monitor → Decide → Act → Repeat.*
-
-</details>
-
----
-
-<details>
-<summary><strong>8. Recommended Architecture Pattern</strong></summary>
-
-**Goal:** High availability + elastic scaling + cost efficiency.
-
-```
-
-```
-    Internet Users
-          │
-          ▼
- ┌────────────────┐
- │ Application LB │  ← HTTPS 443 (ACM certs)
- └────────────────┘
-          │
- ┌────────┴────────┐
- ▼                 ▼
-```
-
-EC2-A             EC2-B
-▲               ▲
-└──────┬────────┘
-│
-Auto Scaling Group
-Min = 2  Desired = 2  Max = 6
-
-```
-
-- Instances spread across multiple AZs  
-- Health Checks at ALB and EC2 level  
-- Scaling based on CPU or RequestCountPerTarget  
-- Instance Refresh for rolling updates  
-- Logging + Alerts via CloudWatch
-
-</details>
-
----
-
-<details>
-<summary><strong>9. Cost Awareness</strong></summary>
-
-| Component | Cost Basis | Notes |
-|------------|-------------|-------|
-| **ALB** | per hour + per LCU (Load Balancer Capacity Unit) | Pay for time active + processed traffic |
-| **NLB** | per hour + per LCU (new connections, data processed) | Slightly higher but faster |
-| **ASG** | Free | Pay only for EC2 and CloudWatch usage |
-| **CloudWatch** | per metric + alarms + logs | Optimize by filtering important metrics only |
-
-**Tip:**  
-Right-size instance types and schedule down-scaling windows to reduce bills.
-
-</details>
-
----
-
-<details>
-<summary><strong>10. Benefits Recap</strong></summary>
-
-| Capability | Handled By | Outcome |
-|-------------|-------------|----------|
-| Traffic Distribution | Load Balancer | Balanced user experience |
-| Fault Tolerance | LB + ASG | Automatic recovery from failures |
-| Cost Efficiency | ASG | Scales down when idle |
-| Security & Monitoring | WAF + CloudWatch | Visibility and Protection |
-
-Together they build **resilient, self-adjusting AWS architectures.**
-
-</details>
-
----
-
-<details>
-<summary><strong>11. Hands-On Pointers</strong></summary>
-
-1. Deploy **ALB** in public subnets; register EC2 targets in private subnets.  
-2. Create **Launch Template** → link to ASG → attach scaling policy.  
-3. Configure Health Checks (`/healthz`) and grace periods.  
-4. Use **ACM** for free SSL/TLS certificates.  
-5. Verify metrics in **CloudWatch Dashboard**.  
-6. Test scaling by generating load (e.g., Apache Bench or stress tool).
-
-</details>
-
----
-
-<details>
-<summary><strong>12. References</strong></summary>
-
-- [AWS Elastic Load Balancing Docs](https://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/what-is-load-balancing.html)  
-- [Amazon EC2 Auto Scaling Docs](https://docs.aws.amazon.com/autoscaling/ec2/userguide/what-is-amazon-ec2-auto-scaling.html)  
-- [Amazon CloudWatch Docs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html)  
-- [AWS WAF Integration Guide](https://docs.aws.amazon.com/waf/latest/developerguide/waf-chapter.html)  
-- [AWS Certificate Manager Overview](https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html)
-
-</details>
----
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 10-cloudwatch-sns
----
-
-[Home](../README.md) | 
-[Intro to AWS](../01-intro-aws/README.md) | 
-[IAM](../02-iam/README.md) | 
-[VPC & Subnet](../03-vpc-subnet/README.md) | 
-[EBS](../04-ebs/README.md) | 
-[EFS](../05-efs/README.md) | 
-[S3](../06-s3/README.md) | 
-[EC2](../07-ec2/README.md) | 
-[RDS](../08-rds/README.md) | 
-[Load Balancing & Auto Scaling](../09-Load-balancing-auto-scaling/README.md) | 
-[CloudWatch & SNS](../10-cloudwatch-sns/README.md) | 
-[Lambda](../11-lambda/README.md) | 
-[Elastic Beanstalk](../12-elastic-beanstalk/README.md) | 
-[Route 53](../13-route53/README.md) | 
-[CLI + CloudFormation](../14-cli-cloudformation/README.md)
-
-# 🛰️ AWS CloudWatch & SNS — “The Eyes and Bell of AWS”
-
-> **CloudWatch observes. SNS alerts.**
-> Together, they form the heartbeat and voice of your AWS ecosystem — detecting change and announcing it instantly.
-> **Phase 5 – Automation & Monitoring**
-
----
-
-## Table of Contents
-
-1. [Why We Need Observability](#1-why-we-need-observability)
-2. [What Is CloudWatch](#2-what-is-cloudwatch)
-3. [What Is SNS](#3-what-is-sns)
-4. [Core Concepts](#4-core-concepts)
-5. [Architecture Diagram](#5-architecture-diagram)
-6. [Hands-On Workflow](#6-hands-on-workflow)
-7. [Best Practices & Use Cases](#7-best-practices--use-cases)
-8. [Beyond Alerts – Automation & IaC](#8-beyond-alerts--automation--iac)
-9. [Cost & Optimization Tips](#9-cost--optimization-tips)
-10. [Quick Summary](#10-quick-summary)
-11. [Self-Audit Checklist](#11-self-audit-checklist)
-
----
-
-<details>
-<summary><strong>1. Why We Need Observability</strong></summary>
-
-As infrastructure grows, manual health checks don’t scale.
-We need **real-time telemetry** — metrics, logs, events — that expose what’s happening under the hood.
-
-Without observability:
-
-* Outages go undetected until users report them.
-* Bottlenecks stay hidden.
-* MTTR (mean time to repair) skyrockets.
-
-**CloudWatch + SNS** close the loop:
-
-> Measure → Detect → Alert → Respond → Recover.
-
-</details>
-
----
-
-<details>
-<summary><strong>2. What Is CloudWatch</strong></summary>
-
-Amazon CloudWatch provides a **central nervous system** for AWS environments.
-
-It collects and visualizes:
-
-* **Metrics:** quantitative measures (CPU, Memory, I/O).
-* **Logs:** textual data from applications & services.
-* **Events:** resource state changes (e.g., EC2 stopped).
-* **Alarms:** logic that evaluates metrics and triggers actions.
-
-Advanced features:
-
-* **Metric Math:** combine or compute metrics (e.g., `CPUUtilization / NumberOfCores`).
-* **Anomaly Detection:** ML-based deviation banding.
-* **Composite Alarms:** aggregate multiple alarms → one decision point.
-* **Dashboards:** unified visibility across accounts and regions.
-
-Reference: [AWS Docs – CloudWatch](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html)
-
-</details>
-
----
-
-<details>
-<summary><strong>3. What Is SNS</strong></summary>
-
-Amazon Simple Notification Service (SNS) is a **fully-managed pub/sub messaging service**.
-It decouples **publishers (alarms)** from **subscribers (email, Lambda, SQS, HTTP)**.
-
-```
-CloudWatch Alarm ──► SNS Topic ──► Subscribers (Email / SMS / Lambda)
-```
-
-Features:
-
-* **Fan-out delivery** to multiple endpoints.
-* **Durability** and delivery retries.
-* **Message filtering** per subscription.
-* **Cross-account topics** for centralized alerting.
-
-Reference: [AWS Docs – SNS](https://docs.aws.amazon.com/sns/latest/dg/welcome.html)
-
-</details>
-
----
-
-<details>
-<summary><strong>4. Core Concepts</strong></summary>
-
-| Concept                | CloudWatch Role                              | SNS Role                                |
-| ---------------------- | -------------------------------------------- | --------------------------------------- |
-| **Metric**             | Numeric data point (e.g., CPU %, Requests)   | —                                       |
-| **Log Group / Stream** | Store application or system logs             | —                                       |
-| **Alarm**              | Evaluates metric vs threshold → state change | Publishes message to topic              |
-| **Dashboard**          | Visualization of metrics                     | —                                       |
-| **Event**              | Detects resource changes                     | May publish notifications through SNS   |
-| **Topic**              | —                                            | Named channel for messages              |
-| **Subscription**       | —                                            | Destination endpoint (Email/SMS/Lambda) |
-
-**Logs vs Metrics vs Events**
-
-| Data Type   | Example Source          | Used For                            |
-| ----------- | ----------------------- | ----------------------------------- |
-| **Logs**    | App stdout / EC2 syslog | Root-cause analysis                 |
-| **Metrics** | CPU %, Memory, Latency  | Trend monitoring & threshold alarms |
-| **Events**  | EC2 stop, Lambda invoke | Automation & reactive flows         |
+<summary><strong>4. Benefits</strong></summary>
+
+| Benefit | Description |
+|----------|-------------|
+| **Fast Deployment** | Launch production-ready environments in minutes |
+| **Managed Scaling** | Auto Scaling adjusts capacity automatically |
+| **Built-in Monitoring** | Health integrated with CloudWatch |
+| **Multi-Language Support** | Node.js, Python, Java, Go, PHP, .NET, Docker |
+| **Version Control** | Keeps multiple app versions in S3 |
+| **Full Control** | Developers can modify EC2, ALB, or configs anytime |
+   
+**💰 Pricing:** There’s no extra cost for using Elastic Beanstalk itself. You only pay for the underlying resources (like EC2, S3, and RDS) it provisions.  
 
 </details>
 
@@ -24692,212 +26673,171 @@ Reference: [AWS Docs – SNS](https://docs.aws.amazon.com/sns/latest/dg/welcome.
 <summary><strong>5. Architecture Diagram</strong></summary>
 
 ```
-                   ┌──────────────────────────────┐
-                   │         AWS Resources         │
-                   │  (EC2, RDS, Lambda, ECS…)   │
-                   └──────────────┬───────────────┘
-                                  │  Metrics / Logs
-                                  ▼
-                        ┌──────────────────┐
-                        │   CloudWatch     │
-                        │ Metrics + Logs   │
-                        └───────┬──────────┘
-                                │ Alarm Trigger
-                                ▼
-                        ┌──────────────────┐
-                        │     SNS Topic    │
-                        │   (ops-alerts)   │
-                        └───────┬──────────┘
-              ┌────────────────┼────────────────┐
-              │                │                │
-       ┌────────────┐  ┌────────────┐  ┌────────────┐
-       │   Email     │  │   SMS      │  │  Lambda    │
-       │ Subscriber  │  │ Subscriber │  │ Automation │
-       └────────────┘  └────────────┘  └────────────┘
-```
 
-**Planes of Operation**
+┌──────────────────────────────────────────────┐
+│              Elastic Beanstalk               │
+│                                              │
+│   ┌──────────────────────────────────────┐   │
+│   │ Environment (e.g., Prod / Dev)       │   │
+│   │ ├─ EC2 Instances (App servers)       │   │
+│   │ ├─ Load Balancer (ALB)               │   │
+│   │ ├─ Auto Scaling Group                │   │
+│   │ ├─ CloudWatch (Monitoring)           │   │
+│   │ ├─ S3 (App Versions)                 │   │
+│   │ └─ Optional: RDS for DB              │   │
+│   └──────────────────────────────────────┘   │
+└──────────────────────────────────────────────┘
 
 ```
-Metrics Plane   →  Collect & Store  (CloudWatch)
-Alarm Plane     →  Evaluate & Trigger
-Notification Plane →  Publish & Deliver (SNS)
-Automation Plane  →  Remediate (Lambda/Systems Manager)
-```
+
+**Flow:**  
+Upload Code → Beanstalk Creates Environment → Deploy → Monitor → Scale  
 
 </details>
 
 ---
 
 <details>
-<summary><strong>6. Hands-On Workflow</strong></summary>
+<summary><strong>6. Theory & Notes</strong></summary>
 
-**Step 1 – Create SNS Topic & Subscription**
+| Concept | Meaning | Example |
+|----------|----------|----------|
+| **Application** | Logical container for versions & environments | `my-web-app` |
+| **Environment** | Running instance of the app | `my-web-app-prod` |
+| **Application Version** | Specific build stored in S3 | `v1`, `v2` |
+| **Tier** | Defines workload type | *Web Server* (HTTP) or *Worker* (SQS) |
+| **Platform** | Runtime stack | `Python 3.11 on Amazon Linux 2023` |
+| **Configuration Files** | `.ebextensions/*.config` customize settings | instance type = `t3.micro` |   
+   
 
-```bash
-aws sns create-topic --name ops-alerts
-aws sns subscribe \
-  --topic-arn arn:aws:sns:us-east-1:111122223333:ops-alerts \
-  --protocol email --notification-endpoint admin@example.com
-```
-
-Confirm email subscription.
-
-**Step 2 – Create CloudWatch Alarm**
-
-```bash
-aws cloudwatch put-metric-alarm \
-  --alarm-name HighCPU \
-  --metric-name CPUUtilization --namespace AWS/EC2 \
-  --statistic Average --period 300 --threshold 80 \
-  --comparison-operator GreaterThanThreshold \
-  --dimensions Name=InstanceId,Value=i-0123456789abcdef \
-  --evaluation-periods 1 \
-  --alarm-actions arn:aws:sns:us-east-1:111122223333:ops-alerts
-```
-
-**Step 3 – Trigger Alarm**
-
-```bash
-sudo yum install stress -y
-sudo stress --cpu 4 --timeout 60
-```
-
-→ Alarm state changes to `ALARM` → SNS emails team.
-
-**Step 4 – View Alarm History**
-Console → CloudWatch → Alarms → History.
-
-</details>
-
----
-
-<details>
-<summary><strong>7. Best Practices & Use Cases</strong></summary>
-
-### Operational Excellence
-
-* Group metrics per application/environment.
-* Apply consistent naming: `<env>-<service>-<metric>-<severity>`.
-* Define severity levels → separate SNS topics (`critical`, `warning`, `info`).
-* Use **composite alarms** to reduce noise.
-* Set **log retention policies**.
-* Encrypt SNS topics with KMS.
-* Integrate Slack/MS Teams via Lambda webhooks.
-* Enable **cross-account dashboards** for central visibility.
-
-### Practical Use Cases
-
-| Category             | Example                                    |
-| -------------------- | ------------------------------------------ |
-| **Performance**      | Alert when ALB 5xx > 1 %, CPU > 80 %       |
-| **Security**         | Root login event → SNS critical topic      |
-| **Automation**       | Low disk space → Lambda expands EBS volume |
-| **Cost Control**     | Idle instance → SNS → Lambda terminates    |
-| **DevOps Pipelines** | CI/CD failure → SNS → Slack channel        |
-
-</details>
-
----
-
-<details>
-<summary><strong>8. Beyond Alerts – Automation & IaC</strong></summary>
-
-### 8.1 Event-Driven Remediation (Example)
-
-```
-CloudWatch Alarm → SNS Topic → Lambda → EC2 API (Action)
-```
-
-**Scenario:** CPU ≥ 95 % for 5 min → auto-scale EC2.
-
-Lambda code (abstract):
-
-```python
-import boto3
-def handler(event, context):
-  asg = boto3.client('autoscaling')
-  asg.set_desired_capacity(AutoScalingGroupName='web-tier', DesiredCapacity=3)
-```
-
-SNS publishes → Lambda invoked → Infra self-heals.
-
-### 8.2 Infrastructure-as-Code (CloudFormation Snippet)
+Example configuration file:
 
 ```yaml
-Resources:
-  OpsAlertsTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      TopicName: ops-alerts
-
-  HighCPUAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmDescription: High CPU Utilization
-      Namespace: AWS/EC2
-      MetricName: CPUUtilization
-      Statistic: Average
-      Period: 300
-      Threshold: 80
-      ComparisonOperator: GreaterThanThreshold
-      EvaluationPeriods: 1
-      AlarmActions:
-        - !Ref OpsAlertsTopic
+option_settings:
+  aws:autoscaling:launchconfiguration:
+    InstanceType: t3.micro
+  aws:elasticbeanstalk:application:environment:
+    DJANGO_DEBUG: false
 ```
 
-Version-control your alerts and topics alongside application code.
+</details>
+
+---
+
+<details>
+<summary><strong>7. Real Examples</strong></summary>
+     
+# Step 1: Create IAM Role
+Policies to attach:
+- AWSElasticBeanStalkWebTier
+- AWSElasticBeanStalkWorkerTier
+- AWSElasticBeanStalkMulticontainerDocker
+
+# Step 2: Create Application
+eb init my-app --platform "Python 3.11" --region us-east-1
+
+# Step 3: Create Environment
+eb create my-app-env
+   
+**Example 1 – Deploy a Node.js App**
+
+```
+eb init my-node-app --platform node.js --region us-east-1
+eb create my-node-env
+eb deploy
+eb open
+```
+
+**Example 2 – Monitor and Check Logs**
+
+```bash
+eb health
+eb logs
+```
+
+```
+Environment health: Green
+Instances running: 3
+Load Balancer: Healthy
+```
+
+**Example 3 – Scale or Terminate**
+
+```bash
+eb scale 3
+eb terminate
+```
 
 </details>
 
 ---
 
 <details>
-<summary><strong>9. Cost & Optimization Tips</strong></summary>
-
-| Area           | Tip                                                              |
-| -------------- | ---------------------------------------------------------------- |
-| **Metrics**    | Publish aggregated custom metrics instead of per-instance.       |
-| **Logs**       | Set retention < 30 days unless required.                         |
-| **Dashboards** | Delete unused widgets to cut API calls.                          |
-| **Alarms**     | Combine via Composite Alarms to reduce charges.                  |
-| **SNS**        | Batch non-urgent notifications or route through SQS to throttle. |
-
+<summary><strong>8. Practical Use Cases</strong></summary>
+     
+| Use Case                      | Description                               |
+| ----------------------------- | ----------------------------------------- |
+| **Deploy Web Apps Quickly**   | Launch a full stack in minutes            |
+| **Test / Stage Environments** | Separate dev, staging, prod workflows     |
+| **CI/CD Integration**         | Connect to CodePipeline or GitHub Actions |
+| **Auto Scaling Demo**         | Observe traffic-based scaling             |
+| **Legacy App Migration**      | Host .NET / Java apps easily              |
+  
 </details>
 
 ---
 
 <details>
-<summary><strong>10. Quick Summary</strong></summary>
+<summary><strong>9. Quick Command Summary</strong></summary>
 
-* **CloudWatch = Observer**, **SNS = Messenger**.
-* Together → real-time visibility + automated response.
-* Use metric math & anomaly detection for smarter alerts.
-* Codify monitoring via CloudFormation/Terraform.
-* Maintain alert hygiene (severity, naming, noise control).
-* Integrate Lambda for self-healing automation.
+| Command        | Full Form                    | Purpose                   |
+| -------------- | ---------------------------- | ------------------------- |
+| `eb init`      | Initialize Beanstalk project | Sets up app & region      |
+| `eb create`    | Create new environment       | Provisions EC2, ALB, ASG  |
+| `eb deploy`    | Deploy latest version        | Uploads ZIP → S3 → deploy |
+| `eb open`      | Open app URL in browser      | Quick access              |
+| `eb status`    | Check environment status     | Health + version          |
+| `eb health`    | View health details          | Instance status           |
+| `eb logs`      | Get application logs         | Debug issues              |
+| `eb terminate` | Delete environment           | Clean resource removal    |
 
-</details>
+---
+
+**AWS Flow Connection**
+`IAM → VPC → EBS → S3 → EC2 → RDS → Load Balancer → Auto Scaling → CloudWatch → Lambda → Elastic Beanstalk → Route 53 → CloudFormation`
+
+Elastic Beanstalk is the **automation layer** that ties these services together for friction-free deployments.
+
+---
+
+**📘 TL;DR Summary**
+
+**Elastic Beanstalk = “Upload Code → AWS Does the Rest.”**
+It manages EC2, Load Balancer, Auto Scaling, and CloudWatch automatically —
+giving you developer-speed with architect-level control.
 
 ---
 
 <details>
-<summary><strong>11. Self-Audit Checklist</strong></summary>
+<summary><strong>⚙️ Mini Comparison – Beanstalk vs Lambda vs CloudFormation</strong></summary>
 
-* [ ] I can explain how CloudWatch and SNS interact.
-* [ ] I can create metrics, alarms, and SNS topics via CLI/IaC.
-* [ ] I understand metric math and anomaly detection.
-* [ ] I can draw the Event → Metric → Alarm → SNS → Lambda flow.
-* [ ] I can implement alert severity and retention policies.
-* [ ] I can estimate and optimize CloudWatch costs.
-* [ ] I have a cross-account dashboard for visibility.
+| Service | Type | Purpose | When to Use | Key Benefit |
+|----------|------|----------|--------------|--------------|
+| **Elastic Beanstalk** | PaaS (Platform as a Service) | Deploy and manage full applications automatically (EC2 + ALB + ASG + CloudWatch) | You want to focus on *code*, not infrastructure | “One-click” deployment with control over AWS resources |
+| **AWS Lambda** | FaaS (Function as a Service) | Run functions without servers — event-driven code execution | You want to run lightweight, short-lived tasks | No servers to manage, pay-per-execution |
+| **CloudFormation** | IaC (Infrastructure as Code) | Define and provision AWS resources using templates | You need reproducible, automated environments | Full automation and version control for infra setup |
+
+**In Short:**  
+- **Lambda →** small code tasks (serverless logic).  
+- **Beanstalk →** full-stack web apps (managed environments).  
+- **CloudFormation →** infrastructure automation (templates and IaC).
 
 </details>
 
 ---
+
 ---
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 11-lambda
----
+# SOURCE: ./notes/08. AWS – Cloud Infrastructure/extras/03-lambda/README.md
 
 [Home](../README.md) | 
 [Intro to AWS](../01-intro-aws/README.md) | 
@@ -25394,1024 +27334,343 @@ Cost ↑
 > The higher the abstraction, the **lower your idle cost** and the **higher your per-use precision** —  
 > AWS shifts the billing model from *infrastructure ownership* → *platform usage* → *function execution*.
 ```
+
 ---
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 12-elastic-beanstalk
----
+# SOURCE: ./notes/09. Terraform – IaC Foundations/README.md
 
-[Home](../README.md) | 
-[Intro to AWS](../01-intro-aws/README.md) | 
-[IAM](../02-iam/README.md) | 
-[VPC & Subnet](../03-vpc-subnet/README.md) | 
-[EBS](../04-ebs/README.md) | 
-[EFS](../05-efs/README.md) | 
-[S3](../06-s3/README.md) | 
-[EC2](../07-ec2/README.md) | 
-[RDS](../08-rds/README.md) | 
-[Load Balancing & Auto Scaling](../09-Load-balancing-auto-scaling/README.md) | 
-[CloudWatch & SNS](../10-cloudwatch-sns/README.md) | 
-[Lambda](../11-lambda/README.md) | 
-[Elastic Beanstalk](../12-elastic-beanstalk/README.md) | 
-[Route 53](../13-route53/README.md) | 
-[CLI + CloudFormation](../14-cli-cloudformation/README.md)
+<p align="center">
+  <img src="../../assets/terraform-banner.svg" alt="terraform" width="100%"/>
+</p>
 
-# AWS Elastic Beanstalk  
-
-## Table of Contents  
-1. [Why do we need Elastic Beanstalk?](#1)  
-2. [The Problem Without Beanstalk](#2)  
-3. [Solution – What Beanstalk Does](#3)  
-4. [Benefits](#4)  
-5. [Architecture Diagram](#5)  
-6. [Theory & Notes](#6)  
-7. [Real Examples](#7)  
-8. [Practical Use Cases](#8)  
-9. [Quick Command Summary](#9)  
+[← devops-runbook](../../README.md)
 
 ---
 
-<details>
-<summary><strong>1. Why do we need Elastic Beanstalk?</strong></summary>
-
-Deploying an application manually involves:
-- Launching EC2 instances  
-- Setting up Load Balancer and Auto Scaling  
-- Managing IAM roles, networking, and health checks  
-- Configuring CloudWatch metrics  
-
-This takes time, effort, and introduces room for error.  
-
-**Elastic Beanstalk (EB)** automates all of this — you just upload your code, and AWS handles provisioning, deployment, scaling, and monitoring.
-
-</details>
+Infrastructure as code — defining the AWS resources that run the webstore as `.tf` files instead of console clicks.
 
 ---
 
-<details>
-<summary><strong>2. The Problem Without Beanstalk</strong></summary>
+## Why Terraform — and Why Not CloudFormation or Pulumi
 
-Without Beanstalk, developers must:  
-1. Launch EC2 and install web servers manually  
-2. Attach and configure a Load Balancer  
-3. Create Auto Scaling Groups and set policies  
-4. Manually upload and update code  
-5. Configure CloudWatch alarms and logging  
+Every AWS resource you created in the previous tool was done manually — console clicks, CLI commands, configuration spread across a browser and a terminal. That works once. It does not work when you need to recreate the same environment for staging, or when someone asks you to prove that production matches what was documented six months ago, or when you need to tear everything down and rebuild it cleanly.
 
-Each of these pieces requires coordination and monitoring.  
-Maintaining consistency across environments (dev, staging, prod) becomes difficult.
+Terraform solves this by making infrastructure declarative. You write `.tf` files that describe what should exist. Terraform reads them, compares against what actually exists in AWS, and makes only the changes needed to reach that state. The entire webstore infrastructure — VPC, subnets, EKS cluster, RDS instance, security groups, IAM roles — becomes a set of files you can version control, review in a pull request, and apply in one command.
 
-</details>
+CloudFormation is AWS-native and requires no additional tooling, but it is verbose, JSON/YAML-heavy, and locked to AWS. If you ever touch another cloud provider, CloudFormation does not help. Pulumi uses real programming languages (Python, TypeScript) which is powerful but adds the overhead of a runtime, dependency management, and language-specific tooling for what is fundamentally a configuration problem. Terraform's HCL is readable enough to be approachable and structured enough to be consistent. It is what the majority of DevOps job descriptions mean when they say IaC.
 
 ---
 
-<details>
-<summary><strong>3. Solution – What Beanstalk Does</strong></summary>
+## Prerequisites
 
-Elastic Beanstalk is a **Platform-as-a-Service (PaaS)** that automates environment setup and management.
+**Complete first:** [08. AWS – Cloud Infrastructure](../08.%20AWS%20–%20Cloud%20Infrastructure/README.md)
 
-You upload your application bundle (ZIP / Git repo).  
-Beanstalk automatically:  
-- Provisions EC2, ALB, and Auto Scaling Groups  
-- Configures networking, IAM, and security groups  
-- Stores versions in S3  
-- Monitors health using CloudWatch  
-- Handles rolling updates and rollback on failure  
-
-You still retain **full access** to all underlying AWS resources.   
-   
-**Service Type:** Platform as a Service (PaaS)      
-**Comparison of Cloud Service Models**   
-| Model | Full Form | Example AWS Services | Responsibility |
-|--------|------------|----------------------|----------------|
-| IaaS | Infrastructure as a Service | EC2, VPC, S3, RDS | You manage OS, runtime, app |
-| PaaS | Platform as a Service | Elastic Beanstalk | AWS manages infra, you manage code |
-| SaaS | Software as a Service | Zoom, Google Meet | AWS/vendor manages everything |
-
-   
-<img src="images/service-control.jpg" alt="Elastic Beanstalk Architecture Overview" width="600" height="375" />
-
-</details>
+Terraform provisions AWS resources. If you do not understand what a VPC is, what an EKS cluster needs to run, or how IAM roles work — you cannot write correct Terraform. You need to have created these resources manually at least once before automating them.
 
 ---
 
-<details>
-<summary><strong>4. Benefits</strong></summary>
+## The Running Example
 
-| Benefit | Description |
-|----------|-------------|
-| **Fast Deployment** | Launch production-ready environments in minutes |
-| **Managed Scaling** | Auto Scaling adjusts capacity automatically |
-| **Built-in Monitoring** | Health integrated with CloudWatch |
-| **Multi-Language Support** | Node.js, Python, Java, Go, PHP, .NET, Docker |
-| **Version Control** | Keeps multiple app versions in S3 |
-| **Full Control** | Developers can modify EC2, ALB, or configs anytime |
-   
-**💰 Pricing:** There’s no extra cost for using Elastic Beanstalk itself. You only pay for the underlying resources (like EC2, S3, and RDS) it provisions.  
+Every file and every lab provisions infrastructure for the webstore app.
 
-</details>
+| What you provision | AWS resource | Terraform resource |
+|---|---|---|
+| Network | VPC, subnets, route tables, IGW, NAT | `aws_vpc`, `aws_subnet`, `aws_route_table` |
+| Cluster | EKS cluster and node groups | `aws_eks_cluster`, `aws_eks_node_group` |
+| Database | RDS PostgreSQL | `aws_db_instance` |
+| Registry | ECR repository for webstore-api | `aws_ecr_repository` |
+| Access | IAM roles and policies | `aws_iam_role`, `aws_iam_policy` |
 
 ---
 
-<details>
-<summary><strong>5. Architecture Diagram</strong></summary>
+## Where You Take the Webstore
 
-```
+You arrive at Terraform having built the webstore AWS infrastructure manually. It works, but it is not reproducible. If something goes wrong, rebuilding it from scratch means remembering every decision you made.
 
-┌──────────────────────────────────────────────┐
-│              Elastic Beanstalk               │
-│                                              │
-│   ┌──────────────────────────────────────┐   │
-│   │ Environment (e.g., Prod / Dev)       │   │
-│   │ ├─ EC2 Instances (App servers)       │   │
-│   │ ├─ Load Balancer (ALB)               │   │
-│   │ ├─ Auto Scaling Group                │   │
-│   │ ├─ CloudWatch (Monitoring)           │   │
-│   │ ├─ S3 (App Versions)                 │   │
-│   │ └─ Optional: RDS for DB              │   │
-│   └──────────────────────────────────────┘   │
-└──────────────────────────────────────────────┘
-
-```
-
-**Flow:**  
-Upload Code → Beanstalk Creates Environment → Deploy → Monitor → Scale  
-
-</details>
+You leave with the entire webstore AWS infrastructure defined as Terraform code. One `terraform apply` creates everything from a blank AWS account. One `terraform destroy` removes it cleanly. The infrastructure is version controlled, reviewable, and identical every time it is applied.
 
 ---
 
-<details>
-<summary><strong>6. Theory & Notes</strong></summary>
+## Why This Order of Phases
 
-| Concept | Meaning | Example |
-|----------|----------|----------|
-| **Application** | Logical container for versions & environments | `my-web-app` |
-| **Environment** | Running instance of the app | `my-web-app-prod` |
-| **Application Version** | Specific build stored in S3 | `v1`, `v2` |
-| **Tier** | Defines workload type | *Web Server* (HTTP) or *Worker* (SQS) |
-| **Platform** | Runtime stack | `Python 3.11 on Amazon Linux 2023` |
-| **Configuration Files** | `.ebextensions/*.config` customize settings | instance type = `t3.micro` |   
-   
-
-Example configuration file:
-
-```yaml
-option_settings:
-  aws:autoscaling:launchconfiguration:
-    InstanceType: t3.micro
-  aws:elasticbeanstalk:application:environment:
-    DJANGO_DEBUG: false
-```
-
-</details>
+Core workflow first — so you understand what Terraform actually does before writing resource definitions. State before modules — so you understand what Terraform is tracking before you abstract it. Real-world project last — so every concept has been introduced before you use it together.
 
 ---
 
-<details>
-<summary><strong>7. Real Examples</strong></summary>
-     
-# Step 1: Create IAM Role
-Policies to attach:
-- AWSElasticBeanStalkWebTier
-- AWSElasticBeanStalkWorkerTier
-- AWSElasticBeanStalkMulticontainerDocker
+## Phases
 
-# Step 2: Create Application
-eb init my-app --platform "Python 3.11" --region us-east-1
-
-# Step 3: Create Environment
-eb create my-app-env
-   
-**Example 1 – Deploy a Node.js App**
-
-```
-eb init my-node-app --platform node.js --region us-east-1
-eb create my-node-env
-eb deploy
-eb open
-```
-
-**Example 2 – Monitor and Check Logs**
-
-```bash
-eb health
-eb logs
-```
-
-```
-Environment health: Green
-Instances running: 3
-Load Balancer: Healthy
-```
-
-**Example 3 – Scale or Terminate**
-
-```bash
-eb scale 3
-eb terminate
-```
-
-</details>
+| # | Phase | Topics | Lab |
+|---|---|---|---|
+| 01 | [What is Terraform](./01-what-is-terraform/README.md) | IaC concept, declarative vs imperative, how Terraform fits the DevOps workflow | No lab |
+| 02 | [Core Workflow](./02-core-workflow/README.md) | `terraform init`, `plan`, `apply`, `destroy` — the four commands you use every day | [Lab 01](./terraform-labs/01-core-workflow-lab.md) |
+| 03 | [Providers & Resources](./03-providers-resources/README.md) | Provider block, resource block, data sources, resource dependencies | [Lab 01](./terraform-labs/01-core-workflow-lab.md) |
+| 04 | [Variables & Outputs](./04-variables-outputs/README.md) | Input variables, output values, locals, `.tfvars` files, variable types | [Lab 02](./terraform-labs/02-variables-state-lab.md) |
+| 05 | [State](./05-state/README.md) | The state file, what it tracks, remote state with S3 + DynamoDB locking | [Lab 02](./terraform-labs/02-variables-state-lab.md) |
+| 06 | [Modules](./06-modules/README.md) | Root module, child modules, the Terraform Registry, writing reusable modules | [Lab 03](./terraform-labs/03-modules-lab.md) |
+| 07 | [Loops & Conditionals](./07-loops-conditionals/README.md) | `count`, `for_each`, `dynamic` blocks, conditional expressions | [Lab 03](./terraform-labs/03-modules-lab.md) |
+| 08 | [Real-World Project](./08-real-world/README.md) | Full webstore AWS infrastructure in Terraform — VPC, EKS, RDS, ECR, IAM | [Lab 04](./terraform-labs/04-webstore-infra-lab.md) |
 
 ---
 
-<details>
-<summary><strong>8. Practical Use Cases</strong></summary>
-     
-| Use Case                      | Description                               |
-| ----------------------------- | ----------------------------------------- |
-| **Deploy Web Apps Quickly**   | Launch a full stack in minutes            |
-| **Test / Stage Environments** | Separate dev, staging, prod workflows     |
-| **CI/CD Integration**         | Connect to CodePipeline or GitHub Actions |
-| **Auto Scaling Demo**         | Observe traffic-based scaling             |
-| **Legacy App Migration**      | Host .NET / Java apps easily              |
-  
-</details>
+## Labs
+
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 01](./terraform-labs/01-core-workflow-lab.md) | Core Workflow, Providers, Resources | Write your first provider block, create a real AWS resource, run init/plan/apply/destroy |
+| [Lab 02](./terraform-labs/02-variables-state-lab.md) | Variables, Outputs, State | Parameterise a configuration, add outputs, move state to S3 with DynamoDB locking |
+| [Lab 03](./terraform-labs/03-modules-lab.md) | Modules, Loops, Conditionals | Extract a VPC into a reusable module, use `for_each` to create multiple subnets |
+| [Lab 04](./terraform-labs/04-webstore-infra-lab.md) | Real-World Project | Provision the full webstore AWS infrastructure — VPC, EKS, RDS, ECR — in one `terraform apply` |
 
 ---
 
-<details>
-<summary><strong>9. Quick Command Summary</strong></summary>
+## What You Can Do After This
 
-| Command        | Full Form                    | Purpose                   |
-| -------------- | ---------------------------- | ------------------------- |
-| `eb init`      | Initialize Beanstalk project | Sets up app & region      |
-| `eb create`    | Create new environment       | Provisions EC2, ALB, ASG  |
-| `eb deploy`    | Deploy latest version        | Uploads ZIP → S3 → deploy |
-| `eb open`      | Open app URL in browser      | Quick access              |
-| `eb status`    | Check environment status     | Health + version          |
-| `eb health`    | View health details          | Instance status           |
-| `eb logs`      | Get application logs         | Debug issues              |
-| `eb terminate` | Delete environment           | Clean resource removal    |
+- Explain what Terraform state is and why it exists
+- Run `terraform init`, `plan`, `apply`, and `destroy` confidently
+- Write provider and resource blocks for common AWS services
+- Use variables, outputs, and locals to make configurations reusable
+- Store Terraform state remotely in S3 with DynamoDB locking
+- Write a reusable module and call it from a root module
+- Use `count` and `for_each` to avoid repetition
+- Provision a complete multi-tier AWS environment from scratch
 
 ---
 
-**AWS Flow Connection**
-`IAM → VPC → EBS → S3 → EC2 → RDS → Load Balancer → Auto Scaling → CloudWatch → Lambda → Elastic Beanstalk → Route 53 → CloudFormation`
+## How to Use This
 
-Elastic Beanstalk is the **automation layer** that ties these services together for friction-free deployments.
-
----
-
-**📘 TL;DR Summary**
-
-**Elastic Beanstalk = “Upload Code → AWS Does the Rest.”**
-It manages EC2, Load Balancer, Auto Scaling, and CloudWatch automatically —
-giving you developer-speed with architect-level control.
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
 
 ---
 
-<details>
-<summary><strong>⚙️ Mini Comparison – Beanstalk vs Lambda vs CloudFormation</strong></summary>
+## What Comes Next
 
-| Service | Type | Purpose | When to Use | Key Benefit |
-|----------|------|----------|--------------|--------------|
-| **Elastic Beanstalk** | PaaS (Platform as a Service) | Deploy and manage full applications automatically (EC2 + ALB + ASG + CloudWatch) | You want to focus on *code*, not infrastructure | “One-click” deployment with control over AWS resources |
-| **AWS Lambda** | FaaS (Function as a Service) | Run functions without servers — event-driven code execution | You want to run lightweight, short-lived tasks | No servers to manage, pay-per-execution |
-| **CloudFormation** | IaC (Infrastructure as Code) | Define and provision AWS resources using templates | You need reproducible, automated environments | Full automation and version control for infra setup |
+→ [10. Ansible – Configuration Management](../10.%20Ansible%20–%20Configuration%20Management/README.md)
 
-**In Short:**  
-- **Lambda →** small code tasks (serverless logic).  
-- **Beanstalk →** full-stack web apps (managed environments).  
-- **CloudFormation →** infrastructure automation (templates and IaC).
+Terraform provisions the infrastructure. Ansible configures what runs on it. Once EC2 instances are running, Ansible connects over SSH and installs packages, manages services, pushes config files, and enforces the state of every server — without touching them manually.
 
-</details>
 
 ---
----
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 13-route53
----
+# SOURCE: ./notes/10. Ansible – Configuration Management/README.md
 
-[Home](../README.md) | 
-[Intro to AWS](../01-intro-aws/README.md) | 
-[IAM](../02-iam/README.md) | 
-[VPC & Subnet](../03-vpc-subnet/README.md) | 
-[EBS](../04-ebs/README.md) | 
-[EFS](../05-efs/README.md) | 
-[S3](../06-s3/README.md) | 
-[EC2](../07-ec2/README.md) | 
-[RDS](../08-rds/README.md) | 
-[Load Balancing & Auto Scaling](../09-Load-balancing-auto-scaling/README.md) | 
-[CloudWatch & SNS](../10-cloudwatch-sns/README.md) | 
-[Lambda](../11-lambda/README.md) | 
-[Elastic Beanstalk](../12-elastic-beanstalk/README.md) | 
-[Route 53](../13-route53/README.md) | 
-[CLI + CloudFormation](../14-cli-cloudformation/README.md)
+<p align="center">
+  <img src="../../assets/ansible-banner.svg" alt="ansible" width="100%"/>
+</p>
 
-# AWS Route 53 — The Global Gateway of Your Architecture
-
-> **Phase 6 – Networking & DNS Gateway**
-> *“If IAM decides who, and VPC decides where, Route 53 decides how the world finds you.”*
+[← devops-runbook](../../README.md)
 
 ---
 
-## Table of Contents
-
-1. [Why We Need Route 53](#1-why-we-need-route-53)
-2. [Analogy – The AWS Postal System](#2-analogy--the-aws-postal-system)
-3. [The Problem Without Route 53](#3-the-problem-without-route-53)
-4. [The Solution – Global DNS Network](#4-the-solution--global-dns-network)
-5. [Core Concepts](#5-core-concepts)
-6. [Architecture Blueprint – Instructor Diagram](#6-architecture-blueprint--instructor-diagram)
-7. [Deep Theory – Records & Routing Policies](#7-deep-theory--records--routing-policies)
-8. [Real-World Examples](#8-real-world-examples)
-9. [Practical Use Cases](#9-practical-use-cases)
-10. [Quick Summary](#10-quick-summary)
-11. [Self-Audit Checklist](#11-self-audit-checklist)
+Configuration management — automating the setup of every server that runs the webstore without touching them manually.
 
 ---
 
-<details>
-<summary><strong>1. Why We Need Route 53</strong></summary>
+## Why Ansible — and Why Not Chef or Puppet
 
-Every system eventually asks: **how do users reach it?**
-Humans remember names like `webstore.com`; machines only understand IPs.
+Terraform provisions infrastructure. It does not configure what runs on it. You have an EC2 instance — now what? Something needs to install nginx, write the config file, create the service account, set the correct permissions, and start the process. Without a configuration management tool, that something is you, SSH-ing into each server and running commands by hand.
 
-**AWS Route 53** is a globally distributed **Domain Name System (DNS)** service that resolves those names to IPs and directs users to the closest, healthiest endpoint (ALB, EC2, or S3).
+Ansible automates that. You write a playbook — a YAML file describing the desired state of a server — and Ansible connects over SSH and makes it so. No agent software on the target servers. No daemon to maintain. Just SSH, Python, and YAML.
 
-It’s not merely a directory — it’s an intelligent **traffic controller** ensuring every request finds the right door, fast.
+Chef and Puppet are the predecessors. Both require an agent installed on every managed server, a separate server to coordinate them, and a learning curve that involves Ruby DSLs and certificates. They solve the same problem Ansible solves, but at significantly more operational cost. Ansible is agentless — it needs nothing on the target server except SSH and Python, both of which come preinstalled on every Linux server. SaltStack is also agentless and fast, but its community and job market presence is a fraction of Ansible's.
 
-</details>
+The other reason Ansible fits this runbook is familiarity. Ansible playbooks are YAML. You have been writing YAML since Kubernetes. The structure is different but the format is the same, and the mental model — describe desired state, let the tool enforce it — is identical.
 
 ---
 
-<details>
-<summary><strong>2. Analogy – The AWS Postal System</strong></summary>
+## Prerequisites
 
-| AWS Concept        | Real-World Equivalent      | Role                              |
-| ------------------ | -------------------------- | --------------------------------- |
-| **Route 53**       | 🌍 National Postal Network | Knows every delivery path         |
-| **Hosted Zone**    | 🏣 Local Post Office       | Manages mail for one domain       |
-| **DNS Record**     | ✉️ Address Label           | Tells where to deliver            |
-| **Routing Policy** | 🚚 Delivery Rule           | Chooses best path                 |
-| **Health Check**   | 👷 Postal Inspector        | Confirms route is open            |
-| **TTL**            | 🕐 Stamp Validity          | How long others reuse the address |
+**Complete first:** [09. Terraform – IaC Foundations](../09.%20Terraform%20–%20IaC%20Foundations/README.md)
 
-When someone types your domain, Route 53:
-
-1. Reads the label (record).
-2. Chooses the best route (policy + health check).
-3. Delivers the request to the correct AWS building (ALB → EC2 → RDS/EFS).
-
-</details>
+Ansible configures servers that already exist. Terraform is what creates them. You need running EC2 instances with SSH access before Ansible has anything to connect to. The webstore infrastructure from the Terraform real-world project is what the Ansible labs configure.
 
 ---
 
-<details>
-<summary><strong>3. The Problem Without Route 53</strong></summary>
+## The Running Example
 
-Without Route 53:
+Every playbook and every lab configures the webstore application servers.
 
-* You manually update IPs when ALB/EC2 changes.
-* No health checks → downtime for users.
-* Latency rises as queries travel globally.
-* IaC automation becomes fragile.
-
-**Bottom line:** users can’t reliably find your app.
-
-</details>
+| What gets configured | Ansible handles |
+|---|---|
+| webstore-frontend server | nginx install, config file, service enabled and started |
+| webstore-api server | runtime install, app deploy, env vars, service managed |
+| webstore-db server | postgres install, postgres user, database created, config pushed |
+| All servers | common packages, security hardening, log rotation, SSH keys |
 
 ---
 
-<details>
-<summary><strong>4. The Solution – Global DNS Network</strong></summary>
+## Where You Take the Webstore
 
-AWS Route 53 operates hundreds of edge DNS servers worldwide.
-Each query is answered by the nearest healthy server for low latency and automatic failover.
+You arrive at Ansible with the webstore running on AWS infrastructure provisioned by Terraform. The EC2 instances exist, the networking is in place, the security groups are correct. But the servers are blank Ubuntu instances — no nginx, no application, no configuration.
 
-**Flow**
-
-1. User enters domain.
-2. Nearest edge server resolves request.
-3. Looks up record in Hosted Zone.
-4. Applies Routing Policy and returns target (ALB DNS).
-5. Browser connects to ALB → EC2 → RDS/EFS.
-
-**Strengths**
-
-* High availability.
-* Latency-based routing.
-* Health-aware failover.
-* Tight AWS integration + IaC support.
-
-</details>
+You leave with every webstore server fully configured by Ansible playbooks. A new server can be provisioned by Terraform and configured by Ansible without a single manual SSH session. The server state is defined in version-controlled YAML files, applied idempotently on every run.
 
 ---
 
-<details>
-<summary><strong>5. Core Concepts</strong></summary>
+## What Idempotent Means
 
-| Concept            | Description                                       | Analogy           |
-| ------------------ | ------------------------------------------------- | ----------------- |
-| **Domain Name**    | Human-readable address (`webstore.com`) | Name on envelope  |
-| **Hosted Zone**    | Container for records                             | Local Post Office |
-| **Record Set**     | Name → target mapping                             | Address Label     |
-| **Routing Policy** | Decides which target to return                    | Delivery Rule     |
-| **Health Check**   | Tests availability                                | Route Inspector   |
-| **TTL**            | Cache duration                                    | Stamp Validity    |
-
-</details>
+Running an Ansible playbook once and running it ten times produces the same result. If nginx is already installed, Ansible does not reinstall it. If the config file is already correct, Ansible does not touch it. If the service is already running, Ansible does not restart it. This is idempotency — the foundation of reliable configuration management.
 
 ---
 
-<details>
-<summary><strong>6. Architecture Blueprint – Instructor Diagram</strong></summary>
+## Phases
 
-```
-                     User / Browser
-                           │
-                           ▼
-                     AWS Route 53
-                 (Global DNS Resolution)
-                           │
-                           ▼
-                   Internet Gateway (IGW)
-                           │
-                           ▼
-             Application Load Balancer (ALB)
-                     (Public Subnet)
-                           │
-                           ▼
-                EC2 / Beanstalk Instances
-                     (Private Subnet)
-                           │
-                           ▼
-              ┌────────────┴────────────┐
-              │                         │
-           Amazon RDS             Amazon EFS
-           (Database)            (File Storage)
-```
-
-**Flow Summary**
-
-1. User types domain → Route 53 resolves to ALB DNS.
-2. Traffic enters via IGW → ALB (public).
-3. ALB routes to EC2/Beanstalk (private).
-4. Instances communicate internally with RDS/EFS.
-
-</details>
+| # | Phase | Topics | Lab |
+|---|---|---|---|
+| 01 | [What is Ansible](./01-what-is-ansible/README.md) | Agentless model, SSH-based, inventory, control node vs managed node | No lab |
+| 02 | [Playbooks](./02-playbooks/README.md) | Plays, tasks, modules, handlers, YAML structure, running a playbook | [Lab 01](./ansible-labs/01-playbooks-lab.md) |
+| 03 | [Variables & Templates](./03-variables-templates/README.md) | Variables, facts, `vars_files`, Jinja2 templates, `when` conditionals | [Lab 02](./ansible-labs/02-variables-templates-lab.md) |
+| 04 | [Roles](./04-roles/README.md) | Role directory structure, `tasks`, `handlers`, `templates`, `defaults`, Ansible Galaxy | [Lab 03](./ansible-labs/03-roles-lab.md) |
+| 05 | [Real-World Project](./05-real-world/README.md) | Configure the full webstore server fleet — nginx, api, postgres — with roles | [Lab 04](./ansible-labs/04-webstore-config-lab.md) |
 
 ---
 
-<details>
-<summary><strong>7. Deep Theory – Records & Routing Policies</strong></summary>
+## Labs
 
-### 7.1 Record Types
-
-| Type    | Purpose                 | Example                        |
-| ------- | ----------------------- | ------------------------------ |
-| A       | Name → IPv4             | `@ → 54.231.10.45`             |
-| AAAA    | Name → IPv6             | `@ → 2600:1f16::45`            |
-| CNAME   | Alias → another domain  | `www → example.com`            |
-| MX      | Mail routing            | `10 mail.google.com`           |
-| TXT     | Metadata / Verification | `google-site-verification=abc` |
-| Alias A | Direct AWS target       | `@ → ALB/S3`                   |
-
-### 7.2 Routing Policies
-
-| Policy        | Function                 | When to Use  |
-| ------------- | ------------------------ | ------------ |
-| Simple        | Single IP                | Static apps  |
-| Weighted      | Split traffic by percent | A/B tests    |
-| Latency-Based | Closest region           | Global apps  |
-| Failover      | Backup target            | DR scenarios |
-| Geolocation   | By user region           | Compliance   |
-| Multi-Value   | Multiple healthy IPs     | Redundancy   |
-
-**Failover Visual**
-
-```
-User
- ├─► Primary (ALB – Healthy)
- └─► Secondary (ALB – Failover)
-```
-
-**Latency Visual**
-
-```
-EU User → EU Endpoint
-US User → US Endpoint
-APAC User → Asia Endpoint
-```
-
-</details>
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 01](./ansible-labs/01-playbooks-lab.md) | Playbooks | Write an inventory file, write your first playbook, run it against an EC2 instance |
+| [Lab 02](./ansible-labs/02-variables-templates-lab.md) | Variables & Templates | Use variables and Jinja2 to write the webstore nginx config template |
+| [Lab 03](./ansible-labs/03-roles-lab.md) | Roles | Extract the nginx playbook into a reusable role, apply it across multiple servers |
+| [Lab 04](./ansible-labs/04-webstore-config-lab.md) | Real-World Project | Configure all three webstore servers end to end — no SSH, no manual steps |
 
 ---
 
-<details>
-<summary><strong>8. Real-World Examples</strong></summary>
+## What You Can Do After This
 
-**Example 1 – Domain → ALB**
-Hosted Zone + Alias A record → ALB DNS → EC2/Beanstalk.
-
-**Example 2 – Static Site on S3**
-Enable hosting → Alias A record → S3 endpoint.
-
-**Example 3 – HTTPS Validation**
-ACM DNS validation adds TXT record via Route 53.
-
-**Example 4 – Failover**
-us-east-1 primary, eu-west-1 secondary → automatic switch.
-
-**Example 5 – IaC**
-Manage zones and records via CloudFormation or Terraform.
-
-</details>
+- Write an Ansible inventory file for a fleet of EC2 servers
+- Write playbooks that install packages, manage services, and push config files
+- Use variables and Jinja2 templates to make playbooks reusable across environments
+- Understand and rely on idempotency — run a playbook ten times, same result every time
+- Structure reusable roles and organise them the way the community does
+- Configure a complete multi-server application without a single manual SSH command
 
 ---
 
-<details>
-<summary><strong>9. Practical Use Cases</strong></summary>
+## How to Use This
 
-| Scenario               | Route 53 Feature         |
-| ---------------------- | ------------------------ |
-| Blue/Green Deployments | Weighted Routing         |
-| Global User Latency    | Latency-Based Routing    |
-| Disaster Recovery      | Failover + Health Checks |
-| Regional Compliance    | Geolocation Routing      |
-| Simple Redundancy      | Multi-Value Answer       |
-| Public Web Hosting     | Alias A → ALB/S3         |
-
-</details>
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
 
 ---
 
-<details>
-<summary><strong>10. Quick Summary</strong></summary>
+## What Comes Next
 
-| Area             | Key Points                                                                       |
-| ---------------- | -------------------------------------------------------------------------------- |
-| **Purpose**      | Authoritative DNS for your domains — resolves names with policy and health logic |
-| **Strengths**    | Global, automated, AWS-integrated                                                |
-| **Integrations** | ALB, S3, CloudFront, ACM, Terraform                                              |
-| **Cost**         | ≈ $0.50/zone + $0.40/M queries (+ health checks)                                 |
-| **Defaults**     | Alias A for AWS targets; TTL ≈ 300 s                                             |
+→ [11. Bash – Shell Scripting Essentials](../11.%20Bash%20–%20Shell%20Scripting%20Essentials/README.md)
 
-</details>
+Ansible automates server configuration. Bash scripts automate everything else — deployment steps, health checks, log rotation, backups, environment setup. Every DevOps tool in this runbook is called from the command line. Bash is the glue that connects them.
+
+
+---
+# SOURCE: ./notes/11. Bash – Shell Scripting Essentials/README.md
+
+<p align="center">
+  <img src="../../assets/bash-banner.svg" alt="bash" width="100%"/>
+</p>
+
+[← devops-runbook](../../README.md)
 
 ---
 
-<details>
-<summary><strong>11. Self-Audit Checklist</strong></summary>
-
-* [ ] I can describe DNS resolution via Route 53.
-* [ ] I can link a domain → ALB/S3 using Alias A.
-* [ ] I understand Weighted, Latency, and Failover policies.
-* [ ] I can configure Health Checks.
-* [ ] I can validate ACM certificates through Route 53.
-* [ ] I can create zones and records in Terraform/CloudFormation.
-* [ ] I can estimate hosted-zone and query costs.
-
-</details>
+Shell scripting — the glue that connects every tool in this runbook and automates the operational work that no other tool handles.
 
 ---
 
-### 💡 Mentor Insight
+## Why Bash — and Why Not Python
 
-Every AWS architecture needs a dependable doorway.
-**Route 53 is that door — a global, fault-tolerant, policy-driven DNS layer that lets the world find your cloud infrastructure without ever getting lost.**
+Bash is pre-installed on every Linux server, every CI runner, every Docker container, and every Kubernetes node. When you SSH into a production server at 2am during an incident, Bash is what you have. No package manager needed, no virtual environment, no import statements — just a file with a shebang line.
 
----
----
-# TOOL: 08. AWS – Cloud Infrastructure | FILE: 14-cli-cloudformation
----
+Python is more powerful for complex scripting. Better string handling, better data structures, better error messages. Both matter in a DevOps career, and you will use both. Bash comes first because it is always available, because the DevOps tools you have been using throughout this runbook are called from the command line, and because reading and writing Bash is an unavoidable part of working with CI pipelines, Dockerfiles, Kubernetes lifecycle hooks, and Ansible tasks.
 
-[Home](../README.md) | 
-[Intro to AWS](../01-intro-aws/README.md) | 
-[IAM](../02-iam/README.md) | 
-[VPC & Subnet](../03-vpc-subnet/README.md) | 
-[EBS](../04-ebs/README.md) | 
-[EFS](../05-efs/README.md) | 
-[S3](../06-s3/README.md) | 
-[EC2](../07-ec2/README.md) | 
-[RDS](../08-rds/README.md) | 
-[Load Balancing & Auto Scaling](../09-Load-balancing-auto-scaling/README.md) | 
-[CloudWatch & SNS](../10-cloudwatch-sns/README.md) | 
-[Lambda](../11-lambda/README.md) | 
-[Elastic Beanstalk](../12-elastic-beanstalk/README.md) | 
-[Route 53](../13-route53/README.md) | 
-[CLI + CloudFormation](../14-cli-cloudformation/README.md)
-
-# **AWS CLI + CloudFormation — From Manual Commands to Code-Driven Infrastructure**
-
-> *“If the Console is your control panel, AWS CLI is the steering wheel — and CloudFormation is the autopilot that remembers every turn.”*
-> Together, they form the **automation backbone** of your AWS ecosystem — bridging manual control with Infrastructure as Code.
+The scripts in this tool are not academic exercises. They are the scripts that DevOps engineers actually write — deploy scripts, health checks, database backups, log rotation, environment bootstrapping. The focus is on writing scripts that are readable, debuggable, and safe to run in production.
 
 ---
 
-## **Table of Contents**
+## Prerequisites
 
-1. [Why Automation Matters](#1-why-automation-matters)
-2. [Analogy – Driver & Autopilot](#2-analogy--driver--autopilot)
-3. [The Problem Without Automation](#3-the-problem-without-automation)
-4. [AWS CLI – Your Command-Line Bridge](#4-aws-cli--your-command-line-bridge)
-5. [CloudFormation – Your Infrastructure Engine](#5-cloudformation--your-infrastructure-engine)
-6. [Architecture Blueprint – Automation Flow](#6-architecture-blueprint--automation-flow)
-7. [Template Deep Dive – Webstore EC2 Stack (YAML Example)](#7-template-deep-dive--webstore-ec2-stack-yaml-example)
-8. [Real-World Use Cases & Best Practices](#8-real-world-use-cases--best-practices)
-9. [Quick Summary & Self-Audit](#9-quick-summary--self-audit)
-10. [💡 Mentor Insight](#10-mentor-insight)
+**Complete first:** [10. Ansible – Configuration Management](../10.%20Ansible%20–%20Configuration%20Management/README.md)
+
+Bash is the last tool in this runbook because it wraps everything else. You write deployment scripts that call `kubectl`. Health check scripts that call `curl` and `aws`. Backup scripts that call `pg_dump` and `aws s3`. Without knowing what those tools do, the scripts have no context. Come here after completing the full stack.
 
 ---
 
-<details>
-<summary><strong>1. Why Automation Matters</strong></summary>
+## The Running Example
 
-Manual provisioning through the console is fine for exploration — but it doesn’t scale.
-When every instance, bucket, or network must be created consistently across environments, **automation becomes survival**.
+Every script in this tool automates a real webstore operational task.
 
-Automation:
-
-* Removes human error
-* Enforces repeatability
-* Enables disaster recovery
-* Saves time in testing, labs, and CI/CD
-
-In AWS, **CLI** gives command-level control; **CloudFormation** codifies entire infrastructures.
-They’re two sides of the same efficiency coin.
-
-</details>
+| Script | What it does |
+|---|---|
+| `deploy.sh` | Builds the webstore-api image, pushes to ECR, updates the manifest, triggers ArgoCD sync |
+| `healthcheck.sh` | Hits the webstore-api `/health` endpoint, checks pod status, reports pass or fail |
+| `backup.sh` | Dumps the webstore-db postgres database, compresses it, uploads to S3 with a timestamp |
+| `rotate-logs.sh` | Compresses logs older than 7 days, deletes logs older than 30 days |
+| `bootstrap.sh` | Sets up a fresh developer machine — installs tools, configures git, sets up kubeconfig |
 
 ---
 
-<details>
-<summary><strong>2. Analogy – Driver & Autopilot</strong></summary>
+## Where You Take the Webstore
 
-| Tool               | Analogy        | Role                                                         |
-| ------------------ | -------------- | ------------------------------------------------------------ |
-| **AWS Console**    | Manual driving | Visual, one-at-a-time actions                                |
-| **AWS CLI**        | Steering wheel | Command-based control over services                          |
-| **CloudFormation** | Autopilot      | Reads a flight plan (YAML/JSON) and provisions automatically |
+You arrive at Bash with the entire webstore stack built — Linux, Git, Docker, Kubernetes, CI-CD, Observability, AWS, Terraform, Ansible. Each piece is solid but each piece is separate. Manual steps connect them.
 
-You first learn to **drive manually** (CLI) — steering each service yourself —
-then you let **autopilot (CloudFormation)** fly the same route flawlessly every time.
-
-</details>
+You leave with scripts that automate the connections. The deployment pipeline has a fallback script. The database has a scheduled backup. The logs rotate automatically. A new engineer can run one script to set up their development environment. The operational toil is gone.
 
 ---
 
-<details>
-<summary><strong>3. The Problem Without Automation</strong></summary>
+## The Scripting Mindset
 
-Imagine decorating a house without writing anything down.
-A few months later, you move rooms around — but you forget which switch turns on which light.
-That’s what happens when you **manage AWS by hand** using only the Console.
+A script should do one thing well and fail loudly when it cannot. The worst scripts are the ones that silently succeed when they actually failed — an empty backup file, a deployment that appeared to finish but was never applied, a health check that always returns green regardless of the application state.
 
-Without CLI or CloudFormation:
-
-* You forget what settings you used before.
-* Two teammates set up things differently.
-* Fixing or recreating something takes hours.
-* A simple mistake (like wrong region or subnet) breaks everything.
-
-Automation is your **blueprint and memory**.
-It ensures every server, bucket, and network can be rebuilt exactly the same way — anywhere, anytime, by anyone.
-
-> “Manual setup is like cooking without a recipe.
-> Automation is the cookbook that guarantees the same flavor every time.”
-
-</details>
+Every script in this tool is written with `set -e` (exit on error), `set -u` (error on unset variables), and explicit error messages. A script that fails clearly is infinitely more useful than one that silently does the wrong thing.
 
 ---
 
-<details>
-<summary><strong>4. AWS CLI – Your Command-Line Bridge</strong></summary>
+## Phases
 
-**🧱 Installing AWS CLI (Mac, Windows, Linux)**
-
-**For Mac (recommended):**
-
-```bash
-brew install awscli
-```
-
-or use the official pkg:
-
-```bash
-curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
-sudo installer -pkg AWSCLIV2.pkg -target /
-```
-
-**For Windows:**
-Download → [AWSCLIV2.msi](https://awscli.amazonaws.com/AWSCLIV2.msi)
-
-**For Linux:**
-
-```bash
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
-```
-
-**Verify installation:**
-
-```bash
-aws --version
-```
+| # | Phase | Topics | Lab |
+|---|---|---|---|
+| 01 | [Scripting Mindset](./01-scripting-mindset/README.md) | When to write a script, shebang line, making scripts executable, exit codes, `set -e` and `set -u` | No lab |
+| 02 | [Variables & Input](./02-variables-input/README.md) | Variables, positional arguments, `$@`, `read`, environment variables, quoting rules | [Lab 01](./bash-labs/01-variables-conditionals-lab.md) |
+| 03 | [Conditionals](./03-conditionals/README.md) | `if/elif/else`, test operators (`-f`, `-z`, `-eq`), `case` statements | [Lab 01](./bash-labs/01-variables-conditionals-lab.md) |
+| 04 | [Loops](./04-loops/README.md) | `for`, `while`, `until`, `break`, `continue`, looping over files and command output | [Lab 02](./bash-labs/02-loops-functions-lab.md) |
+| 05 | [Functions](./05-functions/README.md) | Declaring functions, calling them, return values, local variables, sourcing files | [Lab 02](./bash-labs/02-loops-functions-lab.md) |
+| 06 | [Error Handling](./06-error-handling/README.md) | `set -e`, `set -u`, `set -o pipefail`, `trap`, logging patterns, exit codes | [Lab 03](./bash-labs/03-error-handling-lab.md) |
+| 07 | [Real-World Scripts](./07-real-world-scripts/README.md) | Deploy script, health check, postgres backup, log rotation, developer bootstrap | [Lab 04](./bash-labs/04-real-world-lab.md) |
 
 ---
 
-### ⚙️ Configure Once
+## Labs
 
-```bash
-aws configure
-```
-
-You’ll be asked for:
-
-* Access Key ID
-* Secret Key
-* Default region (e.g., `us-east-1`)
-* Output format (`json`, `table`, `text`)
-
-After setup, your credentials are stored safely under `~/.aws/credentials`.
+| Lab | Topics Covered | What You Practice |
+|---|---|---|
+| [Lab 01](./bash-labs/01-variables-conditionals-lab.md) | Variables, Input, Conditionals | Write a script that reads arguments, validates them, and branches on conditions |
+| [Lab 02](./bash-labs/02-loops-functions-lab.md) | Loops, Functions | Write a function library and loop over real files and command output |
+| [Lab 03](./bash-labs/03-error-handling-lab.md) | Error Handling | Add `set -euo pipefail` and `trap` to a script, produce real failures and read them |
+| [Lab 04](./bash-labs/04-real-world-lab.md) | Real-World Scripts | Write the webstore deploy script, healthcheck, and database backup from scratch |
 
 ---
 
-### 🧩 Grand Table — Everyday AWS CLI Commands for DevOps Engineers
+## What You Can Do After This
 
-| Service                     | Task                          | Command                                                                                                                                                                                      | What It Does                               |
-| --------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| **General**                 | Show current profile & region | `aws configure list`                                                                                                                                                                         | Confirms which account/region you’re using |
-|                             | Switch region temporarily     | `aws ec2 describe-instances --region us-west-2`                                                                                                                                              | Overrides default                          |
-| **S3 (Storage)**            | List buckets                  | `aws s3 ls`                                                                                                                                                                                  | Shows all buckets                          |
-|                             | Create bucket                 | `aws s3 mb s3://webstore-demo`                                                                                                                                                              | Makes a new S3 bucket                      |
-|                             | Upload file                   | `aws s3 cp index.html s3://webstore-demo/`                                                                                                                                                  | Uploads a file                             |
-|                             | Sync folders                  | `aws s3 sync ./website s3://webstore-demo`                                                                                                                                                  | Mirrors local → S3                         |
-|                             | Delete bucket                 | `aws s3 rb s3://webstore-demo --force`                                                                                                                                                      | Removes everything inside                  |
-| **EC2 (Compute)**           | List instances                | `aws ec2 describe-instances`                                                                                                                                                                 | View running/stopped servers               |
-|                             | Start instance                | `aws ec2 start-instances --instance-ids i-1234abcd`                                                                                                                                          | Boot up                                    |
-|                             | Stop instance                 | `aws ec2 stop-instances --instance-ids i-1234abcd`                                                                                                                                           | Shut down                                  |
-|                             | Reboot instance               | `aws ec2 reboot-instances --instance-ids i-1234abcd`                                                                                                                                         | Restart                                    |
-|                             | Create key pair               | `aws ec2 create-key-pair --key-name myKey > myKey.pem`                                                                                                                                       | New SSH key                                |
-| **IAM (Access)**            | List users                    | `aws iam list-users`                                                                                                                                                                         | Show all users                             |
-|                             | Create user                   | `aws iam create-user --user-name devuser`                                                                                                                                                    | Adds IAM user                              |
-|                             | Attach policy                 | `aws iam attach-user-policy --user-name devuser --policy-arn arn:aws:iam::aws:policy/AdministratorAccess`                                                                                    | Grants access                              |
-| **CloudWatch (Monitoring)** | List metrics                  | `aws cloudwatch list-metrics`                                                                                                                                                                | Shows what’s being tracked                 |
-|                             | Get CPU stats                 | `aws cloudwatch get-metric-statistics --metric-name CPUUtilization --namespace AWS/EC2 --start-time 2025-11-10T00:00:00Z --end-time 2025-11-11T00:00:00Z --period 3600 --statistics Average` | View CPU usage                             |
-| **Lambda (Serverless)**     | List functions                | `aws lambda list-functions`                                                                                                                                                                  | Show deployed functions                    |
-|                             | Invoke function               | `aws lambda invoke --function-name myFunction out.json`                                                                                                                                      | Run function manually                      |
-| **CloudFormation (IaC)**    | List stacks                   | `aws cloudformation list-stacks`                                                                                                                                                             | View deployed stacks                       |
-|                             | Validate template             | `aws cloudformation validate-template --template-body file://template.yml`                                                                                                                   | Check YAML before deploying                |
-|                             | Create stack                  | `aws cloudformation create-stack --stack-name MyStack --template-body file://template.yml`                                                                                                   | Deploy infra                               |
-|                             | Delete stack                  | `aws cloudformation delete-stack --stack-name MyStack`                                                                                                                                       | Tear down infra                            |
-| **Misc Tools**              | Get caller identity           | `aws sts get-caller-identity`                                                                                                                                                                | Confirms which user/account is active      |
-|                             | Get service help              | `aws s3 help`                                                                                                                                                                                | Shows CLI options for that service         |
-
-> 💡 Tip: Bookmark this table — it’s a “cloud survival sheet” for everyday DevOps work.
+- Write Bash scripts that are safe to run in production
+- Use `set -euo pipefail` and explain what each flag does
+- Handle errors explicitly with `trap` and meaningful exit codes
+- Write functions that make scripts readable and testable
+- Accept and validate command-line arguments
+- Write a deploy script, a health check, and a backup script from scratch
+- Read any Bash script in a real codebase and understand what it does
 
 ---
 
-### 🧠 When & Why to Use AWS CLI
+## How to Use This
 
-Think of the **AWS CLI** as your **Swiss Army knife** for cloud work — small, fast, and available everywhere.
-
-You use it when:
-
-* You need to **check the health** of servers.
-* You want to **move files** to or from S3 quickly.
-* You must **start, stop, or reboot** EC2 instances.
-* You’re writing small **scripts or cron jobs** that talk to AWS automatically.
-* You want to **verify** what CloudFormation deployed.
-
-> The Console shows you *what exists*.
-> The CLI lets you *command it directly.*
-
-</details>
+Read phases in order. Each one builds on the previous.
+After each phase do the lab before moving on.
+The checklist at the end of every lab is not optional.
 
 ---
 
-<details>
-<summary><strong>5. CloudFormation – Your Infrastructure Engine</strong></summary>
+## You Have Reached the End
 
----
+This is the last tool in the runbook. You started with a blank Linux server and a project idea. You end with the webstore running in production on AWS EKS, deployed automatically by a CI-CD pipeline, monitored by Prometheus and Grafana, infrastructure defined in Terraform, servers configured by Ansible, and operational tasks automated by Bash scripts.
 
-### 🧭 What It Does
-
-CloudFormation turns human-readable templates (YAML/JSON) into live AWS resources — EC2, S3, VPC, IAM roles, everything.
-
-You write **what you want**, AWS figures out **how to build it**.
-
----
-
-### 🧱 Core Concepts
-
-| Term           | Meaning                             |
-| -------------- | ----------------------------------- |
-| **Template**   | Blueprint file describing resources |
-| **Stack**      | Deployed instance of a template     |
-| **Change Set** | Preview before applying changes     |
-| **Parameters** | Input values to reuse templates     |
-| **Outputs**    | Key data exported to other stacks   |
-
----
-
-### ⚙️ Workflow
-
-1. **Write Template**
-2. **Upload** (local or S3)
-3. **Create Stack**
-
-   ```bash
-   aws cloudformation create-stack --stack-name WebstoreEC2Stack \
-       --template-body file://webstore-ec2.yml
-   ```
-4. **Monitor** progress in Events tab
-5. **Verify** resources in EC2 console
-6. **Delete** cleanly:
-
-   ```bash
-   aws cloudformation delete-stack --stack-name WebstoreEC2Stack
-   ```
-
----
-
-### 🧠 Why Architects Love It
-
-* Reproducible environments
-* Version-controlled IaC
-* Automatic dependency ordering
-* Rollback on failure
-* Integrates with GitHub Actions / Terraform / CI-CD
-
-</details>
-
----
-
-<details>
-<summary><strong>6. Architecture Blueprint – Automation Flow</strong></summary>
-
-```
-Developer / Engineer
-        │
-        ▼
- ┌──────────────────────┐
- │ AWS CLI              │  ← Manual provisioning / testing
- └──────────┬───────────┘
-            │
-            ▼
- ┌──────────────────────┐
- │ AWS CloudFormation   │  ← IaC autopilot (templates)
- └──────────┬───────────┘
-            │
-            ▼
- ┌──────────────────────────────┐
- │ AWS Resources                │
- │  (EC2 | S3 | RDS | VPC | EFS)│
- └──────────────────────────────┘
-            │
-            ▼
-   Consistent Infrastructure Ready
-```
-
-CLI = hands-on control
-CloudFormation = repeatable automation
-Together = full-spectrum DevOps efficiency.
-
-</details>
-
----
-
-<details>
-<summary><strong>7. Template Deep Dive – Webstore EC2 Stack (YAML Example)</strong></summary>
-
-Below is an **improved, production-ready version** of your original EC2 template — simplified for clarity but deployable.
-
-```yaml
-AWSTemplateFormatVersion: '2010-09-09'
-Description: >
-  Webstore EC2 Linux VM Stack – creates a secure EC2 instance with SSH access.
-
-Parameters:
-  KeyPairName:
-    Type: AWS::EC2::KeyPair::KeyName
-    Description: Name of an existing EC2 KeyPair to SSH into the instance
-
-Resources:
-  WebstoreSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Allow SSH and HTTP access
-      VpcId: !Ref AWS::NoValue        # auto-picks default VPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-
-  WebstoreEC2Instance:
-    Type: AWS::EC2::Instance
-    Properties:
-      ImageId: ami-0c02fb55956c7d316      # Amazon Linux 2 (us-east-1)
-      InstanceType: t2.micro
-      KeyName: !Ref KeyPairName
-      SecurityGroupIds:
-        - !Ref WebstoreSecurityGroup
-      Tags:
-        - Key: Name
-          Value: Webstore-EC2-Instance
-      UserData:
-        Fn::Base64: |
-          #!/bin/bash
-          yum update -y
-          amazon-linux-extras install nginx1 -y
-          systemctl enable nginx
-          systemctl start nginx
-          echo "<h1>Welcome to Webstore EC2!</h1>" > /usr/share/nginx/html/index.html
-
-Outputs:
-  PublicIP:
-    Description: Public IP address of the instance
-    Value: !GetAtt WebstoreEC2Instance.PublicIp
-  WebURL:
-    Description: URL of the deployed web server
-    Value: !Sub "http://${WebstoreEC2Instance.PublicDnsName}"
-```
-
-**Explanation Highlights**
-
-* **Security Group** → allows SSH + HTTP from anywhere.
-* **EC2 Instance** → launches Amazon Linux 2 + auto-installs Nginx.
-* **UserData** → boots with a welcome page.
-* **Outputs** → instantly give you the Public IP and URL.
-
-Deploy with:
-
-```bash
-aws cloudformation create-stack \
-  --stack-name WebstoreEC2Stack \
-  --template-body file://webstore-ec2.yml \
-  --parameters ParameterKey=KeyPairName,ParameterValue=your-keypair
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>8. Real-World Use Cases & Best Practices</strong></summary>
-
-Instead of big jargon, let’s make it real.
-
-| Situation                | Tool to Use    | Example Scenario                                                                             |
-| ------------------------ | -------------- | -------------------------------------------------------------------------------------------- |
-| **Morning Check**        | AWS CLI        | You start your day by checking which EC2 servers are running — `aws ec2 describe-instances`. |
-| **Quick File Upload**    | AWS CLI        | You push today’s build logs to S3 — `aws s3 cp logs.zip s3://webstore-logs/`.               |
-| **Recreate Environment** | CloudFormation | Need a test VPC + EC2 for a new feature? Run your template once and everything appears.      |
-| **Clean Up Resources**   | AWS CLI        | Before weekend, run `aws s3 rb s3://temp-bucket --force` to clear unused data.               |
-| **Disaster Recovery**    | CloudFormation | Prod broke? Redeploy your saved template and get the same architecture back instantly.       |
-| **Learning / Testing**   | Both           | Try new configs using CLI, then document successful setup as a CloudFormation YAML.          |
-
-**Best Practices**
-
-* Keep all templates in version control (GitHub).
-* Validate every template before running it.
-* Use tags (`--tags Key=Owner,Value=Akhil`) for tracking cost.
-* Practice deleting stacks often — it teaches clean teardown.
-
-> “CLI gives you agility; CloudFormation gives you immortality.”
-> Both make sure your cloud doesn’t depend on memory — only on mastery.
-
-</details>
-
----
-
-<details>
-<summary><strong>9. Quick Summary & Self-Audit</strong></summary>
-
-| Area                    | Key Checks                                |
-| ----------------------- | ----------------------------------------- |
-| **AWS CLI**             | Installed + configured correctly          |
-| **Access Keys**         | Stored securely in credentials file       |
-| **Common Commands**     | S3 list, EC2 describe, IAM users          |
-| **CloudFormation**      | Understands Stacks, Parameters, Outputs   |
-| **Template Validation** | `validate-template` passes cleanly        |
-| **Stack Lifecycle**     | Create → Update → Delete works error-free |
-| **Reproducibility**     | Same infra works across regions           |
-
-✅ **I can:**
-
-* Create and delete S3 buckets from CLI.
-* Deploy the Webstore EC2 Stack via CloudFormation.
-* Explain IaC benefits to a teammate in plain English.
-
-</details>
-
----
-
-<details>
-<summary><strong>10. 💡 Mentor Insight</strong></summary>
-
-Automation turns good engineers into architects.
-Use **AWS CLI** to understand how AWS thinks,
-then let **CloudFormation** express that understanding in code.
-
-When you can rebuild an entire environment with one file or one command —
-you’ve crossed from *manual operator* to *infrastructure designer.*
-
-</details>
-
----
+The runbook is a foundation. The industry moves fast and the tools evolve. But the fundamentals — how containers work, how networks route packets, how infrastructure is provisioned and configured, how systems are observed and debugged — those do not change. Build on them.

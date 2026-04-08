@@ -26,9 +26,72 @@ All you need is a Linux terminal — a VM, WSL, or an EC2 instance works fine.
 
 ---
 
+## The Linux Stack
+
+Linux is not one thing. It is layers. Each layer has one job.
+Every file in these notes lives on a specific layer.
+When something breaks, you know exactly which layer to look at.
+
+```
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  L6  YOU                                                            │
+  │       ~ · /home/akhil · .bashrc · .ssh/ · .config/                  │
+  │       you land here every time you SSH into a server                │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  L5  TOOLS & FILES                                                  │
+  │       /usr/bin · /usr/local/bin · /opt                              │
+  │       the commands you run · the files you edit · the scripts       │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  L4  CONFIG                                                         │
+  │       /etc — users · passwords · groups · network · services        │
+  │       you edit /etc to change how the system behaves                │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  L3  STATE & DEBUG                    ← start here when prod breaks │
+  │       /var/log · /var/lib · /run                                    │
+  │       logs of everything that happened · live state of what runs    │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  L2  NETWORKING                                                     │
+  │       /etc/hosts · /etc/netplan · /sys/class/net                    │
+  │       how this machine talks to the world                           │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  L1  PROCESS MANAGER                                                │
+  │       systemd · PID 1 · /etc/systemd/system                         │
+  │       starts and watches every service you deploy                   │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  L0  FOUNDATION                                                     │
+  │       kernel · GRUB · /boot · hardware · cloud VM                   │
+  │       everything above sits on top of this                          │
+  └─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## When Production Breaks
+
+You SSH into a server. Something is wrong.
+You do not panic. You ask these questions in order.
+Each question maps to a layer. Each layer has a file.
+
+```
+  SYMPTOM                            LAYER   FIRST COMMAND
+  ─────────────────────────────────────────────────────────────────────
+  Can't find a file or command     → L5/L6   pwd · ls · which nginx
+  Config change broke something    → L4      nginx -t · cat /etc/nginx/nginx.conf
+  Need to know what happened       → L3      journalctl -u nginx · tail /var/log/syslog
+  Can't reach the server           → L2      ip addr · ss -tulnp · curl -I localhost
+  Service is down                  → L1      systemctl status nginx
+  Machine is slow or unresponsive  → L0      uptime · free -h · df -h · dmesg | tail
+  ─────────────────────────────────────────────────────────────────────
+```
+
+---
+
 ## The Running Example
 
-Every note and every lab uses the same webstore project on disk. This is the same app that gets containerized in Docker, orchestrated in Kubernetes, and deployed to AWS. It starts here as a directory on a Linux server.
+Every file uses the same webstore project on disk.
+This is the same app that gets containerized in Docker,
+orchestrated in Kubernetes, and deployed to AWS.
+It starts here as a directory on a Linux server.
 
 ```
 ~/webstore/
@@ -40,39 +103,48 @@ Every note and every lab uses the same webstore project on disk. This is the sam
 └── backup/         ← archives before deploys
 ```
 
-By the end of Linux you will have built this structure from scratch, written config files into it, searched its logs with grep and awk, set correct ownership and permissions on every folder, archived it with tar, installed nginx to serve the frontend, managed nginx as a systemd service, and debugged it live over the network with curl and tcpdump.
+By the end of Linux you will have built this structure from scratch,
+written config files into it, searched its logs with grep and awk,
+set correct ownership and permissions on every folder, archived it
+with tar, installed nginx to serve the frontend, managed nginx as a
+systemd service, and debugged it live over the network with curl and tcpdump.
 
 ---
 
 ## Where You Take the Webstore
 
-You arrive at Linux with nothing — a blank server and a project idea. You leave with the webstore running on that server, files organized, permissions locked, nginx serving the frontend, logs being written, and the whole project archived and ready to hand off.
+You arrive at Linux with nothing — a blank server and a project idea.
+You leave with the webstore running on that server, files organized,
+permissions locked, nginx serving the frontend, logs being written,
+and the whole project archived and ready to hand off.
 
-That is the state Git picks up from. You do not start Git with a blank folder — you start it with a working server setup that already has history worth tracking.
-
----
-
-## Phases
-
-| Phase | Topics | Lab |
-|---|---|---|
-| 0 — Foundation | [01 Boot Process](./01-boot-process/README.md) · [02 Basics](./02-basics/README.md) · [03 Files](./03-working-with-files/README.md) | [Lab 01](./linux-labs/01-boot-basics-files-lab.md) |
-| 1 — Text Processing | [04 Filters](./04-filter-commands/README.md) · [05 sed](./05-sed-stream-editor/README.md) · [06 awk](./06-awk/README.md) | [Lab 02](./linux-labs/02-filters-sed-awk-lab.md) |
-| 2 — System Admin | [07 Vim](./07-text-editor/README.md) · [08 Users](./08-user-&-group-management/README.md) · [09 Permissions](./09-file-ownership-&-permissions/README.md) | [Lab 03](./linux-labs/03-vim-users-permissions-lab.md) |
-| 3 — Operations | [10 Archive](./10-archiving-and-compression/README.md) · [11 Packages](./11-package-management/README.md) · [12 Services](./12-service-management/README.md) | [Lab 04](./linux-labs/04-archive-packages-services-lab.md) |
-| 4 — Networking | [13 Networking](./13-networking/README.md) | [Lab 05](./linux-labs/05-networking-lab.md) |
+That is the state Git picks up from. You do not start Git with a
+blank folder — you start it with a working server setup that already
+has history worth tracking.
 
 ---
 
-## Labs
+## Files — Read in This Order
 
-| Lab | Covers |
-|---|---|
-| [Lab 01](./linux-labs/01-boot-basics-files-lab.md) | Boot inspection, filesystem navigation, webstore directory setup, file operations |
-| [Lab 02](./linux-labs/02-filters-sed-awk-lab.md) | grep, find, cut, sort, uniq, sed, awk — all on webstore logs |
-| [Lab 03](./linux-labs/03-vim-users-permissions-lab.md) | vim editing, user/group creation, ownership and permission control |
-| [Lab 04](./linux-labs/04-archive-packages-services-lab.md) | tar/gzip backup, nginx install, systemctl full lifecycle, config management |
-| [Lab 05](./linux-labs/05-networking-lab.md) | ip, ping, traceroute, dig, curl, ss, tcpdump — all against the running nginx |
+Each file only requires knowledge from the files before it.
+Every example uses the webstore. Every file leaves something working.
+
+| # | File | Layer | After reading this you can |
+|---|---|---|---|
+| 01 | [Boot Process](./01-boot-process/README.md) | L0 | Explain every step from power-on to login. Read a boot failure and know which stage broke. |
+| 02 | [Basics](./02-basics/README.md) | L6 | Navigate any Linux server. Know where you are, what is running, what the disk looks like. |
+| 03 | [Working with Files](./03-working-with-files/README.md) | L5 | Copy, move, rename, link files. Back up a directory safely before changing it. |
+| 04 | [Filter Commands](./04-filter-commands/README.md) | L5 | Search logs, count errors, extract fields, chain commands together in a pipeline. |
+| 05 | [sed](./05-sed-stream-editor/README.md) | L5 | Edit config files from the command line without opening an editor. |
+| 06 | [awk](./06-awk/README.md) | L5 | Process log files, calculate totals, build reports from raw text. |
+| 07 | [vim](./07-text-editor/README.md) | L5 | Edit any file on any server — even with no GUI, no nano, nothing else. |
+| 08 | [Users & Groups](./08-user-and-group-management/README.md) | L4 | Create users, manage groups, set up service accounts with least privilege. |
+| 09 | [Permissions](./09-file-ownership-and-permissions/README.md) | L4 | Control exactly who can read, write, and execute every file on the system. |
+| 10 | [Archiving](./10-archiving-and-compression/README.md) | L5 | Back up directories, compress logs, restore from an archive. |
+| 11 | [Package Management](./11-package-management/README.md) | L5 | Install, update, and remove software. Understand what apt actually does to the system. |
+| 12 | [Service Management](./12-service-management/README.md) | L1 | Start, stop, enable services. Write a systemd unit file. Read service logs. |
+| 13 | [Networking](./13-networking/README.md) | L2 | Debug connectivity, check open ports, trace where a request fails. |
+| 14 | [Logs & Debug](./14-logs-and-debug/README.md) | L3 | Read any log, follow a live stream, run a full debug workflow end to end. |
 
 ---
 
@@ -84,14 +156,18 @@ That is the state Git picks up from. You do not start Git with a blank folder �
 - Install software, manage services, and configure nginx
 - Use curl, dig, ss, and tcpdump to debug network issues live
 - Archive and restore directories for backups and deploys
+- Write and edit files directly on a server using vim
+- Run a structured debug workflow from symptom to fix
 
 ---
 
 ## How to Use This
 
-Read phases in order. Each one builds on the previous.
-After each phase do the lab before moving on.
-The checklist at the end of every lab is not optional.
+Read files in order. Each one builds on the previous.
+Do the "On the webstore" section in every file before moving on.
+The webstore must be in the state described at the end of each file.
+If it is not — go back. Moving forward on a broken foundation means
+every file after it will be harder than it should be.
 
 ---
 
@@ -99,4 +175,7 @@ The checklist at the end of every lab is not optional.
 
 → [02. Git & GitHub – Version Control](../02.%20Git%20%26%20GitHub%20–%20Version%20Control/README.md)
 
-Linux gives you the server foundation. Git gives you the workflow foundation — version control, collaboration, and the habit of tracking every change you make to infrastructure and code. The webstore directory you built here becomes the first Git repository you initialize.
+Linux gives you the server foundation. Git gives you the workflow
+foundation — version control, collaboration, and the habit of tracking
+every change you make to infrastructure and code. The webstore
+directory you built here becomes the first Git repository you initialize.

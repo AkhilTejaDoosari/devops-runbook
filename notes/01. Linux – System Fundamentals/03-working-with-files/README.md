@@ -99,14 +99,13 @@ Three timestamps — **Access** (last read), **Modify** (last content change), *
 
 ## 2. Writing Content into Files
 
-Two operators write content into files from the command line — `>` and `>>`. Knowing the difference prevents you from accidentally wiping a file you meant to append to.
+Two operators write content into files from the command line — `>` and `>>`.     
+Knowing the difference prevents you from accidentally wiping a file you meant to append to.
 
 | Operator | What it does | When you reach for it |
 |---|---|---|
 | `echo "text" > <file>` | Write text to a file — **overwrites** entirely if file exists | Creating `webstore.conf` from scratch with a single line |
 | `echo "text" >> <file>` | Append text to a file — adds to the end, never overwrites | Adding a new config entry to an existing file without disturbing the rest |
-| `cat > <file>` | Write multiple lines interactively — `Ctrl+D` to save | Writing a small config file without opening an editor |
-| `cat >> <file>` | Append multiple lines interactively | Adding a block of config to the end of an existing file |
 
 ```bash
 # Create webstore.conf with initial content
@@ -121,8 +120,13 @@ cat ~/webstore/config/webstore.conf
 # api_port=8080
 ```
 
-> **`>` overwrites without warning.** `echo "new" > webstore.conf` replaces the entire file with one word. Use `>>` when you mean to add. Use `>` only when you mean to replace everything.
+ Use `>>` **(append)** when you mean to add.  
+Use `>` **(overwrite)** only when you mean to replace everything.   
+ **`>` overwrites without warning.** `echo "new" > webstore.conf` replaces the entire file with one word.  
 
+> **Rule of Thumb:**    
+Use `echo` for quickly injecting small pieces of data or appending single lines to files via scripts.   
+For creating or editing large, complex configuration files, use a text editor like `vim`.
 ---
 
 ## 3. Copying Files — `cp`
@@ -286,21 +290,23 @@ The directory structure exists from file 02. Now you write content into it, back
 
 ```bash
 # Step 1 — write the webstore config file
+echo "frontend_port=80" >> ~/webstore/config/webstore.conf
+echo "api_host=webstore-api" >> ~/webstore/config/webstore.conf
+echo "api_port=8080" >> ~/webstore/config/webstore.conf
 echo "db_host=webstore-db" > ~/webstore/config/webstore.conf
 echo "db_port=5432" >> ~/webstore/config/webstore.conf
 echo "db_name=webstore" >> ~/webstore/config/webstore.conf
-echo "api_port=8080" >> ~/webstore/config/webstore.conf
-echo "api_host=webstore-api" >> ~/webstore/config/webstore.conf
 echo "env=production" >> ~/webstore/config/webstore.conf
 
 # Step 2 — verify it
 cat ~/webstore/config/webstore.conf
-# db_host=webstore-db
-# db_port=5432
-# db_name=webstore
-# api_port=8080
-# api_host=webstore-api
-# env=production
+frontend_port=80
+api_host=webstore-api
+api_port=8080
+db_host=webstore-db
+db_port=5432
+db_name=webstore
+env=production
 
 # Step 3 — create a placeholder log file before nginx starts
 touch ~/webstore/logs/access.log
@@ -322,9 +328,9 @@ ls -la ~/webstore-backup/
 
 # Step 7 — read only the first 3 lines of the config
 head -n 3 ~/webstore/config/webstore.conf
-# db_host=webstore-db
-# db_port=5432
-# db_name=webstore
+frontend_port=80
+api_host=webstore-api
+api_port=8080
 ```
 
 The webstore now has a real config file and placeholder log files. The backup exists. From here, file 04 will search and filter this config. File 05 will edit it in-place. File 07 will let you open and edit it in vim.

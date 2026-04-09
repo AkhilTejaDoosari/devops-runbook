@@ -26,9 +26,82 @@ You need to be comfortable in the terminal — navigating directories, editing f
 
 ---
 
-## The Running Example
+## The Architecture
 
-Every lab uses the same webstore project — the same app from Linux. You initialize it as a Git repository, build its commit history file by file, create feature branches, resolve conflicts, tag the first release, and push to GitHub. By the end the webstore has a complete, readable history that any engineer can clone and understand.
+Every Git command is a movement between zones. Know the zones — every command makes sense.
+
+```
+  YOUR MACHINE
+  ───────────────────────────────────────────────────────────────────────────────
+
+  ┌─────────────────┐      ┌─────────────────┐      ┌──────────────────────────┐
+  │                 │      │                 │      │                          │
+  │  Working        │      │  Staging area   │      │  Local repo  (.git/)     │
+  │  directory      │      │  (.git/index)   │      │                          │
+  │                 │      │                 │      │  • full commit history   │
+  │  your files     │      │  files chosen   │      │  • all branches          │
+  │  what you edit  │      │  for the next   │      │  • all tags              │
+  │                 │      │  commit         │      │  • works fully offline   │
+  └─────────────────┘      └─────────────────┘      └──────────────────────────┘
+          │                        │                            │
+          │  ── git add ────────►  │                            │
+          │  ◄─ git restore──────  │                            │
+          │  ────staged ──────────►  (unstage back)             │
+          │                        │  ── git commit ──────────► │
+          │                        │  ◄─ git reset ──────────── │
+          │                        │     (soft/mixed/hard)      │
+          │                                                     │
+          │  ◄─────────────── git checkout / git switch ─────── │
+          │  ◄─────────────── git restore <file> ────────────── │
+
+
+  WHAT EACH COMMAND SEES
+  ─────────────────────────────────────────────────────────────────────────────
+  git status        working dir + staging area   never sees the remote
+  git log           local repo commits           stale until git fetch
+  git diff          working dir  vs  staging
+  git diff --staged staging      vs  last commit
+  git diff HEAD     working dir  vs  last commit
+
+
+  BRANCHES AND HEAD  (inside the local repo)
+  ─────────────────────────────────────────────────────────────────────────────
+
+  a3f92c1 ◄── b71e3a2 ◄── c8d21fa   ←  main  ←  HEAD
+                                ↑
+               every commit points back to its parent
+
+  main branch: a3f92c1 ◄── b71e3a2 ◄── c8d21fa  ←  HEAD
+                                              ↘
+  feature branch:                               d1a3c22 ◄── e8f90ab  ←  HEAD
+
+
+  GITHUB  (the remote)
+  ───────────────────────────────────────────────────────────────────────────────
+
+  ┌──────────────────────────────────────────────────────────────────────────────┐
+  │  origin   →  github.com/AkhilTejaDoosari/webstore                            │
+  │                                                                              │
+  │  your fork or your team repo — you push here, PRs open here                  │
+  │  GitHub Actions triggers on every push to main                               │
+  │  ArgoCD watches main — deploys to cluster when it changes                    │
+  └──────────────────────────────────────────────────────────────────────────────┘
+  ┌──────────────────────────────────────────────────────────────────────────────┐
+  │  upstream →  github.com/original-owner/webstore                              │
+  │                                                                              │
+  │  the repo you forked from — pull to stay in sync, never push to it           │
+  └──────────────────────────────────────────────────────────────────────────────┘
+
+  local repo  ──── git push ────────────────────────────────────► origin
+  local repo  ◄─── git fetch ───────────────────────────────────  origin / upstream
+  working dir ◄─── git pull  (fetch + merge) ───────────────────  origin
+  all zones   ◄─── git clone (first time only) ─────────────────  origin
+
+
+  THE DAILY WORKFLOW
+  ─────────────────────────────────────────────────────────────────────────────
+  git status  →  git add .  →  git commit -m ""  →  git push
+```
 
 ---
 
@@ -48,27 +121,15 @@ There is no real alternative at this level. SVN is legacy. Mercurial is niche. G
 
 ---
 
-## Phases
+## Files — Read in This Order
 
-| Phase | Topics | Lab |
-|---|---|---|
-| 1 — Foundations | [01 Foundations](./01-foundations/README.md) | [Lab 01](./git-labs/01-foundations-lab.md) |
-| 2 — Stash & Tags | [02 Stash & Tags](./02-stash-tags/README.md) | [Lab 02](./git-labs/02-stash-tags-lab.md) |
-| 3 — History & Branching | [03 History & Branching](./03-history-branching/README.md) | [Lab 03](./git-labs/03-history-branching-lab.md) |
-| 4 — Contribute | [04 Contribute](./04-contribute/README.md) | [Lab 04](./git-labs/04-contribute-lab.md) |
-| 5 — Undo & Recovery | [05 Undo & Recovery](./05-undo-recovery/README.md) | [Lab 05](./git-labs/05-undo-recovery-lab.md) |
-
----
-
-## Labs
-
-| Lab | Topics Covered | What You Practice |
-|---|---|---|
-| [Lab 01](./git-labs/01-foundations-lab.md) | Foundations | Init repo, configure identity, .gitignore, first commits, push to GitHub |
-| [Lab 02](./git-labs/02-stash-tags-lab.md) | Stash & Tags | Stash mid-work, restore, tag the first release, push tags |
-| [Lab 03](./git-labs/03-history-branching-lab.md) | History & Branching | Read history, fast-forward merge, 3-way merge, conflict resolution, rebase |
-| [Lab 04](./git-labs/04-contribute-lab.md) | Contribute | Feature branch PR workflow, fork, upstream remote, sync fork |
-| [Lab 05](./git-labs/05-undo-recovery-lab.md) | Undo & Recovery | Amend commits, revert bad commits, reset, recover with reflog |
+| # | File | What it covers | After reading this you can |
+|---|---|---|---|
+| 01 | [Foundations](./01-foundations/README.md) | init, config, three states, commit, .gitignore, remote, push | Start a repo from scratch, make commits, push to GitHub |
+| 02 | [Stash & Tags](./02-stash-tags/README.md) | stash workflow, annotated tags, releases | Pause mid-work cleanly, tag v1.0, mark stable releases |
+| 03 | [History & Branching](./03-history-branching/README.md) | git log, branches, merge types, conflicts, rebase | Read project history, build features in isolation, merge without breaking things |
+| 04 | [Contribute](./04-contribute/README.md) | clone, remotes, PR workflow, fork, upstream sync | Work on a team repo, open PRs, contribute to open source |
+| 05 | [Undo & Recovery](./05-undo-recovery/README.md) | amend, revert, reset, reflog | Fix any mistake — wrong commit, bad push, deleted branch |
 
 ---
 
@@ -87,9 +148,9 @@ There is no real alternative at this level. SVN is legacy. Mercurial is niche. G
 
 ## How to Use This
 
-Read phases in order. Each one builds on the previous.
-After each phase do the lab before moving on.
-The checklist at the end of every lab is not optional.
+Read files in order. Each one builds on the previous.
+Do the "On the webstore" section in every file before moving on.
+The webstore must be in the state described at the end of each file.
 
 ---
 

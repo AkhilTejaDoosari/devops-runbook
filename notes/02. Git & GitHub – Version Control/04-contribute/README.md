@@ -3,45 +3,55 @@
 [Stash & Tags](../02-stash-tags/README.md) |
 [History & Branching](../03-history-branching/README.md) |
 [Contribute](../04-contribute/README.md) |
-[Undo & Recovery](../05-undo-recovery/README.md)
+[Undo & Recovery](../05-undo-recovery/README.md) |
+[Interview](../99-interview-prep/README.md)
+
+---
 
 # Git Contribute
 
-The webstore is on GitHub. A second developer joins the team and needs to work on the products API. They cannot push directly to main — that is the production branch. They need their own copy to work from, a way to propose their changes for review, and a way to stay in sync when main moves forward while they are working.
-
-This is the collaboration model. Understanding it is what separates someone who uses Git alone from someone who uses Git on a team.
+> **Depends on:** [03 History & Branching](./03-history-branching/README.md) — you need branches and merges before the PR workflow makes sense
+> **Used in production when:** A second developer joins the team, you need to propose code for review before it reaches main, or you are contributing to a repo you do not own
 
 ---
 
 ## Table of Contents
 
-- [1. Two Collaboration Contexts](#1-two-collaboration-contexts)
-- [2. Cloning — Getting the Repo Locally](#2-cloning--getting-the-repo-locally)
+- [What this is](#what-this-is)
+- [1. Two collaboration contexts](#1-two-collaboration-contexts)
+- [2. Cloning — getting the repo locally](#2-cloning--getting-the-repo-locally)
 - [3. Remotes — origin and upstream](#3-remotes--origin-and-upstream)
-- [4. The Feature Branch PR Workflow](#4-the-feature-branch-pr-workflow)
-- [5. Forking — Contributing to a Repo You Do Not Own](#5-forking--contributing-to-a-repo-you-do-not-own)
-- [6. Keeping Your Fork in Sync](#6-keeping-your-fork-in-sync)
-- [7. What Makes a Good Pull Request](#7-what-makes-a-good-pull-request)
-- [8. Quick Reference](#8-quick-reference)
+- [4. git fetch vs git pull — the distinction](#4-git-fetch-vs-git-pull--the-distinction)
+- [5. The feature branch PR workflow](#5-the-feature-branch-pr-workflow)
+- [6. Forking — contributing to a repo you do not own](#6-forking--contributing-to-a-repo-you-do-not-own)
+- [7. Keeping your fork in sync](#7-keeping-your-fork-in-sync)
+- [8. What makes a good pull request](#8-what-makes-a-good-pull-request)
+- [On the webstore](#on-the-webstore)
+- [What breaks](#what-breaks)
+- [Daily commands](#daily-commands)
 
 ---
 
-## 1. Two Collaboration Contexts
+## What this is
 
-You will work in two different contexts depending on whether you own the repo.
+The webstore is on GitHub. A second developer joins and needs to work on the products API. They cannot push directly to main — that is the production branch. They need their own copy to work from, a way to propose changes for review, and a way to stay in sync when main moves forward while they are working. This is the collaboration model. It is what separates someone who uses Git alone from someone who uses Git on a team.
+
+---
+
+## 1. Two collaboration contexts
 
 | Context | When | What you do |
 |---|---|---|
-| **Company repo** | You are on the team, have access | Clone directly, work in feature branches, open PRs to main |
-| **Open-source repo** | You do not have write access | Fork the repo first, clone your fork, open PR to the original |
+| Company repo | You are on the team, have write access | Clone directly, work in feature branches, open PRs to main |
+| Open-source repo | You do not have write access | Fork first, clone your fork, open PR to the original |
 
-In DevOps day-to-day work — your team's infrastructure repo, the webstore deployment manifests, Terraform configs — you use the company repo pattern. Fork is for contributing to projects you do not own.
+In DevOps day-to-day work — your team's infrastructure repo, webstore deployment manifests, Terraform configs — you use the company repo pattern. Fork is for contributing to projects you do not own.
 
 ---
 
-## 2. Cloning — Getting the Repo Locally
+## 2. Cloning — getting the repo locally
 
-Clone downloads the full repository to your machine — all commits, all branches, all history.
+Clone downloads the full repository — all commits, all branches, all history. Not just the latest files. Everything.
 
 ```bash
 # Clone the webstore repo
@@ -50,55 +60,91 @@ git clone https://github.com/AkhilTejaDoosari/webstore.git
 # Clone into a specific folder name
 git clone https://github.com/AkhilTejaDoosari/webstore.git my-webstore
 
-# After cloning
 cd webstore
-git log --oneline   # full history is here
-git branch -a       # all branches, local and remote
+git log --oneline    # full history is here
+git branch -a        # all branches — local and remote
+# * main
+#   remotes/origin/main
+#   remotes/origin/feature/db-failover-config
 ```
 
-After cloning, you have:
-- A full local copy of the repository
-- One remote called `origin` pointing back to GitHub
-- A local `main` branch tracking `origin/main`
+After cloning you have a full local copy, one remote called `origin` pointing to GitHub, and a local `main` tracking `origin/main`.
 
 ---
 
 ## 3. Remotes — origin and upstream
 
-A remote is a named reference to a repository hosted somewhere else. Every connection to GitHub is a remote.
+A remote is a named reference to a repo hosted somewhere else.
 
 ```bash
-# Check what remotes you have
+# See all remotes
 git remote -v
 # origin  https://github.com/AkhilTejaDoosari/webstore.git (fetch)
 # origin  https://github.com/AkhilTejaDoosari/webstore.git (push)
 ```
 
-**`origin`** is the repo you cloned from — your team's repo or your fork. You push to origin and pull from origin.
+**`origin`** — the repo you cloned from. Your team's repo or your fork. You push here and pull from here.
 
-**`upstream`** is the original repo when you have forked. You pull from upstream to stay in sync but never push to it directly.
+**`upstream`** — the original repo when you have forked. You pull from upstream to stay in sync. You never push to it.
 
 ```bash
-# Add upstream (open-source workflow — after forking)
+# Add upstream after forking
 git remote add upstream https://github.com/original-owner/webstore.git
 
 git remote -v
-# origin    https://github.com/your-username/webstore.git (fetch)
-# origin    https://github.com/your-username/webstore.git (push)
+# origin    https://github.com/AkhilTejaDoosari/webstore.git (fetch)
+# origin    https://github.com/AkhilTejaDoosari/webstore.git (push)
 # upstream  https://github.com/original-owner/webstore.git (fetch)
 # upstream  https://github.com/original-owner/webstore.git (push)
 ```
 
-| Remote | Purpose | You push to it? |
+| Remote | Purpose | Push to it? |
 |---|---|---|
 | `origin` | Your fork or your team's repo | Yes |
-| `upstream` | Original repo you forked from | No — read only |
+| `upstream` | The original repo you forked from | No — read only |
 
 ---
 
-## 4. The Feature Branch PR Workflow
+## 4. git fetch vs git pull — the distinction
 
-This is what you do every day on a team. Every new piece of work — feature, fix, config change — gets its own branch. When done, you open a pull request on GitHub for review before it merges to main.
+This is one of the most common interview questions and a real source of mistakes in production.
+
+```
+git fetch   → downloads new commits from remote into local repo
+              does NOT touch your working directory or current branch
+              your files are unchanged — you just have the remote data locally
+
+git pull    → git fetch + git merge in one command
+              downloads AND immediately merges into your current branch
+              your working directory changes
+```
+
+```bash
+# fetch — safe, no changes to your work
+git fetch origin
+# Now you can see what changed without your files moving
+git log --oneline main..origin/main
+# a1b2c3d feat: add payment gateway   ← these are on remote, not in your main yet
+
+# Look before you merge
+git diff main origin/main
+
+# Merge when ready
+git merge origin/main
+
+# pull — does both in one step
+git pull
+# equivalent to: git fetch origin + git merge origin/main
+```
+
+**When to use which:**
+Use `git fetch` when you want to see what changed on the remote before merging — safe on production branches. Use `git pull` in your normal daily workflow when you are confident and just want to be up to date.
+
+---
+
+## 5. The feature branch PR workflow
+
+This is what you do every day on a team. Every piece of work — feature, fix, config change — gets its own branch. When done, you open a pull request for review before it merges to main.
 
 ```bash
 # Step 1 — start from latest main
@@ -108,7 +154,7 @@ git pull
 # Step 2 — create your feature branch
 git switch -c feature/webstore-product-pagination
 
-# Step 3 — do the work, make commits
+# Step 3 — do the work, commit as you go
 vim api/server.js
 git add api/server.js
 git commit -m "feat: add pagination to products endpoint"
@@ -123,41 +169,36 @@ git push origin feature/webstore-product-pagination
 # Step 5 — open a pull request on GitHub
 # github.com → your repo → "Compare & pull request"
 # Base: main  ←  Compare: feature/webstore-product-pagination
-# Write a clear title and description
-# Submit for review
+# Write a clear title and description, submit for review
 
-# Step 6 — after review and approval, merge on GitHub
-# (or merge locally if you have permission)
+# Step 6 — teammate reviews, approves, merges on GitHub
 
 # Step 7 — clean up locally after merge
 git switch main
-git pull                                           # get the merged commit
-git branch -d feature/webstore-product-pagination  # delete the branch
+git pull                                            # get the merged commit
+git branch -d feature/webstore-product-pagination   # delete local branch
 ```
 
-**Why the PR exists:**
-A pull request is a checkpoint. Before code merges to main — the production branch — a teammate reads it, asks questions, catches bugs, and approves. This is how teams catch mistakes before they reach production. Even on a solo project, opening a PR forces you to read your own diff one more time before merging.
+**Why the PR exists:** a pull request is a checkpoint. Before code reaches main — the production branch — a teammate reads it, catches bugs, asks questions, and approves. Even on a solo project, opening a PR forces you to read your own diff one more time before merging.
 
 ---
 
-## 5. Forking — Contributing to a Repo You Do Not Own
+## 6. Forking — contributing to a repo you do not own
 
-A fork is a complete copy of someone else's repository under your GitHub account. You have full write access to your fork. The original repo is unaffected by anything you do.
+A fork is a complete copy of someone else's repository under your GitHub account. You have full write access to your fork. The original repo is unaffected by anything you do in your fork.
 
-Forking is a GitHub feature, not a Git command. You fork on the GitHub website, then clone your fork to work locally.
-
-**The open-source contribution workflow:**
+Fork is a GitHub feature, not a Git command. You fork on the GitHub website, then clone your fork locally.
 
 ```bash
 # Step 1 — fork on GitHub
 # github.com → original repo → Fork button (top right)
-# GitHub creates a copy at: github.com/your-username/webstore
+# GitHub creates: github.com/AkhilTejaDoosari/webstore
 
 # Step 2 — clone your fork
-git clone https://github.com/your-username/webstore.git
+git clone https://github.com/AkhilTejaDoosari/webstore.git
 cd webstore
 
-# Step 3 — add the original repo as upstream
+# Step 3 — add the original as upstream
 git remote add upstream https://github.com/original-owner/webstore.git
 
 # Step 4 — create a feature branch
@@ -169,26 +210,26 @@ git commit -m "fix: increase api timeout from 5s to 30s"
 # Step 6 — push to your fork
 git push origin fix/webstore-api-timeout
 
-# Step 7 — open a PR from your fork to the original repo
+# Step 7 — open a PR from your fork to the original
 # github.com → your fork → Compare & pull request
 # Base repository: original-owner/webstore  base: main
-# Head repository: your-username/webstore  compare: fix/webstore-api-timeout
+# Head repository: AkhilTejaDoosari/webstore  compare: fix/webstore-api-timeout
 ```
 
 ---
 
-## 6. Keeping Your Fork in Sync
+## 7. Keeping your fork in sync
 
-While you work on your fork, the original repo keeps moving forward. Before you submit a PR — and regularly while working — you need to pull in those changes so your fork does not fall behind.
+While you work, the original repo keeps moving forward. Before submitting a PR — and regularly while working — pull in those changes so your fork does not fall behind.
 
 ```bash
-# Fetch all new commits from the original repo
+# Fetch new commits from the original repo (not your fork)
 git fetch upstream
 
-# See what is new
+# See what is new on upstream that you do not have
 git log --oneline main..upstream/main
 
-# Merge upstream changes into your local main
+# Merge upstream into your local main
 git switch main
 git merge upstream/main
 
@@ -200,44 +241,103 @@ git switch fix/webstore-api-timeout
 git rebase main
 ```
 
-If you do not stay in sync, your PR will have merge conflicts and may be rejected until you resolve them.
+If you do not stay in sync, your PR will have merge conflicts and reviewers will ask you to fix them before approving.
 
 ---
 
-## 7. What Makes a Good Pull Request
+## 8. What makes a good pull request
 
-The PR is what your teammates read when reviewing your work. A good PR makes review fast and approval easy. A poor PR makes review painful and delays the merge.
+The PR is what your teammates read when reviewing your work. A good PR makes review fast and approval easy.
 
-**A good PR:**
-- Has a clear title that matches the commit convention: `feat: add pagination to products endpoint`
-- Explains what changed and why — not just "updated server.js"
-- Is focused on one logical change — one feature, one fix, not five things at once
+**Good PR:**
+- Title matches commit convention: `feat: add pagination to products endpoint`
+- Description explains what changed and why — not just "updated server.js"
+- Focused on one logical change — one feature, one fix, not five things
 - Links to the related issue if one exists
-- Is small enough to review in one sitting — the bigger the PR, the less thorough the review
+- Small enough to review in one sitting
 
-**A poor PR:**
+**Poor PR:**
 - Title: "changes" or "WIP" or "stuff"
-- Touches ten different files with no common theme
-- Has no description
-- Is so large that reviewers skim it
+- Touches ten files with no common theme
+- No description
+- So large that reviewers skim it
 
-The single biggest lever for getting PRs approved quickly: keep them small. One logical change per PR. If a feature is large, break it into multiple PRs that each stand on their own.
+The single biggest lever for fast approvals: keep PRs small. One logical change per PR. If a feature is large, break it into multiple PRs that each stand on their own.
 
 ---
 
-## 8. Quick Reference
+## On the webstore
+
+A second developer — charan — joins the team and needs to add a product search endpoint. They clone the repo, build in a branch, and open a PR.
+
+```bash
+# Charan clones the webstore
+git clone https://github.com/AkhilTejaDoosari/webstore.git
+cd webstore
+
+# Confirm the full history came down
+git log --oneline
+# a1b2c3d feat: add database failover config
+# c8d21fa logs: add initial server startup entry
+# ...
+
+# Create a feature branch
+git switch -c feature/product-search
+
+# Build the feature
+vim api/server.js
+git add api/server.js
+git commit -m "feat: add product search endpoint with query param"
+
+# Before pushing, fetch to check if main moved
+git fetch origin
+git log --oneline main..origin/main
+# (empty — main has not moved, safe to push)
+
+# Push the feature branch
+git push origin feature/product-search
+
+# Open PR on GitHub
+# Base: main  ←  Compare: feature/product-search
+
+# After PR is merged, clean up
+git switch main
+git pull
+git branch -d feature/product-search
+```
+
+File 05 picks up from here — what happens when a commit needs to be undone after it has already been pushed.
+
+---
+
+## What breaks
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `git push` rejected — "no upstream branch" | Feature branch not yet on remote | `git push origin <branch-name>` to push it for the first time |
+| PR shows merge conflicts | Your branch is behind main — both changed same files | `git fetch origin`, `git rebase origin/main` on your branch, fix conflicts, push |
+| `git pull` has unexpected merges | Used pull when you should have fetched first | Use `git fetch` + inspect + `git merge` separately in sensitive situations |
+| Fork is behind original by many commits | Did not sync upstream regularly | `git fetch upstream`, `git merge upstream/main`, `git push origin main` |
+| Branch deleted on GitHub after merge, still local | Normal — GitHub deletes remote branch after merge | `git branch -d <branch>` locally to match |
+| `git remote add upstream` fails "remote already exists" | Already added it before | `git remote -v` to confirm it is correct, no action needed |
+
+---
+
+## Daily commands
 
 | Command | What it does |
 |---|---|
 | `git clone <url>` | Download full repository to local machine |
-| `git remote -v` | List all remotes |
-| `git remote add upstream <url>` | Add the original repo as upstream |
-| `git fetch upstream` | Fetch new commits from upstream without merging |
-| `git merge upstream/main` | Merge upstream changes into current branch |
-| `git push origin <branch>` | Push a branch to your remote |
-| `git switch -c feature/<n>` | Create and switch to feature branch |
+| `git remote -v` | List all remotes with their URLs |
+| `git remote add upstream <url>` | Add the original repo as upstream remote |
+| `git fetch origin` | Download remote changes without merging |
+| `git diff main origin/main` | See what is on remote that is not in local main |
+| `git push origin <branch>` | Push a branch to remote |
 | `git pull` | Fetch and merge from current tracking remote |
+| `git fetch upstream` | Fetch new commits from the original repo |
+| `git merge upstream/main` | Merge upstream changes into current branch |
+| `git branch -d <branch>` | Delete a local branch after it is merged |
 
 ---
 
-→ Ready to practice? [Go to Lab 04](../git-labs/04-contribute-lab.md)
+→ **Interview questions for this topic:** [99-interview-prep → Contribute](../99-interview-prep/README.md#contribute)

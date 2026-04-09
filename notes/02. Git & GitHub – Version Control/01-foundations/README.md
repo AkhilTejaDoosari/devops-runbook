@@ -3,147 +3,147 @@
 [Stash & Tags](../02-stash-tags/README.md) |
 [History & Branching](../03-history-branching/README.md) |
 [Contribute](../04-contribute/README.md) |
-[Undo & Recovery](../05-undo-recovery/README.md)
+[Undo & Recovery](../05-undo-recovery/README.md) |
+[Interview](../99-interview-prep/README.md)
+
+---
 
 # Git Foundations
 
-Before Git, the way people saved progress on a project was to zip the folder. `webstore_final.zip` became `webstore_final_v2.zip` became `webstore_final_REAL_final.zip`. Nobody knew which was current. Nobody knew what changed between them. If something broke, there was no reliable way back.
-
-Git solves this by recording every change as a permanent snapshot with a timestamp, a message, and the identity of who made it. You can jump to any point in that history instantly. You can work on a new feature without touching the working version. You can collaborate with other engineers without overwriting each other's work.
-
-In DevOps, Git is the source of truth. GitHub Actions reads from it to know when to build. Terraform reads from it to know what infrastructure to provision. ArgoCD reads from it to know what to deploy. Everything downstream depends on what is in the repo.
+> **Depends on:** [01 Linux](../../01.%20Linux%20–%20System%20Fundamentals/README.md) — you need terminal confidence and the webstore directory before initializing a repo
+> **Used in production when:** Starting any new project, making daily commits, pushing code to GitHub, or onboarding to a repo for the first time
 
 ---
 
 ## Table of Contents
 
-- [1. How Git Tracks History](#1-how-git-tracks-history)
-- [2. Installing and Configuring Git](#2-installing-and-configuring-git)
-- [3. Creating a Repository — The Project's Birth](#3-creating-a-repository--the-projects-birth)
-- [4. The Three States — Working, Staged, Committed](#4-the-three-states--working-staged-committed)
-- [5. Your First Commits — Building the Webstore History](#5-your-first-commits--building-the-webstore-history)
-- [6. .gitignore — What Git Should Never See](#6-gitignore--what-git-should-never-see)
-- [7. Connecting to GitHub — The Remote](#7-connecting-to-github--the-remote)
-- [8. Commit Message Convention](#8-commit-message-convention)
-- [9. Quick Reference](#9-quick-reference)
+- [What this is](#what-this-is)
+- [How Git works — the architecture](#how-git-works--the-architecture)
+- [1. How Git tracks history](#1-how-git-tracks-history)
+- [2. Installing and configuring Git](#2-installing-and-configuring-git)
+- [3. Creating a repository](#3-creating-a-repository)
+- [4. The three states — working, staged, committed](#4-the-three-states--working-staged-committed)
+- [5. Your first commits](#5-your-first-commits)
+- [6. .gitignore — what Git should never see](#6-gitignore--what-git-should-never-see)
+- [7. Connecting to GitHub — the remote](#7-connecting-to-github--the-remote)
+- [8. Commit message convention](#8-commit-message-convention)
+- [On the webstore](#on-the-webstore)
+- [What breaks](#what-breaks)
+- [Daily commands](#daily-commands)
 
 ---
 
-## 1. How Git Tracks History
+## What this is
 
-Git stores history as a chain of **commits**. Each commit is a snapshot of your entire project at a point in time — not a diff, not a patch, a complete snapshot. Every commit has:
+Before Git, saving progress meant zipping folders. `webstore_final.zip` → `webstore_final_v2.zip` → `webstore_final_REAL_final.zip`. Nobody knew which was current. If something broke, there was no reliable way back. Git solves this by recording every change as a permanent snapshot with a timestamp, a message, and the identity of who made it. In DevOps, Git is the source of truth. GitHub Actions reads from it to know when to build. Terraform reads from it to know what to provision. ArgoCD reads from it to know what to deploy. Everything downstream depends on what is in the repo.
 
-- A unique **SHA hash** — a 40-character fingerprint like `a3f92c1b...` that identifies it permanently
+---
+
+## How Git works — the architecture
+
+```
+  Working dir   →   Staging area   →   Local repo   →   Remote (GitHub)
+     edit            git add            git commit        git push
+
+  ◄── git restore --staged    ◄── git reset       ◄────── git fetch / pull
+```
+
+Three zones on your machine. One zone on GitHub. Every Git command moves data between zones. Know where data is — every command makes sense. Full diagram in the [Git README](../README.md).
+
+---
+
+## 1. How Git tracks history
+
+Git stores history as a chain of commits. Each commit is a complete snapshot — not a diff, a full snapshot of the project at that point in time. Every commit has:
+
+- A **SHA hash** — a unique 40-character fingerprint like `a3f92c1b` that identifies it permanently
 - A **message** — what changed and why
-- The **author** — who made the change and when
-- A pointer to its **parent commit** — the previous snapshot
-
-The chain looks like this:
+- The **author** — who made it and when
+- A pointer to its **parent** — the previous snapshot
 
 ```
-A ← B ← C ← D   (main branch)
+a3f92c1 ◄── b71e3a2 ◄── c8d21fa   ←  main  ←  HEAD
 ```
 
-Each letter is a commit. Each one points back to its parent. `D` is the most recent. `A` is the first. Every commit between them is preserved permanently.
-
-**HEAD** is a pointer that tells Git where you currently are — which commit you are looking at right now. When you make a new commit, HEAD moves forward automatically.
+**HEAD** is a pointer to where you currently are. When you make a new commit, HEAD moves forward automatically.
 
 ---
 
-## 2. Installing and Configuring Git
-
-**Install:**
+## 2. Installing and configuring Git
 
 ```bash
-# Ubuntu/Debian
+# Install — Ubuntu/Debian
 sudo apt install git -y
-
-# macOS
-brew install git
 
 # Verify
 git --version
+# git version 2.43.0
 ```
 
-**Configure your identity — required before your first commit:**
+**Configure identity — required before your first commit:**
 
 ```bash
+# --global applies to every repo on this machine
 git config --global user.name "Akhil Teja Doosari"
 git config --global user.email "doosariakhilteja@gmail.com"
-```
-
-Every commit you make carries this identity. On GitHub it links your commits to your account. On a team, it shows your teammates who made each change.
-
-**Set your default editor:**
-
-```bash
 git config --global core.editor "vim"
-```
 
-**Check all settings:**
-
-```bash
+# Verify everything is set
 git config --list
+# user.name=Akhil Teja Doosari
+# user.email=doosariakhilteja@gmail.com
+# core.editor=vim
 ```
 
-**Config levels — where settings live:**
+Every commit carries this identity. On GitHub it links your commits to your account.
+
+**Config levels — which file wins:**
 
 | Level | Flag | File | Affects |
 |---|---|---|---|
 | System | `--system` | `/etc/gitconfig` | Every user on this machine |
 | Global | `--global` | `~/.gitconfig` | Your user account |
-| Local | `--local` | `.git/config` | This repo only |
-
-Local overrides global overrides system. Use local config when you work with a company email on one project and a personal email on others:
+| Local | `--local` | `.git/config` | This repo only — overrides global |
 
 ```bash
-# Inside the work repo
+# Different email for a work repo — override global inside that repo
 git config --local user.email "akhil@company.com"
 ```
 
 ---
 
-## 3. Creating a Repository — The Project's Birth
+## 3. Creating a repository
 
-When you run `git init` in a directory, Git creates a hidden `.git/` folder inside it. That folder is the entire repository — every commit, every branch, every tag. The `.git/` folder is what makes a directory a Git repo.
+`git init` creates a `.git/` folder inside the directory. That folder IS the entire repository — every commit, every branch, every tag. Nothing is tracked yet — Git is watching but has not been asked to remember anything.
 
 ```bash
-# Turn the webstore directory into a Git repo
 cd ~/webstore
 git init
-```
+# Initialized empty Git repository in /home/akhil/webstore/.git/
 
-```
-Initialized empty Git repository in /home/akhil/webstore/.git/
-```
-
-```bash
 # Confirm .git exists
 ls -la
 # .git  frontend/  api/  db/  logs/  config/  backup/
 ```
 
-The webstore project now has version control. Nothing is tracked yet — Git is watching but has not been told what to remember.
-
 ---
 
-## 4. The Three States — Working, Staged, Committed
+## 4. The three states — working, staged, committed
 
-Every file in a Git repository is in one of three states. Understanding this is the mental model that makes every Git command make sense.
+Every file is always in one of three states:
 
 ```
 Working Directory → Staging Area → Repository
       edit             git add        git commit
 ```
 
-**Working Directory** — where you edit files. Git sees the changes but has not been asked to do anything with them yet. Running `git status` shows what has changed.
+**Working Directory** — where you edit files. Git sees changes but has not been asked to do anything with them.
 
-**Staging Area** — a holding area where you explicitly choose what goes into the next commit. Think of it as preparing a package before sealing it. You decide exactly what is in this snapshot.
+**Staging Area** — you explicitly choose what goes into the next commit. Think of it as preparing a package before sealing it.
 
-**Repository** — committed history. Permanent. Immutable. Every commit here is preserved indefinitely.
+**Repository** — committed history. Permanent. Immutable.
 
-**Why the staging area exists:**
-You edited five files but only three are ready to commit. The staging area lets you commit those three as one logical change while leaving the other two in progress. Without it, every `git commit` would include everything you touched.
+**Why the staging area exists:** You edited five files but only three are ready to commit. Stage those three as one logical change, leave the other two in progress. Without staging, every commit would include everything you touched.
 
 ```bash
 # See where everything stands
@@ -155,29 +155,27 @@ git add config/webstore.conf
 # Stage everything
 git add .
 
-# Unstage a file you added by mistake
+# Unstage a file added by mistake
+# --staged = move it back from staging to working dir
 git restore --staged config/webstore.conf
 
 # See what is staged vs what is not
-git diff --staged   # shows staged changes
-git diff            # shows unstaged changes
+git diff           # working dir vs staging area
+git diff --staged  # staging area vs last commit
 ```
 
 ---
 
-## 5. Your First Commits — Building the Webstore History
-
-This is the moment the webstore project becomes trackable. Every future deploy, every incident, every feature will be traceable back to this history.
-
-**The first commit:**
+## 5. Your first commits
 
 ```bash
 cd ~/webstore
 
 # Check what Git sees
 git status
+# Untracked files: frontend/ api/ db/ logs/ config/ backup/
 
-# Stage everything — the whole initial project
+# Stage the whole project
 git add .
 
 # Confirm what is staged
@@ -188,53 +186,50 @@ git status
 #   new file: config/webstore.conf
 #   ...
 
-# Create the first commit
+# First commit — type: short description
 git commit -m "feat: initialize webstore project structure
 
 - add frontend, api, db, logs, config, backup directories
-- add webstore.conf with db and api connection settings
-- add placeholder files for each service layer"
-```
+- add webstore.conf with db and api connection settings"
 
-**View the commit:**
-
-```bash
+# View it
 git log --oneline
 # a3f92c1 feat: initialize webstore project structure
 ```
 
-**Build more history — each commit tells the story of what the webstore became:**
+**Build more history:**
 
 ```bash
-# Second commit — first real config
+# Second commit
 echo "nginx_worker_processes=4" >> config/webstore.conf
 git add config/webstore.conf
 git commit -m "config: add nginx worker process setting"
 
-# Third commit — add the first log entry
+# Third commit
 echo "2025-04-05 09:00 server started" >> logs/access.log
 git add logs/access.log
 git commit -m "logs: add initial server startup entry"
 
-# View the growing history
 git log --oneline
 # c8d21fa logs: add initial server startup entry
 # b71e3a2 config: add nginx worker process setting
 # a3f92c1 feat: initialize webstore project structure
 ```
 
-Each commit is a chapter. The message explains what changed. The hash identifies it permanently. Anyone who clones this repo can read this history and understand how the project evolved.
+Each commit is a chapter. Anyone cloning this repo can run `git log --oneline` and understand how the project evolved.
 
 ---
 
-## 6. .gitignore — What Git Should Never See
+## 6. .gitignore — what Git should never see
 
-`.gitignore` tells Git which files to completely ignore — never track, never show in `git status`, never accidentally commit. This is one of the most important files in any repo.
+`.gitignore` tells Git which files to completely ignore — never track, never show in `git status`, never accidentally commit. Create it before your first `git add .` — if you commit a secret, it is in the history permanently even if you delete the file later.
 
-**What belongs in `.gitignore`:**
+```bash
+vim ~/webstore/.gitignore
+```
 
 ```
-# Environment files — database passwords, API keys, secrets
+# Secrets — never commit these
 .env
 .env.local
 .env.production
@@ -248,77 +243,64 @@ build/
 # Dependencies — installed, not committed
 node_modules/
 
-# OS noise
-.DS_Store
-Thumbs.db
-
 # Logs — runtime data, not source
 *.log
 
-# Terraform — contains sensitive infrastructure state
+# Terraform state — contains sensitive infrastructure data
 *.tfstate
 *.tfstate.backup
 .terraform/
+
+# OS noise
+.DS_Store
+Thumbs.db
 
 # IDE files
 .vscode/
 .idea/
 ```
 
-**Create it at the root of the repo:**
-
 ```bash
-vim ~/webstore/.gitignore
-# add the entries above
 git add .gitignore
 git commit -m "chore: add .gitignore"
 ```
 
-**The most important rule:** create `.gitignore` before your first `git add .`. If you accidentally commit a secret, it is in the history permanently — even if you delete the file later. The history is immutable.
-
 **If you accidentally tracked a file that should be ignored:**
 
 ```bash
-# Remove from tracking without deleting from disk
+# --cached = remove from Git tracking only, keep the file on disk
 git rm --cached .env
 echo ".env" >> .gitignore
 git commit -m "fix: remove .env from tracking, add to gitignore"
-```
 
-**Check why a file is being ignored:**
-
-```bash
+# Check why a file is being ignored
 git check-ignore -v .env
 # .gitignore:1:.env  .env
 ```
 
 ---
 
-## 7. Connecting to GitHub — The Remote
+## 7. Connecting to GitHub — the remote
 
-A remote is a Git repository hosted somewhere else — GitHub in this case. When you push, Git sends your commits to the remote. When you pull, Git fetches commits from the remote into your local repo.
-
-**Create the repo on GitHub first** (github.com → New repository → webstore), then connect it:
+A remote is a Git repository hosted somewhere else. When you push, Git sends your commits there. When you pull, Git fetches commits from there.
 
 ```bash
-# Add the remote — named "origin" by convention
+# Create the repo on GitHub first — then connect it
 git remote add origin https://github.com/AkhilTejaDoosari/webstore.git
 
-# Verify the connection
+# Verify
 git remote -v
 # origin  https://github.com/AkhilTejaDoosari/webstore.git (fetch)
 # origin  https://github.com/AkhilTejaDoosari/webstore.git (push)
 
-# Push the local history to GitHub for the first time
+# First push — -u sets origin/main as default upstream
+# After this, git push and git pull work with no arguments
 git push -u origin main
 ```
-
-The `-u` flag sets origin/main as the default upstream — after this, `git push` and `git pull` with no arguments work from the right place.
 
 **The daily workflow after the first push:**
 
 ```bash
-# Edit files
 git status               # see what changed
 git add .                # stage changes
 git commit -m "message"  # commit
@@ -327,19 +309,15 @@ git push                 # push to GitHub
 
 ---
 
-## 8. Commit Message Convention
+## 8. Commit message convention
 
-Every commit you make is a permanent record. Write messages that a teammate — or you in six months — can read and immediately understand what changed and why.
-
-**The format:**
+Every commit is a permanent record. Write messages a teammate — or you in six months — can read and immediately understand.
 
 ```
 type: short description (under 72 characters)
 
-Optional longer explanation if needed.
+Optional longer explanation if the change needs context.
 ```
-
-**Common types:**
 
 | Type | When to use |
 |---|---|
@@ -349,11 +327,8 @@ Optional longer explanation if needed.
 | `docs` | Documentation only |
 | `chore` | Maintenance — dependencies, gitignore, tooling |
 | `refactor` | Code restructure with no behavior change |
-| `test` | Adding or fixing tests |
 
-**Good vs bad examples:**
-
-```
+```bash
 # Bad — tells you nothing
 git commit -m "update"
 git commit -m "fix stuff"
@@ -365,31 +340,75 @@ git commit -m "fix: correct db_port in webstore.conf — was 27017, should be 54
 git commit -m "config: add nginx worker process setting for production load"
 ```
 
-**The webstore history should read like documentation.** Anyone cloning the repo for the first time should be able to run `git log --oneline` and understand how the project evolved without opening a single file.
+The webstore history should read like documentation. Anyone cloning the repo should understand how it evolved from `git log --oneline` alone.
 
 ---
 
-## 9. Quick Reference
+## On the webstore
+
+The webstore directory from Linux exists on disk. No version control yet. This is where it gets one.
+
+```bash
+# Step 1 — initialize the repo
+cd ~/webstore
+git init
+# Initialized empty Git repository in /home/akhil/webstore/.git/
+
+# Step 2 — create .gitignore before staging anything
+vim .gitignore
+# add .env, *.log, node_modules/, dist/, .terraform/
+
+# Step 3 — stage and commit the initial structure
+git add .
+git status
+# new file: frontend/index.html, api/server.js, config/webstore.conf ...
+git commit -m "feat: initialize webstore project structure"
+
+# Step 4 — connect to GitHub
+git remote add origin https://github.com/AkhilTejaDoosari/webstore.git
+git push -u origin main
+
+# Step 5 — verify it is on GitHub
+git remote -v
+# origin  https://github.com/AkhilTejaDoosari/webstore.git (fetch)
+# origin  https://github.com/AkhilTejaDoosari/webstore.git (push)
+
+git log --oneline
+# a3f92c1 feat: initialize webstore project structure
+```
+
+The webstore now has version control. Every change from here is tracked. File 02 picks up from here — stashing work in progress and tagging the first release.
+
+---
+
+## What breaks
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `git commit` fails with "no identity" | user.name and user.email not configured | `git config --global user.name "Name"` and email |
+| Committed a secret (.env, password) | Staged it before adding to .gitignore | `git rm --cached .env` + add to .gitignore + new commit. If pushed — rotate the secret immediately |
+| `git push` rejected — "non-fast-forward" | Someone else pushed to the same branch | `git pull` first to get their changes, resolve conflicts if any, then push |
+| File shows in `git status` after adding to .gitignore | File was already tracked before .gitignore was added | `git rm --cached <file>` to stop tracking it |
+| Committed to wrong branch | Forgot to create a feature branch | `git reset --soft HEAD~1` moves the commit back to staging — then switch to correct branch and recommit |
+| `fatal: not a git repository` | Ran git command outside a repo | `cd` to the repo root where `.git/` lives |
+
+---
+
+## Daily commands
 
 | Command | What it does |
 |---|---|
-| `git init` | Initialize a repo in the current directory |
-| `git config --global user.name "Name"` | Set global identity |
+| `git init` | Initialize a new repository in current directory |
+| `git config --global user.name "Name"` | Set global identity — name and email required before first commit |
 | `git status` | Show working directory and staging area state |
-| `git add <file>` | Stage a specific file |
-| `git add .` | Stage all changes |
-| `git restore --staged <file>` | Unstage a file |
-| `git commit -m "message"` | Commit staged changes |
-| `git log --oneline` | View compact commit history |
-| `git diff` | Show unstaged changes |
-| `git diff --staged` | Show staged changes |
-| `git rm --cached <file>` | Remove from tracking without deleting |
-| `git remote add origin <url>` | Connect to a GitHub remote |
-| `git push -u origin main` | Push and set upstream (first push) |
-| `git push` | Push commits to remote |
-| `git pull` | Fetch and merge remote changes |
-| `git check-ignore -v <file>` | Show which gitignore rule matched |
+| `git add .` | Stage all changes in current directory |
+| `git add <file>` | Stage a specific file only |
+| `git restore --staged <file>` | Unstage a file — moves it back to working directory |
+| `git commit -m "type: message"` | Commit staged changes with a message |
+| `git log --oneline` | Compact one-line view of commit history |
+| `git remote add origin <url>` | Connect local repo to GitHub remote |
+| `git push -u origin main` | Push to GitHub and set default upstream |
 
 ---
 
-→ Ready to practice? [Go to Lab 01](../git-labs/01-foundations-lab.md)
+→ **Interview questions for this topic:** [99-interview-prep → Git Foundations](../99-interview-prep/README.md#git-foundations)

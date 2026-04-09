@@ -5,221 +5,236 @@
 [Filters](../04-filter-commands/README.md) |
 [sed](../05-sed-stream-editor/README.md) |
 [awk](../06-awk/README.md) |
-[Editors](../07-text-editor/README.md) |
-[Users](../08-user-&-group-management/README.md) |
-[Permissions](../09-file-ownership-&-permissions/README.md) |
+[vim](../07-text-editor/README.md) |
+[Users](../08-user-and-group-management/README.md) |
+[Permissions](../09-file-ownership-and-permissions/README.md) |
 [Archive](../10-archiving-and-compression/README.md) |
 [Packages](../11-package-management/README.md) |
 [Services](../12-service-management/README.md) |
-[Networking](../13-networking/README.md)
+[Networking](../13-networking/README.md) |
+[Logs](../14-logs-and-debug/README.md) |
+[Interview](../99-interview-prep/README.md)
+
+---
 
 # Package Management
 
-On a Linux server you never download software from a website and run an installer. You use the package manager — a tool that fetches verified software from trusted repositories, resolves all dependencies automatically, and tracks everything it installed so it can be cleanly removed later.
-
-This is how nginx gets on the webstore server. One command. No manual download. No guessing which libraries it needs. The package manager handles all of it.
+> **Layer:** L5 — Tools & Files
+> **Depends on:** [02 Basics](../02-basics/README.md) — you need basic navigation before installing software
+> **Used in production when:** Installing nginx, updating the server, removing a package cleanly, or auditing what is installed on an unfamiliar server
 
 ---
 
 ## Table of Contents
 
-- [1. What a Package Manager Does](#1-what-a-package-manager-does)
+- [What this is](#what-this-is)
+- [How it fits the stack](#how-it-fits-the-stack)
+- [1. What a package manager does](#1-what-a-package-manager-does)
 - [2. APT — Debian and Ubuntu](#2-apt--debian-and-ubuntu)
 - [3. YUM and DNF — RHEL CentOS Fedora](#3-yum-and-dnf--rhel-centos-fedora)
-- [4. Comparing Package Managers](#4-comparing-package-managers)
-- [5. The Webstore Install Workflow](#5-the-webstore-install-workflow)
-- [6. Quick Reference](#6-quick-reference)
+- [4. Comparing package managers](#4-comparing-package-managers)
+- [On the webstore](#on-the-webstore)
+- [What breaks](#what-breaks)
+- [Daily commands](#daily-commands)
 
 ---
 
-## 1. What a Package Manager Does
+## What this is
+
+On a Linux server you never download software from a website and run an installer. You use the package manager — a tool that fetches verified software from trusted repositories, resolves all dependencies automatically, and tracks everything it installed so it can be cleanly removed later. This is how nginx gets on the webstore server. One command. No manual download. No guessing which libraries it needs. The package manager handles all of it.
+
+---
+
+## How it fits the stack
+
+```
+  L6  You
+  L5  Tools & Files  ← this file lives here
+       apt yum dnf — install and manage all software on the system
+  L4  Config  ← /etc/apt/sources.list — where apt looks for packages
+  L3  State & Debug  ← /var/cache/apt/ /var/lib/dpkg/ — package state lives here
+  L2  Networking
+  L1  Process Manager  ← systemd unit files created by packages land at L1
+  L0  Kernel & Hardware
+```
+
+When you run `apt install nginx`, it downloads the package, installs the binary to `/usr/bin/`, puts the config in `/etc/nginx/`, and registers `nginx.service` with systemd at L1. One command touches four layers.
+
+---
+
+## 1. What a package manager does
 
 A **package** is a bundle containing everything a piece of software needs — the binary, its libraries, default config files, and documentation. The package manager handles four things you would otherwise do manually:
 
 - **Installation** — downloads the package and puts every file in the right place
 - **Dependency resolution** — figures out what other packages this one needs and installs those too
 - **Verification** — checks GPG signatures to confirm the package has not been tampered with
-- **Removal** — tracks every file that was installed so it can cleanly remove them later
+- **Removal** — tracks every file installed so it can cleanly remove them later
 
-Without a package manager you would download a tarball, manually install it, manually install its 12 dependencies, then discover you installed the wrong version of one of them. Package managers exist because that process does not scale.
+**Two ecosystems on Linux:**
 
-**Two package ecosystems on Linux:**
-
-| Ecosystem | Package format | Package manager | Used on |
+| Ecosystem | Format | Manager | Used on |
 |---|---|---|---|
 | Debian | `.deb` | `apt` | Ubuntu, Debian — what this runbook uses |
 | Red Hat | `.rpm` | `yum` / `dnf` | RHEL, CentOS, Fedora, Amazon Linux |
 
-Ubuntu is what AWS EC2 defaults to and what this runbook uses throughout. You will see both ecosystems in real jobs — know both at the command level.
+Ubuntu is the AWS EC2 default and what this runbook uses throughout. You will see both in real jobs.
 
 ---
 
 ## 2. APT — Debian and Ubuntu
 
-APT (Advanced Package Tool) is the package manager on Ubuntu. Its package lists live in `/etc/apt/sources.list` and `/etc/apt/sources.list.d/`. Before installing anything, you update the local index — this tells apt what versions are currently available in the repositories. The index is not updated automatically.
+APT (Advanced Package Tool) manages packages on Ubuntu. Package lists live in `/etc/apt/sources.list` and `/etc/apt/sources.list.d/`. The index must be updated manually before installing.
 
-**The standard install sequence — always in this order:**
+**The install sequence — always in this order:**
 
 ```bash
 # Step 1 — refresh the package index
-# This does NOT install anything — it just updates what apt knows is available
+# Does NOT install anything — just updates what apt knows is available
 sudo apt update
 
-# Step 2 — install the package
+# Step 2 — install
 sudo apt install nginx
-
-# What happens:
-# apt resolves all nginx dependencies
-# downloads nginx and every dependency
-# installs them in the correct order
-# creates the www-data user if it doesn't exist
-# puts the default config in /etc/nginx/
-# registers nginx as a systemd service
+# apt resolves dependencies, downloads, installs in correct order
+# creates www-data user, puts config in /etc/nginx/, registers systemd service
 ```
 
-Never skip `apt update` before installing. Without it you might install a stale version, or apt might fail to find a dependency that was recently renamed.
+Never skip `apt update` before installing. Without it you may install a stale version, or apt may fail to find a dependency that was recently renamed.
 
 **Full APT command set:**
 
 | Command | What it does | When you reach for it |
 |---|---|---|
 | `sudo apt update` | Refresh package index — fetch latest available versions | Before every install or upgrade |
-| `sudo apt install <pkg>` | Download and install a package and its dependencies | Installing nginx, curl, vim, git |
-| `sudo apt install <pkg>=<version>` | Install a specific version | Pinning nginx to a version that matches production |
-| `sudo apt upgrade -y` | Upgrade all installed packages to latest versions | Routine server maintenance |
-| `sudo apt remove <pkg>` | Remove a package but keep its config files | Removing nginx while keeping `/etc/nginx/` for reinstall |
-| `sudo apt purge <pkg>` | Remove a package and all its config files | Clean uninstall — nothing left behind |
-| `sudo apt autoremove` | Remove packages that were installed as dependencies but are no longer needed | After removing a package that pulled in many deps |
-| `sudo apt clean` | Delete downloaded `.deb` files from the local cache | Freeing disk space on a server with limited storage |
+| `sudo apt install <pkg>` | Install a package and its dependencies | Installing nginx, curl, vim, git |
+| `sudo apt install <pkg>=<version>` | Install a specific version | Pinning nginx to match production |
+| `sudo apt upgrade -y` | Upgrade all installed packages | Routine server maintenance |
+| `sudo apt remove <pkg>` | Remove package, keep config files | Removing nginx while keeping `/etc/nginx/` for reinstall |
+| `sudo apt purge <pkg>` | Remove package AND all config files | Complete clean uninstall |
+| `sudo apt autoremove` | Remove unused dependency packages | After removing a package that pulled in many deps |
+| `sudo apt clean` | Delete downloaded `.deb` files from cache | Freeing disk space |
 | `apt list --installed` | List all installed packages | Auditing what is on a server |
-| `apt show <pkg>` | Show package details — version, size, dependencies | Checking what version is available before installing |
-| `apt search <keyword>` | Search available packages by keyword | Finding the right package name when you are not sure |
+| `apt show <pkg>` | Show details — version, size, dependencies | Before installing, check what you are getting |
+| `apt search <keyword>` | Search available packages | Finding the right package name |
 
-**remove vs purge — when it matters:**
-`apt remove nginx` removes the binary but leaves `/etc/nginx/` intact. If you reinstall nginx later, your config is still there. `apt purge nginx` removes everything including configs. Use `remove` when you plan to reinstall. Use `purge` for a complete clean uninstall.
+**`remove` vs `purge` — when it matters:**
+`apt remove nginx` removes the binary but leaves `/etc/nginx/` intact — if you reinstall later your config is still there.
+`apt purge nginx` removes everything including configs — nothing left behind.
+Use `remove` when you plan to reinstall. Use `purge` for a complete clean uninstall.
 
 ---
 
 ## 3. YUM and DNF — RHEL CentOS Fedora
 
-YUM is the package manager on older Red Hat systems (RHEL 7, CentOS 7). DNF replaced it on RHEL 8+, Fedora, and Amazon Linux 2023. The commands are nearly identical — DNF is faster and has better dependency resolution.
+YUM is the package manager on older Red Hat systems (RHEL 7, CentOS 7). DNF replaced it on RHEL 8+, Fedora, and Amazon Linux 2023.
 
 **YUM (CentOS / RHEL 7):**
 
 ```bash
-sudo yum install nginx        # install
-sudo yum update -y            # upgrade all packages
-sudo yum remove nginx         # remove
-sudo yum clean all            # clear all cached data
-sudo yum list installed       # list installed packages
+sudo yum install nginx       # install
+sudo yum update -y           # upgrade all packages
+sudo yum remove nginx        # remove
+sudo yum clean all           # clear cached data
+sudo yum list installed      # list installed packages
 ```
 
 **DNF (Fedora / RHEL 8+ / Amazon Linux 2023):**
 
 ```bash
-sudo dnf install nginx        # install
-sudo dnf upgrade -y           # upgrade all packages
-sudo dnf remove nginx         # remove
-sudo dnf clean all            # clear all cached data
-sudo dnf list installed       # list installed packages
+sudo dnf install nginx       # install
+sudo dnf upgrade -y          # upgrade all packages
+sudo dnf remove nginx        # remove
+sudo dnf clean all           # clear cached data
+sudo dnf list installed      # list installed packages
 ```
 
-The key difference from APT: YUM and DNF do not separate `update` (refresh index) from `upgrade` (install updates). `yum update` and `dnf upgrade` do both in one step.
+Key difference from APT: YUM and DNF do not separate `update` (refresh index) from `upgrade` (install updates). `yum update` and `dnf upgrade` do both in one step.
 
 ---
 
-## 4. Comparing Package Managers
+## 4. Comparing package managers
 
 | | APT | YUM | DNF |
 |---|---|---|---|
 | Used on | Ubuntu, Debian | CentOS, RHEL 7 | Fedora, RHEL 8+, Amazon Linux |
-| Package format | `.deb` | `.rpm` | `.rpm` |
-| Refresh index | `apt update` | Automatic with install | Automatic with install |
-| Install | `apt install <pkg>` | `yum install <pkg>` | `dnf install <pkg>` |
+| Format | `.deb` | `.rpm` | `.rpm` |
+| Refresh index | `apt update` (manual) | Automatic | Automatic |
+| Install | `apt install` | `yum install` | `dnf install` |
 | Upgrade all | `apt upgrade` | `yum update` | `dnf upgrade` |
-| Remove | `apt remove <pkg>` | `yum remove <pkg>` | `dnf remove <pkg>` |
-| Remove + configs | `apt purge <pkg>` | No direct equivalent | No direct equivalent |
+| Remove | `apt remove` | `yum remove` | `dnf remove` |
+| Remove + configs | `apt purge` | No equivalent | No equivalent |
 | Clean cache | `apt clean` | `yum clean all` | `dnf clean all` |
 | List installed | `apt list --installed` | `yum list installed` | `dnf list installed` |
 | Repo config | `/etc/apt/sources.list` | `/etc/yum.repos.d/` | `/etc/yum.repos.d/` |
 
 ---
 
-## 5. The Webstore Install Workflow
+## On the webstore
 
-This is the sequence you run on a fresh Ubuntu server to get the webstore stack installed and ready.
+Installing the full webstore stack on a fresh Ubuntu server.
 
 ```bash
-# Start with a clean, updated index
+# Step 1 — update index first, always
 sudo apt update
 
-# Install nginx to serve the webstore frontend
+# Step 2 — install nginx to serve the webstore frontend
 sudo apt install -y nginx
+# -y (--yes) answers confirmation prompt automatically
+# use -y in scripts; skip it interactively to review dependencies first
 
-# Confirm nginx installed and check its version
+# Step 3 — confirm nginx installed and check version
 nginx -v
 # nginx version: nginx/1.24.0
 
-# Install useful tools for working with the webstore
+# Step 4 — install tools needed for the webstore
 sudo apt install -y curl vim git
 
-# Install the postgresql client to connect to webstore-db
+# Step 5 — install PostgreSQL client to connect to webstore-db
 sudo apt install -y postgresql-client
 
-# Verify what got installed
+# Step 6 — verify what got installed
 apt list --installed | grep -E 'nginx|curl|vim|git|postgresql'
 
-# Check disk space after installs
+# Step 7 — check disk space — installs can be large
 df -h
+# Filesystem      Size  Used Avail Use%
+# /dev/sda1        20G  5.1G   14G  27%
 
-# Clean up downloaded package files — good habit after large installs
+# Step 8 — clean up downloaded .deb files
 sudo apt clean
 sudo apt autoremove
 ```
 
-**Why `-y` on some installs:**
-`-y` answers "yes" automatically to the confirmation prompt. Use it in scripts or when you know exactly what you are installing. Skip it when installing interactively so you can review what dependencies will be pulled in before confirming.
+---
+
+## What breaks
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `E: Unable to locate package <pkg>` | Package index is stale or package name is wrong | Run `sudo apt update` first, then `apt search <keyword>` to find correct name |
+| `E: Could not get lock /var/lib/dpkg/lock` | Another apt process is running | Wait for it to finish, or `sudo kill <pid>` if it is stuck |
+| `apt upgrade` broke a service | A package update changed behavior or config | Check `/var/log/dpkg.log` for what changed, restore from backup |
+| `apt remove` left config files behind | Used `remove` instead of `purge` | Run `sudo apt purge <pkg>` to remove configs too |
+| Disk full after install | `/var/cache/apt/archives/` filled with `.deb` files | `sudo apt clean` to clear the cache |
+| Package installs old version | Index not refreshed before install | Always `sudo apt update` before `apt install` |
 
 ---
 
-## 6. Quick Reference
-
-**APT (Ubuntu/Debian):**
+## Daily commands
 
 | Command | What it does |
 |---|---|
-| `sudo apt update` | Refresh package index |
-| `sudo apt install <pkg>` | Install a package |
-| `sudo apt install <pkg>=<version>` | Install specific version |
-| `sudo apt upgrade -y` | Upgrade all packages |
-| `sudo apt remove <pkg>` | Remove package, keep configs |
-| `sudo apt purge <pkg>` | Remove package and configs |
-| `sudo apt autoremove` | Remove unused dependencies |
-| `sudo apt clean` | Clear downloaded package cache |
-| `apt list --installed` | List installed packages |
-| `apt show <pkg>` | Show package details |
-| `apt search <keyword>` | Search available packages |
-
-**YUM (CentOS/RHEL 7):**
-
-| Command | What it does |
-|---|---|
-| `sudo yum install <pkg>` | Install a package |
-| `sudo yum update -y` | Upgrade all packages |
-| `sudo yum remove <pkg>` | Remove a package |
-| `sudo yum clean all` | Clear all cached data |
-| `sudo yum list installed` | List installed packages |
-
-**DNF (Fedora/RHEL 8+):**
-
-| Command | What it does |
-|---|---|
-| `sudo dnf install <pkg>` | Install a package |
-| `sudo dnf upgrade -y` | Upgrade all packages |
-| `sudo dnf remove <pkg>` | Remove a package |
-| `sudo dnf clean all` | Clear all cached data |
-| `sudo dnf list installed` | List installed packages |
+| `sudo apt update` | Refresh package index — run before every install |
+| `sudo apt install -y <pkg>` | Install a package without confirmation prompt |
+| `sudo apt upgrade -y` | Upgrade all installed packages |
+| `sudo apt remove <pkg>` | Remove package, keep config files |
+| `sudo apt purge <pkg>` | Remove package and all config files |
+| `sudo apt autoremove` | Remove unused dependency packages |
+| `sudo apt clean` | Clear downloaded .deb files from cache |
+| `apt list --installed \| grep <name>` | Check if a specific package is installed |
+| `apt show <pkg>` | Show package version, size, and dependencies |
+| `apt search <keyword>` | Find the correct package name |
 
 ---
 
-→ Ready to practice? [Go to Lab 04](../linux-labs/04-archive-packages-services-lab.md)
+→ **Interview questions for this topic:** [99-interview-prep → Package Management](../99-interview-prep/README.md#package-management)

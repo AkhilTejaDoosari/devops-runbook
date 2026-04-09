@@ -299,7 +299,6 @@ The webstore directory structure now exists on disk. Every file from here onward
 | `whoami` | Show your current username |
 | `id` | Show your UID, GID, and all group memberships |
 | `uptime` | Show how long the machine has been running and load average |
-| `uname -r` | Show the kernel version currently running |
 
 ---
 

@@ -5,90 +5,112 @@
 [Filters](../04-filter-commands/README.md) |
 [sed](../05-sed-stream-editor/README.md) |
 [awk](../06-awk/README.md) |
-[Editors](../07-text-editor/README.md) |
-[Users](../08-user-&-group-management/README.md) |
-[Permissions](../09-file-ownership-&-permissions/README.md) |
+[vim](../07-text-editor/README.md) |
+[Users](../08-user-and-group-management/README.md) |
+[Permissions](../09-file-ownership-and-permissions/README.md) |
 [Archive](../10-archiving-and-compression/README.md) |
 [Packages](../11-package-management/README.md) |
 [Services](../12-service-management/README.md) |
-[Networking](../13-networking/README.md)
+[Networking](../13-networking/README.md) |
+[Logs](../14-logs-and-debug/README.md) |
+[Interview](../99-interview-prep/README.md)
+
+---
 
 # Service Management
 
-A service is a process that runs in the background without any user interaction — started at boot, running continuously, doing its job silently until something goes wrong. nginx serving the webstore frontend is a service. The SSH daemon that lets you log into the server remotely is a service. The process collecting logs is a service.
-
-On modern Linux systems, all of these are managed by `systemd` — the same process that took control after the kernel booted (PID 1). Every service you start, stop, enable, or debug goes through `systemctl`, systemd's command-line interface.
+> **Layer:** L1 — Process Manager
+> **Depends on:** [11 Package Management](../11-package-management/README.md) — you need to install software before you can manage it as a service
+> **Used in production when:** Starting and stopping services, making a service survive reboots, applying a config change without dropping connections, or debugging why a service failed to start
 
 ---
 
 ## Table of Contents
 
-- [1. Services and Daemons](#1-services-and-daemons)
-- [2. systemd — How It Manages Services](#2-systemd--how-it-manages-services)
-- [3. systemctl — The Control Interface](#3-systemctl--the-control-interface)
-- [4. restart vs reload — The Critical Distinction](#4-restart-vs-reload--the-critical-distinction)
-- [5. journalctl — Reading Service Logs](#5-journalctl--reading-service-logs)
-- [6. The Webstore nginx Lifecycle](#6-the-webstore-nginx-lifecycle)
-- [7. Quick Reference](#7-quick-reference)
+- [What this is](#what-this-is)
+- [How it fits the stack](#how-it-fits-the-stack)
+- [1. Services and daemons](#1-services-and-daemons)
+- [2. systemd — how it manages services](#2-systemd--how-it-manages-services)
+- [3. systemctl — the control interface](#3-systemctl--the-control-interface)
+- [4. restart vs reload — the critical distinction](#4-restart-vs-reload--the-critical-distinction)
+- [5. journalctl — reading service logs](#5-journalctl--reading-service-logs)
+- [On the webstore](#on-the-webstore)
+- [What breaks](#what-breaks)
+- [Daily commands](#daily-commands)
 
 ---
 
-## 1. Services and Daemons
+## What this is
 
-A **daemon** is a background process that was started at boot and keeps running until the system shuts down. The name comes from Unix tradition — daemons run silently in the background, invisible unless you look for them.
+A service is a process that runs in the background without user interaction — started at boot, running continuously, doing its job silently until something goes wrong. nginx serving the webstore frontend is a service. The SSH daemon that lets you log in remotely is a service. On modern Linux, all of these are managed by `systemd` — the PID 1 process from file 01. Every service you start, stop, enable, or debug goes through `systemctl`, systemd's command-line interface.
 
-Every daemon has a config file that defines its behavior:
+---
+
+## How it fits the stack
+
+```
+  L6  You
+  L5  Tools & Files
+  L4  Config  ← /etc/systemd/system/ — your unit files live here
+  L3  State & Debug  ← /var/log/ /run/ — service logs and state live here
+  L2  Networking
+  L1  Process Manager  ← this file lives here
+       systemd PID 1 · systemctl · journalctl
+  L0  Kernel & Hardware
+```
+
+Every service you install at L5 (apt install nginx) gets managed by systemd at L1. The config at L4 (/etc/nginx/) controls what the service does. The logs at L3 (/var/log/nginx/) record what it did.
+
+---
+
+## 1. Services and daemons
+
+A **daemon** is a background process that keeps running until the system shuts down. Every daemon has a config file:
 
 | Daemon | What it does | Config file |
 |---|---|---|
-| `nginx` | Serves web content — the webstore frontend | `/etc/nginx/nginx.conf` |
-| `sshd` | Accepts incoming SSH connections | `/etc/ssh/sshd_config` |
+| `nginx` | Serves web content | `/etc/nginx/nginx.conf` |
+| `sshd` | Accepts SSH connections | `/etc/ssh/sshd_config` |
 | `cron` | Runs scheduled tasks | `/etc/crontab`, `/etc/cron.d/` |
-| `journald` | Collects and stores all system logs | `/etc/systemd/journald.conf` |
-| `postgresql` | Runs the webstore database | `/etc/postgresql/*/main/postgresql.conf` |
+| `journald` | Collects all system logs | `/etc/systemd/journald.conf` |
+| `postgresql` | Runs the database | `/etc/postgresql/*/main/postgresql.conf` |
 
-When you edit a config file, nothing changes until you tell the service to reload or restart. The running process in memory is using the old config until you explicitly apply the new one.
-
----
-
-## 2. systemd — How It Manages Services
-
-systemd manages services through **unit files** — text files that describe a service: what binary to run, what user to run it as, what other services it depends on, and whether it should restart automatically if it crashes.
-
-Unit files live in `/lib/systemd/system/` (package-installed) and `/etc/systemd/system/` (custom overrides). You never edit these directly in normal operations — you use `systemctl` commands which call systemd on your behalf.
-
-**Unit types you will encounter:**
-
-| Unit type | File extension | Purpose |
-|---|---|---|
-| Service | `.service` | Background daemons — nginx, sshd, postgresql |
-| Timer | `.timer` | Scheduled jobs — replacement for cron |
-| Socket | `.socket` | Socket-activated services |
-| Target | `.target` | Groups of units — defines boot states |
-
-**System targets — what state the system boots into:**
-
-| Target | Old runlevel | Purpose |
-|---|---|---|
-| `poweroff.target` | 0 | Shutdown |
-| `rescue.target` | 1 | Single-user recovery mode |
-| `multi-user.target` | 3 | Full CLI with networking — standard for servers |
-| `graphical.target` | 5 | Multi-user with GUI — standard for desktops |
-| `reboot.target` | 6 | Restart |
-
-Servers run at `multi-user.target`. When you SSH into a cloud server, this is the target that brought up networking and SSH before you connected.
+When you edit a config file, nothing changes until you tell the service to reload or restart. The running process in memory uses the old config until you explicitly apply the new one.
 
 ---
 
-## 3. systemctl — The Control Interface
+## 2. systemd — how it manages services
 
-**Starting and stopping:**
+systemd manages services through **unit files** — text files describing what binary to run, what user to run it as, what it depends on, and whether it should restart if it crashes.
+
+**Unit file locations — priority order (1 wins):**
+
+| Priority | Location | Purpose |
+|---|---|---|
+| 1 | `/etc/systemd/system/` | Your overrides and custom units — edit here |
+| 2 | `/run/systemd/system/` | Runtime units — lost on reboot |
+| 3 | `/usr/lib/systemd/system/` | Vendor defaults installed by packages — never edit |
+
+**Unit types:**
+
+| Extension | Purpose |
+|---|---|
+| `.service` | Background daemon — nginx, sshd, postgresql |
+| `.timer` | Scheduled job — modern cron replacement |
+| `.socket` | Socket-activated service |
+| `.target` | Group of units — defines boot state |
+
+---
+
+## 3. systemctl — the control interface
+
+**Start, stop, restart, reload:**
 
 ```bash
-# Start a service immediately — does not affect boot behavior
+# Start now — does not affect boot behavior
 sudo systemctl start nginx
 
-# Stop a running service
+# Stop now
 sudo systemctl stop nginx
 
 # Restart — stop then start — drops all active connections
@@ -98,89 +120,67 @@ sudo systemctl restart nginx
 sudo systemctl reload nginx
 ```
 
-**Enabling and disabling at boot:**
+**Enable and disable at boot:**
 
 ```bash
-# Enable — service will start automatically on next boot
+# Enable — will start automatically on next boot
 sudo systemctl enable nginx
 
 # Enable AND start immediately in one command
 sudo systemctl enable --now nginx
 
-# Disable — service will not start on boot
+# Disable — will not start on boot
 sudo systemctl disable nginx
 
 # Disable AND stop immediately
 sudo systemctl disable --now nginx
 ```
 
-`enable` and `start` are independent. `enable` without `start` means it will start next boot but is not running now. `start` without `enable` means it is running now but will not start after a reboot. In production you almost always want both.
+`enable` and `start` are independent. `enable` without `start` = starts next boot but not now. `start` without `enable` = running now but not after reboot. In production you almost always want both — use `enable --now`.
 
-**Checking status:**
+**Check status:**
 
 ```bash
-# Full status — active state, enabled state, recent log lines, PID
 sudo systemctl status nginx
+# ● nginx.service - A high performance web server
+#      Loaded: loaded (/lib/systemd/system/nginx.service; enabled)
+#      Active: active (running) since Sat 2025-04-05 09:14:22 UTC; 2h ago
+#     Main PID: 1235 (nginx)
+#      CGroup: /system.slice/nginx.service
+#              ├─1235 nginx: master process
+#              └─1236 nginx: worker process
 
-# Is it running right now?
-systemctl is-active nginx
-# active  or  inactive
-
-# Will it start on boot?
-systemctl is-enabled nginx
-# enabled  or  disabled
+# Quick checks
+systemctl is-active nginx     # active  or  inactive
+systemctl is-enabled nginx    # enabled  or  disabled
 ```
 
-**What `systemctl status` output tells you:**
+**Loaded** = unit file found and whether it is enabled.
+**Active** = current running state and how long.
+**CGroup** = every process this service spawned.
 
-```
-● nginx.service - A high performance web server and a reverse proxy server
-     Loaded: loaded (/lib/systemd/system/nginx.service; enabled; vendor preset: enabled)
-     Active: active (running) since Sat 2025-04-05 09:14:22 UTC; 2h 3min ago
-    Process: 1234 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=0/SUCCESS)
-   Main PID: 1235 (nginx)
-      Tasks: 2 (limit: 1136)
-     CGroup: /system.slice/nginx.service
-             ├─1235 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;
-             └─1236 nginx: worker process
-```
-
-Reading this output: `Loaded` tells you the unit file path and whether it is enabled. `Active` tells you current state and how long it has been running. `Main PID` is the process ID — you can use this with `kill` if needed. The `CGroup` section shows every process the service spawned.
-
-**Listing services:**
+**List services:**
 
 ```bash
-# All active units
-systemctl list-units
-
-# Only services
-systemctl list-units --type=service
-
-# Only running services
-systemctl list-units --type=service --state=running
-
-# Services that failed
-systemctl list-units --type=service --state=failed
+systemctl list-units --type=service --state=running   # all running
+systemctl list-units --type=service --state=failed    # all failed — check this first
 ```
-
-`--state=failed` is the first thing you check when something stopped working and you are not sure which service died.
 
 ---
 
-## 4. restart vs reload — The Critical Distinction
+## 4. restart vs reload — the critical distinction
 
-This distinction matters in production. Getting it wrong drops active connections.
+**`restart`** — stops the process completely, starts a fresh one. Any user currently connected loses their connection. Use when a config change requires a full restart, or when a service is misbehaving.
 
-**`restart`** — stops the process completely, then starts a fresh one. Any user currently connected to the service loses their connection. Use this when a config change requires a full process restart, or when a service is misbehaving and needs to be killed and restarted clean.
-
-**`reload`** — sends a signal to the running process asking it to re-read its config file. The process stays running. Active connections are not dropped. nginx supports reload — it spins up new worker processes with the new config while old workers finish serving their current requests, then exits gracefully.
+**`reload`** — sends a signal asking the process to re-read its config. Process stays running. Connections are not dropped. nginx supports reload — new workers start with new config while old workers finish current requests, then exit gracefully.
 
 ```bash
-# You edited nginx.conf — test it first, then reload
-sudo nginx -t                    # test syntax — always do this first
+# Edited nginx.conf — test first, then reload
+sudo nginx -t                    # always test config syntax before applying
+# nginx: configuration file /etc/nginx/nginx.conf test is successful
 sudo systemctl reload nginx      # apply without dropping connections
 
-# nginx is consuming too much memory and not responding — restart it
+# nginx consuming memory and not responding — restart it
 sudo systemctl restart nginx     # drops connections, starts fresh
 ```
 
@@ -188,144 +188,120 @@ sudo systemctl restart nginx     # drops connections, starts fresh
 
 ---
 
-## 5. journalctl — Reading Service Logs
+## 5. journalctl — reading service logs
 
-systemd collects all service output in a centralized journal. `journalctl` is how you read it. This is where you look when a service fails to start or behaves unexpectedly.
+systemd collects all service output in a centralized journal. `journalctl` is how you read it.
 
 ```bash
-# View all logs for nginx — most recent at bottom
+# All logs for nginx
 journalctl -u nginx
 
-# Follow live — new lines appear as they are written
+# Follow live — new lines appear as written
 journalctl -u nginx -f
 
-# Show only the last 50 lines
+# Last 50 lines
 journalctl -u nginx -n 50
 
-# Show logs since boot
+# Logs since current boot
 journalctl -u nginx -b
 
-# Show logs from the last hour
+# Logs from last hour
 journalctl -u nginx --since "1 hour ago"
 
-# Show logs between two timestamps
-journalctl -u nginx --since "2025-04-05 09:00" --until "2025-04-05 10:00"
-
-# Show only error-level messages
+# Error-level messages only
 journalctl -u nginx -p err
 
-# View logs for a failed service immediately after it dies
-journalctl -u nginx -n 100 --no-pager
+# Logs from previous boot — useful after a crash
+journalctl -u nginx -b -1
 ```
 
-**The debug loop when a service fails to start:**
+**The debug loop when a service fails:**
 
 ```bash
 sudo systemctl start nginx          # attempt to start
-sudo systemctl status nginx         # see if it started or failed
-journalctl -u nginx -n 50          # read what went wrong
+sudo systemctl status nginx         # see if it started or shows error
+journalctl -u nginx -n 50           # read exactly what went wrong
 # fix the problem
-sudo nginx -t                       # verify the config is valid
+sudo nginx -t                       # verify config is valid
 sudo systemctl start nginx          # try again
 ```
 
-`journalctl -u nginx -n 50` after a failed start shows you the exact error message that caused the failure. This is faster than grepping log files.
-
 ---
 
-## 6. The Webstore nginx Lifecycle
+## On the webstore
 
-This is the complete sequence from installation to serving the webstore frontend — every step in order.
+The complete nginx lifecycle — from install to serving the webstore frontend.
 
 ```bash
-# Step 1 — install nginx
+# Step 1 — install nginx (from file 11)
 sudo apt update && sudo apt install -y nginx
 
-# Step 2 — confirm it installed and check version
-nginx -v
-# nginx version: nginx/1.24.0
-
-# Step 3 — check status — nginx auto-starts after install on Ubuntu
+# Step 2 — nginx auto-starts on Ubuntu after install — check it
 sudo systemctl status nginx
 # Active: active (running)
 
-# Step 4 — test the default page
-curl http://localhost
-# Returns the nginx welcome page HTML
-
-# Step 5 — create the webstore frontend directory
+# Step 3 — create webstore frontend directory and page
 sudo mkdir -p /var/www/webstore-frontend
-echo "<h1>webstore-frontend is live</h1>" | sudo tee /var/www/webstore-frontend/index.html
+echo "<h1>webstore is live</h1>" | sudo tee /var/www/webstore-frontend/index.html
 
-# Step 6 — create an nginx site config for webstore
-sudo tee /etc/nginx/sites-available/webstore << 'EOF'
-server {
-    listen 80;
-    server_name localhost;
-    root /var/www/webstore-frontend;
-    index index.html;
+# Step 4 — write the nginx site config using vim (from file 07)
+sudo vim /etc/nginx/sites-available/webstore
+# [write the server block config]
 
-    location / {
-        try_files $uri $uri/ =404;
-    }
-
-    access_log /var/log/nginx/webstore-access.log;
-    error_log  /var/log/nginx/webstore-error.log;
-}
-EOF
-
-# Step 7 — enable the site by creating a symlink
+# Step 5 — enable the site
 sudo ln -s /etc/nginx/sites-available/webstore /etc/nginx/sites-enabled/webstore
-
-# Step 8 — disable the default site to avoid conflict
 sudo rm /etc/nginx/sites-enabled/default
 
-# Step 9 — test the config — always before reload or restart
+# Step 6 — ALWAYS test config before applying
 sudo nginx -t
 # nginx: configuration file /etc/nginx/nginx.conf test is successful
 
-# Step 10 — reload nginx to apply the new config without dropping connections
+# Step 7 — reload without dropping connections
 sudo systemctl reload nginx
 
-# Step 11 — verify it is serving the webstore
+# Step 8 — verify it is serving the webstore
 curl http://localhost
-# <h1>webstore-frontend is live</h1>
+# <h1>webstore is live</h1>
 
-# Step 12 — enable nginx to survive reboots
+# Step 9 — enable nginx to survive reboots
 sudo systemctl enable nginx
 # Created symlink /etc/systemd/system/multi-user.target.wants/nginx.service
 
-# Step 13 — confirm enabled
+# Step 10 — confirm enabled
 systemctl is-enabled nginx
 # enabled
 ```
 
-**The sites-available / sites-enabled pattern:**
-nginx config files live in `sites-available/` — all of them, enabled or not. `sites-enabled/` contains only symlinks to the configs that are active. To disable a site you remove the symlink. To enable a site you create one. The actual config file is never touched. This is the same symlink pattern from the permissions file.
+---
+
+## What breaks
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `Job for nginx.service failed` | Config syntax error or port conflict | `sudo nginx -t` to find syntax error · `ss -tlnp \| grep :80` to find port conflict |
+| Service starts but stops immediately | Binary error, missing file, or permission problem | `journalctl -u nginx -n 50` — read the exact error |
+| `reload` returns error | Service does not support reload | Use `restart` instead — check man page for support |
+| Service running but not surviving reboot | Started with `start` but not `enable` | `sudo systemctl enable nginx` |
+| `enable` but service not starting after reboot | Unit file has dependency issue | `journalctl -b -u nginx` — logs from boot |
+| Config change not taking effect | Forgot to reload after editing | `sudo systemctl reload nginx` or `restart` |
 
 ---
 
-## 7. Quick Reference
+## Daily commands
 
 | Command | What it does |
 |---|---|
+| `sudo systemctl status <svc>` | Full status — state, PID, recent logs |
 | `sudo systemctl start <svc>` | Start service now |
 | `sudo systemctl stop <svc>` | Stop service now |
 | `sudo systemctl restart <svc>` | Stop and start — drops connections |
-| `sudo systemctl reload <svc>` | Reload config — no dropped connections |
-| `sudo systemctl enable <svc>` | Start on boot |
-| `sudo systemctl enable --now <svc>` | Enable AND start now |
-| `sudo systemctl disable <svc>` | Do not start on boot |
-| `sudo systemctl status <svc>` | Full status — state, PID, recent logs |
-| `systemctl is-active <svc>` | active or inactive |
-| `systemctl is-enabled <svc>` | enabled or disabled |
-| `systemctl list-units --type=service --state=running` | All running services |
-| `systemctl list-units --type=service --state=failed` | All failed services |
-| `journalctl -u <svc> -f` | Follow live logs |
-| `journalctl -u <svc> -n 50` | Last 50 log lines |
-| `journalctl -u <svc> -p err` | Error-level messages only |
+| `sudo systemctl reload <svc>` | Apply new config — no dropped connections |
+| `sudo systemctl enable --now <svc>` | Enable at boot AND start immediately |
+| `systemctl list-units --state=failed` | Show every service that failed |
+| `journalctl -u <svc> -f` | Follow live service logs |
+| `journalctl -u <svc> -n 50` | Last 50 lines of service logs |
 | `sudo nginx -t` | Test nginx config syntax before applying |
 
 ---
 
-→ Ready to practice? [Go to Lab 04](../linux-labs/04-archive-packages-services-lab.md)
+→ **Interview questions for this topic:** [99-interview-prep → Service Management](../99-interview-prep/README.md#service-management)

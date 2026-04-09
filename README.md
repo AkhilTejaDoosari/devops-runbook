@@ -3,11 +3,29 @@
 </p>
 
 <p align="center">
+  <b>Modules:</b> 
+  <a href="./notes/01.%20Linux%20–%20System%20Fundamentals/README.md">01 Linux</a> • 
+  <a href="./notes/02.%20Git%20%26%20GitHub%20–%20Version%20Control/README.md">02 Git</a> • 
+  <a href="./notes/03.%20Networking%20–%20Foundations/README.md">03 Net</a> • 
+  <a href="./notes/04.%20Docker%20–%20Containerization/README.md">04 Docker</a> • 
+  <a href="./notes/05.%20Kubernetes%20–%20Orchestration/README.md">05 K8s</a> • 
+  <a href="./notes/06.%20CI-CD%20–%20Pipelines%20%26%20GitOps/README.md">06 CI/CD</a> • 
+  <a href="./notes/07.%20Observability%20–%20Monitoring%20%26%20Logs/README.md">07 Obs</a> • 
+  <a href="./notes/08.%20AWS%20–%20Cloud%20Infrastructure/README.md">08 AWS</a> • 
+  <a href="./notes/09.%20Terraform%20–%20IaC%20Foundations/README.md">09 TF</a> • 
+  <a href="./notes/10.%20Ansible%20–%20Configuration%20Management/README.md">10 Ansible</a> • 
+  <a href="./notes/11.%20Bash%20–%20Shell%20Scripting%20Essentials/README.md">11 Bash</a>
+</p>
+
+
+<p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License"/></a>
   <a href="https://paypal.me/AkhilTejaDoosari"><img src="https://img.shields.io/badge/PayPal-Support%20this%20work-00457C?logo=paypal&logoColor=white" alt="PayPal"/></a>
 </p>
 
-A personal DevOps runbook — structured notes and labs built from fundamentals up, using one consistent application across every tool.
+---
+
+A personal DevOps runbook — structured notes, daily commands, and hands-on projects built from fundamentals up, using one consistent application across every tool.
 
 ---
 

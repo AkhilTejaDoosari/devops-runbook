@@ -161,3 +161,43 @@ Full form shown — no unexplained flags anywhere.
 ---
 
 → **Interview questions for this topic:** [99-interview-prep → Topic Name](../99-interview-prep/README.md#topic-anchor)
+
+
+---
+
+## RULE — No duplicate daily commands across files
+
+Every command lives in the daily commands of the file where it is
+first taught and explained. Once a command appears in one file's
+daily commands table it never appears in another file's table.
+
+If a command is used as part of an example or pipeline in a later
+file — that is fine. It just does not repeat in daily commands.
+
+Ownership map (add to this as files are written):
+
+  uname -r      → 01-boot-process
+  uptime        → 02-basics
+  pwd           → 02-basics
+  ls -lahtr     → 02-basics
+  cd            → 02-basics
+  mkdir -p      → 02-basics
+  whoami        → 02-basics
+  id            → 02-basics
+  touch         → 03-working-with-files
+  stat          → 03-working-with-files
+  cat           → 03-working-with-files
+  less          → 03-working-with-files
+  tail -f       → 03-working-with-files
+  head -n       → 03-working-with-files
+  cp -riv       → 03-working-with-files
+  mv -iv        → 03-working-with-files
+  ln -s         → 03-working-with-files
+  rm -i         → 03-working-with-files
+  grep          → 04-filter-commands
+  find          → 04-filter-commands
+  cut           → 04-filter-commands
+  sort|uniq -c  → 04-filter-commands
+  wc -l         → 04-filter-commands
+  tee           → 04-filter-commands
+  sed -i        → 05-sed

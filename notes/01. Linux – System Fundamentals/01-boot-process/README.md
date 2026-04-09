@@ -312,7 +312,6 @@ file during boot and starts every enabled service. That process starts here.
 | Command | What it does |
 |---|---|
 | `uname -r` | Show the kernel version currently running |
-| `uptime` | Show how long the system has been running and load average |
 | `systemctl get-default` | Show which target the system boots into |
 | `systemctl list-units --state=failed` | Show every unit that failed during boot |
 | `journalctl -b` | Show all logs from the current boot |

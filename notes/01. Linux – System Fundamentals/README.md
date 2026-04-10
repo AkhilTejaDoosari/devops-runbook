@@ -3,21 +3,21 @@
 </p>
 
 [← devops-runbook](../../README.md) |
-[Boot](../01-boot-process/README.md) |
-[Basics](../02-basics/README.md) |
-[Files](../03-working-with-files/README.md) |
-[Filters](../04-filter-commands/README.md) |
-[sed](../05-sed-stream-editor/README.md) |
-[awk](../06-awk/README.md) |
-[vim](../07-text-editor/README.md) |
-[Users](../08-user-and-group-management/README.md) |
-[Permissions](../09-file-ownership-and-permissions/README.md) |
-[Archive](../10-archiving-and-compression/README.md) |
-[Packages](../11-package-management/README.md) |
-[Services](../12-service-management/README.md) |
-[Networking](../13-networking/README.md) |
-[Logs](../14-logs-and-debug/README.md) |
-[Interview](../99-interview-prep/README.md)   
+[Boot](./01-boot-process/README.md) |
+[Basics](./02-basics/README.md) |
+[Files](./03-working-with-files/README.md) |
+[Filters](./04-filter-commands/README.md) |
+[sed](./05-sed-stream-editor/README.md) |
+[awk](./06-awk/README.md) |
+[vim](./07-text-editor/README.md) |
+[Users](./08-user-and-group-management/README.md) |
+[Permissions](./09-file-ownership-and-permissions/README.md) |
+[Archive](./10-archiving-and-compression/README.md) |
+[Packages](./11-package-management/README.md) |
+[Services](./12-service-management/README.md) |
+[Networking](./13-networking/README.md) |
+[Logs](./14-logs-and-debug/README.md) |
+[Interview](./99-interview-prep/README.md)
 
 ---
 

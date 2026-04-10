@@ -2,7 +2,13 @@
   <img src="../../assets/git-banner.svg" alt="git and github" width="100%"/>
 </p>
 
-[← devops-runbook](../../README.md)
+[← devops-runbook](../../README.md) |
+[Foundations](./01-foundations/README.md) |
+[Stash & Tags](./02-stash-tags/README.md) |
+[History & Branching](./03-history-branching/README.md) |
+[Contribute](./04-contribute/README.md) |
+[Undo & Recovery](./05-undo-recovery/README.md) |
+[Interview](./99-interview-prep/README.md)
 
 ---
 

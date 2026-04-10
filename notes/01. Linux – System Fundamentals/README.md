@@ -2,12 +2,22 @@
   <img src="../../assets/linux-banner.svg" alt="linux" width="100%"/>
 </p>
 
-[← devops-runbook](../../README.md)
-
----
-
-A production-focused Linux guide built around one running example.
-No certification fluff. No desktop Linux. Only what you actually use on servers.
+[← devops-runbook](../../README.md) |
+[Boot](../01-boot-process/README.md) |
+[Basics](../02-basics/README.md) |
+[Files](../03-working-with-files/README.md) |
+[Filters](../04-filter-commands/README.md) |
+[sed](../05-sed-stream-editor/README.md) |
+[awk](../06-awk/README.md) |
+[vim](../07-text-editor/README.md) |
+[Users](../08-user-and-group-management/README.md) |
+[Permissions](../09-file-ownership-and-permissions/README.md) |
+[Archive](../10-archiving-and-compression/README.md) |
+[Packages](../11-package-management/README.md) |
+[Services](../12-service-management/README.md) |
+[Networking](../13-networking/README.md) |
+[Logs](../14-logs-and-debug/README.md) |
+[Interview](../99-interview-prep/README.md)   
 
 ---
 
@@ -16,13 +26,6 @@ No certification fluff. No desktop Linux. Only what you actually use on servers.
 Every server you will ever SSH into in a DevOps role runs Linux. AWS EC2 instances run Linux. Docker containers run Linux. Kubernetes nodes run Linux. The CI runners that build your images run Linux. Learning Linux is not optional in this stack — it is the ground everything else stands on.
 
 Ubuntu is the distribution this runbook uses because it is the default for AWS EC2, the most common choice in DevOps job environments, and the distribution all tooling in this series assumes. The concepts transfer directly to any other Linux distribution — the package manager and a few paths change, nothing fundamental does.
-
----
-
-## Prerequisites
-
-None. This is the first folder in the series.
-All you need is a Linux terminal — a VM, WSL, or an EC2 instance works fine.
 
 ---
 
@@ -179,3 +182,27 @@ Linux gives you the server foundation. Git gives you the workflow
 foundation — version control, collaboration, and the habit of tracking
 every change you make to infrastructure and code. The webstore
 directory you built here becomes the first Git repository you initialize.
+
+
+## 🚀 Practice Lab & Setup
+
+We recommend **Google Cloud Shell** as your lab. It is a real Linux server in your browser.
+
+* **Lab Portal:** [Launch Google Cloud Shell](https://shell.cloud.google.com/?hl=en_GB&theme=dark&authuser=0&fromcloudshell=true&show=terminal)
+* **Specs:** 2 vCPUs, 5 GB RAM, 5 GB persistent home directory.
+* **Usage:** 50 free hours per week. **Always type `exit` to save your quota!**
+
+<details>
+<summary><b>🎨 Click to expand: Customize Your Prompt (Permanent)</b></summary>
+<br>
+
+Cloud Shell defaults to a long, messy username. Follow these steps to set a clean "Production" prompt:
+
+1. Open config: `nano ~/.bashrc`
+2. Paste at the bottom: 
+   ```bash
+   export PS1="\[\e[1;32m\][Webstore-Prod]\[\e[m\]:\[\e[1;34m\]\w\[\e[m\]\$ "
+3. **Save/Exit:** Ctrl+O, Enter, Ctrl+X
+4. Apply: source ~/.bashrc
+
+</details>

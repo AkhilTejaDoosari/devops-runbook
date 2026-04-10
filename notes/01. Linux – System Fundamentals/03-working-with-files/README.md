@@ -293,7 +293,7 @@ The directory structure exists from file 02. Now you write content into it, back
 echo "frontend_port=80" >> ~/webstore/config/webstore.conf
 echo "api_host=webstore-api" >> ~/webstore/config/webstore.conf
 echo "api_port=8080" >> ~/webstore/config/webstore.conf
-echo "db_host=webstore-db" > ~/webstore/config/webstore.conf
+echo "db_host=webstore-db" >> ~/webstore/config/webstore.conf
 echo "db_port=5432" >> ~/webstore/config/webstore.conf
 echo "db_name=webstore" >> ~/webstore/config/webstore.conf
 echo "env=production" >> ~/webstore/config/webstore.conf

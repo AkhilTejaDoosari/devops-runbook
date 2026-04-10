@@ -317,7 +317,7 @@ file during boot and starts every enabled service. That process starts here.
 | `journalctl -b` | Show all logs from the current boot |
 | `journalctl -b -1` | Show all logs from the previous boot — useful after a crash |
 | `journalctl -b --priority=err` | Show only errors from current boot |
-| `dmesg | less` | Show kernel hardware messages — look here after a crash |
+| `dmesg \| less` | Show kernel hardware messages — look here after a crash |
 | `ls -lh /boot` | See kernel, initramfs, and GRUB files |
 | `sudo update-grub` | Regenerate `/boot/grub/grub.cfg` after editing `/etc/default/grub` |
 

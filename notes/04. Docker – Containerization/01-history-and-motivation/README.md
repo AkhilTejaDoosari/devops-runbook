@@ -8,7 +8,8 @@
 [Layers](../07-docker-layers/README.md) |
 [Build](../08-docker-build-dockerfile/README.md) |
 [Registry](../09-docker-registry/README.md) |
-[Compose](../10-docker-compose/README.md)
+[Compose](../10-docker-compose/README.md) |
+[Interview Prep](../99-interview-prep/README.md) 
 
 ---
 
@@ -234,3 +235,36 @@ With Docker:
 
 **What you hand to Kubernetes after Docker:**
 A Kubernetes cluster does not know what your app is. It pulls container images from a registry and runs them. Everything you build in Docker — images, tags, environment variables, port mappings — is exactly what Kubernetes reads. Docker is not a stepping stone to Kubernetes. It is the prerequisite.
+
+---
+
+## What Breaks
+
+| Symptom | Cause | First command to run |
+|---|---|---|
+| `docker: command not found` | Docker not installed or not in PATH | `which docker` — if missing, reinstall |
+| `permission denied while trying to connect to the Docker daemon` | Your user is not in the `docker` group | `sudo usermod -aG docker $USER` then log out and back in |
+| `Cannot connect to the Docker daemon at unix:///var/run/docker.sock` | The Docker daemon is not running | `sudo systemctl start docker` |
+| Container exits immediately after `docker run` | The main process inside the container finished or crashed | `docker logs CONTAINER_NAME` to see the exit reason |
+| `image operating system "linux" cannot be used on this platform` | Running a Linux image on Mac/Windows without the correct backend | Ensure Docker Desktop is running and fully started |
+
+---
+
+## Daily Commands
+
+| Command | What it does |
+|---|---|
+| `docker --version` | Confirm Docker is installed and show the version |
+| `docker info` | Show system-wide info — daemon status, storage driver, running container count |
+| `docker images` | List all images downloaded on this machine |
+| `docker ps` | List running containers |
+| `docker ps -a` | List all containers including stopped ones |
+| `docker pull IMAGE:TAG` | Download an image without running it |
+| `docker run --name NAME IMAGE` | Run a container with a specific name |
+| `docker stop NAME` | Stop a running container gracefully |
+| `docker rm NAME` | Delete a stopped container |
+| `docker rmi IMAGE` | Delete an image — remove containers referencing it first |
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → Image vs Container · Containers vs VMs](../99-interview-prep/README.md#image-vs-container--containers-vs-vms)

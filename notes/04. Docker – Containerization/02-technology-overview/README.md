@@ -8,8 +8,8 @@
 [Layers](../07-docker-layers/README.md) |
 [Build](../08-docker-build-dockerfile/README.md) |
 [Registry](../09-docker-registry/README.md) |
-[Compose](../10-docker-compose/README.md)
-
+[Compose](../10-docker-compose/README.md) |
+[Interview Prep](../99-interview-prep/README.md)
 
 ---
 
@@ -46,7 +46,7 @@ These limits are enforced by the kernel.
 When a process is started with namespaces and cgroups applied, it becomes what we call a container.
 
 **One-line lock:**
-A container is just a process with restricted view and restricted usge.
+A container is just a process with restricted view and restricted usage.
 
 ---
 
@@ -118,3 +118,51 @@ Docker Desktop is just a wrapper. It provides a GUI, helpers, and a Linux VM so 
 
 **One-line lock:**
 Command goes in → Docker Engine runs containers → registry stores images.
+
+---
+
+## On the Webstore
+
+Every webstore container is a Linux process running under these exact constraints.
+
+When `docker compose up` starts `webstore-db`:
+- A **namespace** gives it its own network — it sees `webstore-db:5432`, not the host's network
+- A **cgroup** caps how much RAM postgres can consume — it cannot starve `webstore-api` of memory
+- The **union filesystem** stacks the postgres:15 read-only image layers and adds one writable layer on top — that writable layer is where postgres writes its data files until a volume takes over
+
+When `webstore-api` connects to `webstore-db` using the hostname `webstore-db`, that works because Docker's embedded DNS resolver maps that hostname to the container's namespaced IP. No `/etc/hosts` edit. No manual IP. The namespace makes it automatic.
+
+This is not Docker magic. It is Linux kernel features — namespaces, cgroups, overlayfs — wired together by the Docker daemon.
+
+---
+
+## What Breaks
+
+| Symptom | Cause | First command to run |
+|---|---|---|
+| `docker: Error response from daemon: driver failed programming external connectivity` | Port on the host is already in use by another process | `ss -tulpn \| grep PORT` to find what is using it |
+| Container is killed unexpectedly with exit code 137 | cgroup memory limit reached — OOM killer terminated the process | `docker inspect CONTAINER_NAME \| grep -i memory` to check the limit |
+| `cannot allocate memory` inside a container | Host has no memory left to give new containers | `free -h` on the host to check available memory |
+| Two containers cannot reach each other by hostname | They are on different Docker networks | `docker inspect CONTAINER_NAME \| grep -i network` on both — they must share a network |
+| `permission denied` writing files inside a container | The process user inside the container does not own the mounted path | `docker exec -it CONTAINER_NAME ls -la /path` to check ownership |
+
+---
+
+## Daily Commands
+
+| Command | What it does |
+|---|---|
+| `docker info` | Show storage driver, cgroup driver, and runtime details for this Docker install |
+| `docker inspect CONTAINER_NAME` | Full JSON output — namespaces, cgroup limits, mounts, network settings |
+| `docker stats` | Live CPU and memory usage per container — shows cgroup limits in action |
+| `docker system df` | Show disk usage broken down by images, containers, and volumes |
+| `docker system prune` | Remove all stopped containers, dangling images, unused networks |
+| `docker network ls` | List all Docker networks on this host |
+| `docker network inspect NETWORK_NAME` | Show which containers are on a network and their IPs |
+| `docker exec -it CONTAINER_NAME sh` | Open a shell inside a running container |
+| `docker history IMAGE` | Show layers that make up an image — union filesystem in action |
+| `cat /proc/self/cgroup` | Run inside a container to see its cgroup membership |
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → Namespaces · cgroups · How Docker Uses the Linux Kernel](../99-interview-prep/README.md#namespaces--cgroups--how-docker-uses-the-linux-kernel)

@@ -8,7 +8,8 @@
 [Layers](../07-docker-layers/README.md) |
 [Build](../08-docker-build-dockerfile/README.md) |
 [Registry](../09-docker-registry/README.md) |
-[Compose](../10-docker-compose/README.md)
+[Compose](../10-docker-compose/README.md) |
+[Interview Prep](../99-interview-prep/README.md)
 
 # Docker Compose — Same System, Automated
 
@@ -375,7 +376,38 @@ Browser → localhost:8081 → adminer → webstore-db:5432 → webstore-db
 ```
 
 One-line truth:
-webstore-api connects to webstore-db using hostname `webstore-db` on a Docker network.
+> webstore-api connects to webstore-db using hostname `webstore-db` on a Docker network.
 Compose only automates the same configuration you already know.
+
+---
+
+## What Breaks
+
+| Symptom | Cause | First command to run |
+|---|---|---|
+| `Bind for 0.0.0.0:8080 failed: port is already allocated` | Another container or process already owns that host port | `docker ps` to find it — `docker stop NAME` then retry |
+| Service exits immediately after `docker compose up` | App crashed on startup — often a missing env var or wrong CMD | `docker compose logs SERVICE_NAME` to see the exit reason |
+| `webstore-api` cannot connect to `webstore-db` | `DB_HOST` is set to `localhost` instead of the service name | Check `environment` block — must be `DB_HOST: webstore-db` not `localhost` |
+| `docker compose down -v` deleted all database data | `-v` flag removes volumes — used when you wanted to keep data | Never use `-v` unless you explicitly want to wipe the database |
+| Changes to `docker-compose.yml` not taking effect | Old containers still running with old config | `docker compose down` first, then `docker compose up -d` |
+
+---
+
+## Daily Commands
+
+| Command | What it does |
+|---|---|
+| `docker compose up -d` | Start all services in the background |
+| `docker compose down` | Stop and remove containers and network — volumes survive |
+| `docker compose down -v` | Stop and remove everything including volumes — data is gone |
+| `docker compose logs SERVICE` | View logs for a specific service |
+| `docker compose logs -f SERVICE` | Follow live logs for a specific service |
+| `docker compose ps` | List all containers managed by this Compose file |
+| `docker compose exec SERVICE COMMAND` | Run a command inside a running service container |
+| `docker compose build` | Rebuild images for services that use `build:` |
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → Compose · depends_on · Networks and Volumes](../99-interview-prep/README.md#compose--dependson--networks-and-volumes)
 
 → Ready to practice? [Go to Lab 04](../docker-labs/04-registry-compose-lab.md)

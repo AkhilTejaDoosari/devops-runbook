@@ -8,7 +8,8 @@
 [Layers](../07-docker-layers/README.md) |
 [Build](../08-docker-build-dockerfile/README.md) |
 [Registry](../09-docker-registry/README.md) |
-[Compose](../10-docker-compose/README.md)
+[Compose](../10-docker-compose/README.md) |
+[Interview Prep](../99-interview-prep/README.md)
 
 # Docker Layers
 
@@ -561,5 +562,34 @@ Order matters for speed
 
 **One-line truth:**
 Docker images are stacks of cached, read-only layers; changing one layer invalidates everything after it, so put stable stuff first and volatile stuff last.
+
+---
+
+## What Breaks
+
+| Symptom | Cause | First command to run |
+|---|---|---|
+| Every build is slow — nothing is cached | `COPY . .` is too early — source code changes bust the cache for everything after it | Move `COPY . .` after dependency install steps |
+| `npm install` runs on every build even when dependencies didn't change | `package.json` is copied with `COPY . .` instead of separately before `RUN npm install` | Copy `package.json` first, run install, then `COPY . .` |
+| Image is unexpectedly large | Build tools, test files, or `.git` folder copied into the image | Add a `.dockerignore` file excluding `node_modules`, `.git`, `*.log` |
+| `docker build` fails with `COPY failed: file not found` | File path in `COPY` is wrong relative to the build context | Run `docker build` from the directory that contains the files being copied |
+| Multi-stage build final image is missing files | Files were created in the builder stage but not copied to the runtime stage with `COPY --from=builder` | Check every file the runtime needs has an explicit `COPY --from=builder` line |
+
+---
+
+## Daily Commands
+
+| Command | What it does |
+|---|---|
+| `docker build -t NAME:TAG .` | Build an image from the Dockerfile in the current directory |
+| `docker build --no-cache -t NAME:TAG .` | Force rebuild all layers — bypass cache entirely |
+| `docker history IMAGE` | Show all layers, their sizes, and which instruction created them |
+| `docker images` | List all images and their sizes |
+| `docker system df` | Show total disk usage by images, containers, and volumes |
+| `docker image inspect IMAGE` | Full image metadata including layer digests |
+| `docker rmi IMAGE` | Delete an image — remove containers using it first |
+
+---
+→ **Interview questions for this topic:** [99-interview-prep → Layers · Caching · Image Optimization](../99-interview-prep/README.md#layers--caching--image-optimization)
 
 → Ready to practice? [Go to Lab 03](../docker-labs/03-build-layers-lab.md)

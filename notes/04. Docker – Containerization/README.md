@@ -2,7 +2,18 @@
   <img src="../../assets/docker-banner.svg" alt="docker" width="100%"/>
 </p>
 
-[← devops-runbook](../../README.md)
+[← devops-runbook](../../README.md) |
+[History & Motivation](./01-history-and-motivation/README.md) |
+[Technology Overview](./02-technology-overview/README.md) |
+[Containers](./03-docker-containers/README.md) |
+[Port Binding](./04-docker-port-binding/README.md) |
+[Networking](./05-docker-networking/README.md) |
+[Volumes](./06-docker-volumes/README.md) |
+[Layers](./07-docker-layers/README.md) |
+[Build](./08-docker-build-dockerfile/README.md) |
+[Registry](./09-docker-registry/README.md) |
+[Compose](./10-docker-compose/README.md) |
+[Interview](./99-interview-prep/README.md)
 
 ---
 
@@ -66,6 +77,12 @@ You leave Docker with the webstore as three container images — webstore-fronte
 | [Lab 02](./docker-labs/02-networking-volumes-lab.md) | Docker networks, DNS between containers, iptables DNAT proof, named volumes, bind mounts |
 | [Lab 03](./docker-labs/03-build-layers-lab.md) | Layer inspection, cache behavior, Dockerfile ordering, .dockerignore, multi-stage builds |
 | [Lab 04](./docker-labs/04-registry-compose-lab.md) | Push to Docker Hub, tagging strategy, pull and verify, write and run docker-compose.yml |
+
+---
+
+## Interview Prep
+
+→ [99-interview-prep](./99-interview-prep/README.md) — Image vs Container · Containers vs VMs · Namespaces · cgroups · Lifecycle · Port Binding · Networking · Layers · Caching · Volumes · Dockerfile · Registry · Compose
 
 ---
 

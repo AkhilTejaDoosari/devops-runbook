@@ -8,7 +8,8 @@
 [Layers](../07-docker-layers/README.md) |
 [Build](../08-docker-build-dockerfile/README.md) |
 [Registry](../09-docker-registry/README.md) |
-[Compose](../10-docker-compose/README.md)
+[Compose](../10-docker-compose/README.md) |
+[Interview Prep](../99-interview-prep/README.md)
 
 # Container Registries
 
@@ -415,6 +416,36 @@ Then you understand container registries at the correct practical level.
 
 **One-Line Definition**
 
-A container registry is a remote store for container images so the same image can be shared across development, CI, and production.
+> A container registry is a remote store for container images so the same image can be shared across development, CI, and production.
+
+---
+
+## What Breaks
+
+| Symptom | Cause | First command to run |
+|---|---|---|
+| `denied: requested access to the resource is denied` | Wrong Docker Hub username in the tag, or not logged in | `docker logout` then `docker login` — retag with the correct username |
+| `unauthorized: authentication required` | Credentials expired or never set | `docker login` — re-authenticate |
+| Push succeeds but Kubernetes can't pull the image | Image is in a private registry but no pull secret is configured in the cluster | Confirm the repo visibility on Docker Hub — set to public for now |
+| `tag does not exist` when pulling | Tag was never pushed, or you used the wrong tag name | `docker images` to see what tags exist locally — check Docker Hub UI for what was pushed |
+| Layers upload on every push — nothing is reused | Base image tag changed (e.g., `node:20` resolved to a new digest) | Pin the base image with a specific digest or use a fixed tag like `node:20.11.0-alpine` |
+
+---
+
+## Daily Commands
+
+| Command | What it does |
+|---|---|
+| `docker login` | Authenticate to Docker Hub — credentials stored by OS |
+| `docker logout` | Remove stored credentials |
+| `docker tag SOURCE TARGET` | Create a new tag pointing to the same image |
+| `docker push USERNAME/IMAGE:TAG` | Upload image to registry |
+| `docker pull USERNAME/IMAGE:TAG` | Download image from registry |
+| `docker images` | List all local images and tags |
+| `docker rmi IMAGE:TAG` | Delete a local image tag — does not affect the registry |
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → Registry · Tagging · Push and Pull](../99-interview-prep/README.md#registry--tagging--push-and-pull)
 
 → Ready to practice? [Go to Lab 04](../docker-labs/04-registry-compose-lab.md)

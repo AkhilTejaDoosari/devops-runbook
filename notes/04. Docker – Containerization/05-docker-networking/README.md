@@ -8,7 +8,8 @@
 [Layers](../07-docker-layers/README.md) |
 [Build](../08-docker-build-dockerfile/README.md) |
 [Registry](../09-docker-registry/README.md) |
-[Compose](../10-docker-compose/README.md)
+[Compose](../10-docker-compose/README.md) |
+[Interview Prep](../99-interview-prep/README.md)
 
 # Docker Networking
 
@@ -465,5 +466,36 @@ docker network create webstore-network
 docker run --network webstore-network --name webstore-api nginx
 docker run --network webstore-network --name webstore-db postgres:15
 ```
+
+---
+
+## What Breaks
+
+| Symptom | Cause | First command to run |
+|---|---|---|
+| `ping: bad address 'webstore-db'` | Containers are on different networks or the default bridge | `docker inspect CONTAINER \| grep -A 5 Networks` on both containers |
+| Connection refused when using container name | Container is on a named network but the app hardcoded `localhost` | `docker exec -it CONTAINER env \| grep DB_HOST` — check the env var |
+| `docker network create` succeeds but DNS still fails | Container joined the default `bridge` not the named network — missing `--network` flag | `docker inspect CONTAINER \| grep -A 5 Networks` — check which network it actually joined |
+| Container can reach the internet but not sibling containers | Missing `--network` flag on one of the containers | `docker inspect CONTAINER \| grep -A 5 Networks` — one will show `bridge`, not your network |
+| Port binding works but containers talk to each other on wrong port | Confusing host port with container port | Container-to-container traffic uses container port not host port — use `webstore-db:5432` not `webstore-db:8081` |
+
+---
+
+## Daily Commands
+
+| Command | What it does |
+|---|---|
+| `docker network create NAME` | Create a named bridge network with Docker DNS enabled |
+| `docker network ls` | List all networks on this host |
+| `docker network inspect NAME` | Show all containers on a network and their IPs |
+| `docker network rm NAME` | Delete a network — all containers must be disconnected first |
+| `docker exec CONTAINER cat /etc/resolv.conf` | Confirm Docker DNS is configured inside a container |
+| `docker exec CONTAINER nslookup TARGET` | Test DNS resolution from inside a container |
+| `docker exec CONTAINER nc -zv TARGET PORT` | Test TCP reachability from inside a container |
+| `docker inspect CONTAINER \| grep -A 5 Networks` | Show which network a container is on and its IP |
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → Docker Networking · DNS · Localhost Rule](../99-interview-prep/README.md#docker-networking--dns--localhost-rule)
 
 → Ready to practice? [Go to Lab 02](../docker-labs/02-networking-volumes-lab.md)

@@ -8,13 +8,16 @@
 [Layers](../07-docker-layers/README.md) |
 [Build](../08-docker-build-dockerfile/README.md) |
 [Registry](../09-docker-registry/README.md) |
-[Compose](../10-docker-compose/README.md)
+[Compose](../10-docker-compose/README.md) |
+[Interview Prep](../99-interview-prep/README.md)
 
 # Docker Containers
 
 ## What this file is about (theory)
 
-This file teaches how to **run and operate containers**. If you can use everything here, you can run prebuilt software without installing it on your host, run services in the background, pass correct startup configuration, debug containers when they fail, and clean Docker safely without breaking anything. This is runtime usage only — not Dockerfile, not image building, not volumes deep dive, not networking deep dive.
+This file teaches how to **run and operate containers**.
+
+If you can use everything here, you can run prebuilt software without installing it on your host, run services in the background, pass correct startup configuration, debug containers when they fail, and clean Docker safely without breaking anything. This is runtime usage only — not Dockerfile, not image building, not volumes deep dive, not networking deep dive.
 
 1. [Getting Software (Images)](#1-getting-software-images)
 2. [Interactive Containers (Learning & Exploration)](#2-interactive-containers-learning--exploration)
@@ -59,7 +62,7 @@ This file teaches how to **run and operate containers**. If you can use everythi
 - You must use the generated name or container ID for all follow-up commands (`start`, `stop`, `logs`, `exec`).
 
 **Mental model:**   
-`-it` attaches your terminal to the container’s main process. If that process exits, the container stops.
+`-it` attaches your terminal to the container's main process. If that process exits, the container stops.
 - -it — interactive terminal
 
 ---
@@ -89,7 +92,7 @@ This file teaches how to **run and operate containers**. If you can use everythi
 | 13 | Run in background (detach) + name it | `docker run -d --name CONT_NAME IMAGE` | `docker run -d --name web nginx` |
 
 **Mental model:**   
-`-d` means “run like a service.” You don’t enter it. You observe it and manage it.
+`-d` means "run like a service." You don't enter it. You observe it and manage it.
 
 ---
 
@@ -103,7 +106,7 @@ This file teaches how to **run and operate containers**. If you can use everythi
 
 **Mental model:**   
 Image is generic. `-e` makes it environment-specific at runtime.  
-You find required env vars in the image’s official docs (Docker Hub).  
+You find required env vars in the image's official docs (Docker Hub).  
 
 ### Helper: generating secrets (host-side, not a Docker command — optional)
 
@@ -136,14 +139,14 @@ docker run -d \
   mysql:8.0
 ```
 
-That’s all.  
+That's all.  
 No magic. No Docker internals.  
 
 ---
 
 ## 6. Observability & Debugging (Operator Level)
 
-**Goal:** figure out what’s wrong without rebuilding.
+**Goal:** figure out what's wrong without rebuilding.
 
 | Step | What you do                                           | Command                             | Example                       |
 | -----|------------------------------------------------ | ----------------------------------- | ----------------------------- |
@@ -165,7 +168,7 @@ This is the **operator mindset** difference between juniors and seniors.
 
 **When to use what:**
 
-- Container exited or won’t stay up → `docker logs`
+- Container exited or won't stay up → `docker logs`
 - Container running but misbehaving → `docker logs -f`
 - Unsure how the container was started → `docker inspect`
 - Need to look inside a running container → `docker exec`
@@ -177,17 +180,17 @@ This is the **operator mindset** difference between juniors and seniors.
 
 | Situation (what you see) | What it means | Command to use | Why this command |
 |--------------------------|---------------|----------------|------------------|
-| Container exited or won’t stay up | App crashed at startup | `docker logs CONT_NAME` | See error output from the last run |
+| Container exited or won't stay up | App crashed at startup | `docker logs CONT_NAME` | See error output from the last run |
 | Container running but acting strange | App is alive but misbehaving | `docker logs -f CONT_NAME` | Watch live behavior and errors |
-| You forgot how the container was started | Assumptions are unreliable | `docker inspect CONT_NAME` | Docker’s source of truth (env, ports, image) |
-| Logs aren’t enough | Need to look inside | `docker exec -it CONT_NAME /bin/sh` | Debug from inside the container |
+| You forgot how the container was started | Assumptions are unreliable | `docker inspect CONT_NAME` | Docker's source of truth (env, ports, image) |
+| Logs aren't enough | Need to look inside | `docker exec -it CONT_NAME /bin/sh` | Debug from inside the container |
 | App stuck or config changed | Process needs reset | `docker restart CONT_NAME` | Clean restart without rebuilding |
 
 ---
 
 ## 7. Safe Delete Flow (Memorize This)
 
-**Goal:** clean Docker without “blocked by dependency” errors.
+**Goal:** clean Docker without "blocked by dependency" errors.
 
 Docker will block image deletion if any container still exists that references it (even stopped). So deletion must always follow the same order.
 
@@ -209,4 +212,64 @@ Configure → `-e`
 Debug → `logs / inspect / exec`  
 Clean → `stop → rm → rmi`  
 
-→ Ready to practice? [Go to Lab 01](../docker-labs/01-containers-portbinding-lab.md)
+---
+
+## On the Webstore
+
+These are the exact commands to run the webstore-db container manually — before Compose automates it. The same flags, the same env vars, the same image. Compose just wraps this.
+
+```bash
+# Pull the webstore images
+docker pull nginx:1.24
+docker pull postgres:15
+
+# Run webstore-db in service mode with required config
+docker run -d \
+  --name webstore-db \
+  -e POSTGRES_DB=webstore \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=secret \
+  postgres:15
+
+# Run webstore-frontend in service mode
+docker run -d \
+  --name webstore-frontend \
+  nginx:1.24
+
+# Check both are running
+docker ps
+
+# Watch webstore-db startup logs
+docker logs -f webstore-db
+
+# Inspect webstore-db — confirm env vars were applied
+docker inspect webstore-db
+
+# Enter webstore-db to verify postgres is running
+docker exec -it webstore-db /bin/sh
+# Inside: psql -U admin -d webstore
+# Inside: \l   (list databases)
+# Inside: exit
+
+# Safe delete when done
+docker stop webstore-frontend webstore-db
+docker rm webstore-frontend webstore-db
+```
+
+**What you are proving:** every flag in the `docker compose up` you run later maps directly to a `docker run` flag you already understand.
+
+---
+
+## What Breaks
+
+| Symptom | Cause | First command to run |
+|---|---|---|
+| `docker: Error response from daemon: Conflict. The container name is already in use` | A container with that name already exists (even stopped) | `docker ps -a` to find it, then `docker rm NAME` |
+| Container exits immediately with no error | The main process has no foreground task to keep it alive | `docker logs CONTAINER_NAME` — look for the exit reason |
+| `docker rm` fails with `removal of container is not permitted` | Container is still running | `docker stop NAME` first, then `docker rm NAME` |
+| `docker rmi` fails with `image is being used by stopped container` | A stopped container still references the image | `docker ps -a` to find it, `docker rm NAME`, then `docker rmi IMAGE` |
+| `Error response from daemon: No such container` | Wrong name or the container was already deleted | `docker ps -a` to see what actually exists |
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → Container Lifecycle · Image vs Container · Debugging](../99-interview-prep/README.md#container-lifecycle--debugging)

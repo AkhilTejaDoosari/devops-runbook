@@ -13,7 +13,7 @@
 
 The webstore ran on a Linux server. Now you are going to containerize it — but before you containerize your own app, you need to understand how containers work at the most basic level. What does it mean to run nginx as a container? How do you reach it from a browser? What happens when it crashes?
 
-This lab uses prebuilt images — nginx for the webstore-frontend, MySQL for an example of a service that requires configuration at startup. By the end you will have run, inspected, debugged, and cleaned up containers confidently. Lab 02 picks up here to wire multiple containers together into the actual webstore stack.
+This lab uses prebuilt images — nginx for the webstore-frontend and postgres for webstore-db. By the end you will have run, inspected, debugged, and cleaned up containers confidently. Lab 02 picks up here to wire multiple containers together into the actual webstore stack.
 
 ## What this lab covers
 
@@ -161,25 +161,27 @@ Press `Ctrl+C` to stop following logs.
 
 **Goal:** pass required environment variables to a container that needs them.
 
-1. Try running MySQL without any configuration
+1. Try running webstore-db without any configuration
 ```bash
-docker run -d --name mysql-test mysql:8.0
+docker run -d --name webstore-db-test postgres:15
 ```
 
 2. Check what happened
 ```bash
 docker ps -a
-docker logs mysql-test
+docker logs webstore-db-test
 ```
 
-**What to observe:** container exited immediately — MySQL requires a root password. This is exactly what happens when you run webstore-db without the required postgres environment variables.
+**What to observe:** container exited immediately — postgres requires at minimum `POSTGRES_PASSWORD`. This is the `-e` flag in action — without it the image refuses to start.
 
-3. Run MySQL with the required environment variable
+3. Run webstore-db with the required environment variables
 ```bash
 docker run -d \
-  --name mysql-configured \
-  -e MYSQL_ROOT_PASSWORD=secret \
-  mysql:8.0
+  --name webstore-db-configured \
+  -e POSTGRES_DB=webstore \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=secret \
+  postgres:15
 ```
 
 4. Confirm it is running
@@ -189,10 +191,10 @@ docker ps
 
 5. Check logs to confirm clean startup
 ```bash
-docker logs mysql-configured
+docker logs webstore-db-configured
 ```
 
-**What to observe:** MySQL started successfully this time
+**What to observe:** postgres started successfully — you will see `database system is ready to accept connections` in the logs
 
 ---
 
@@ -254,7 +256,7 @@ docker logs broken-1
 
 ### Break 2 — Missing required environment variable
 
-You already did this in Section 4 with MySQL. Go back and re-read those logs now with fresh eyes.
+You already did this in Section 4 with webstore-db. Go back and re-read those logs now with fresh eyes.
 
 **What to observe:** the error message tells you exactly what is missing
 
@@ -292,12 +294,12 @@ docker ps -a
 
 2. Stop all running containers
 ```bash
-docker stop webstore-frontend webstore-frontend-2 mysql-configured
+docker stop webstore-frontend webstore-frontend-2 webstore-db-configured
 ```
 
 3. Remove all containers (including the failed ones)
 ```bash
-docker rm ubuntu-test webstore-frontend webstore-frontend-2 mysql-configured mysql-test broken-1 broken-2
+docker rm ubuntu-test webstore-frontend webstore-frontend-2 webstore-db-configured webstore-db-test broken-1 broken-2
 ```
 
 4. Confirm no containers remain
@@ -307,7 +309,7 @@ docker ps -a
 
 5. Remove images
 ```bash
-docker rmi nginx:1.24 ubuntu:22.04 ubuntu mysql:8.0
+docker rmi nginx:1.24 ubuntu:22.04 ubuntu postgres:15
 ```
 
 6. Confirm images are gone
@@ -327,8 +329,8 @@ Do not move to Lab 02 until every box is checked.
 - [ ] I entered an ubuntu container interactively, created a file, exited, restarted, and confirmed the file survived the stop/start cycle
 - [ ] I ran nginx with `-d` and `-p` and saw the welcome page in my browser
 - [ ] I watched live logs with `docker logs -f` and saw a new line appear when I refreshed the browser
-- [ ] I ran MySQL without `-e` and read the error — I know why it failed
-- [ ] I ran MySQL with `-e MYSQL_ROOT_PASSWORD` and confirmed clean startup in logs
+- [ ] I ran webstore-db without `-e` and read the error — I know why it failed
+- [ ] I ran webstore-db with the correct postgres env vars and confirmed clean startup in logs
 - [ ] I used `docker inspect` and found the port mapping and image name in the output
 - [ ] I used `docker exec -it` to enter a running container and looked around
 - [ ] I produced a port conflict error on purpose and understood what it meant

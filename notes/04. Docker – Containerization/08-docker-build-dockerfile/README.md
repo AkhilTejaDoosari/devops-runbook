@@ -8,7 +8,8 @@
 [Layers](../07-docker-layers/README.md) |
 [Build](../08-docker-build-dockerfile/README.md) |
 [Registry](../09-docker-registry/README.md) |
-[Compose](../10-docker-compose/README.md)
+[Compose](../10-docker-compose/README.md) |
+[Interview Prep](../99-interview-prep/README.md)
 
 # Docker Build (Dockerfile)
 
@@ -505,5 +506,35 @@ OS package managers are Linux-specific.
 ## 19) One-Line Truth
 
 > A Dockerfile is a cached, ordered, Linux build recipe that separates build-time from run-time to create reproducible images.
+
+---
+
+## What Breaks
+
+| Symptom | Cause | First command to run |
+|---|---|---|
+| `failed to solve: failed to read dockerfile` | Dockerfile is not named `Dockerfile` or is in the wrong directory | `ls -la` in the directory where you ran `docker build` |
+| `COPY failed: file not found in build context` | File path in `COPY` doesn't exist relative to the build context | Check the path is correct and the file exists — `ls` in the project root |
+| Container starts but app crashes immediately | `CMD` is wrong — wrong file name, wrong path, or wrong syntax | `docker logs CONTAINER_NAME` to see the exact error |
+| Build works but `node_modules` is missing inside container | `COPY . .` ran before `RUN npm install` — copies over the installed modules | Put `RUN npm install` before `COPY . .` |
+| Image builds but secrets are baked in | `.env` file was not excluded — `COPY . .` pulled it into the image | Add `.env` to `.dockerignore` — rebuild the image |
+
+---
+
+## Daily Commands
+
+| Command | What it does |
+|---|---|
+| `docker build -t NAME:TAG .` | Build an image — `.` sets the build context to current directory |
+| `docker build --no-cache -t NAME:TAG .` | Build with no cache — forces every layer to rebuild |
+| `docker build -f PATH/Dockerfile -t NAME:TAG .` | Build using a Dockerfile at a non-default location |
+| `docker run -p HOST:CONTAINER NAME:TAG` | Run the built image as a container with port binding |
+| `docker history NAME:TAG` | Inspect all layers the Dockerfile produced |
+| `docker image inspect NAME:TAG` | Full metadata — entrypoint, CMD, env vars, layers |
+| `docker run --rm NAME:TAG COMMAND` | Run a one-off command in the image and auto-delete the container |
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → Dockerfile · Build-time vs Run-time · Multi-stage](../99-interview-prep/README.md#dockerfile--build-time-vs-run-time--multi-stage)
 
 → Ready to practice? [Go to Lab 03](../docker-labs/03-build-layers-lab.md)

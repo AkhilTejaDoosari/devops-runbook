@@ -8,7 +8,8 @@
 [Layers](../07-docker-layers/README.md) |
 [Build](../08-docker-build-dockerfile/README.md) |
 [Registry](../09-docker-registry/README.md) |
-[Compose](../10-docker-compose/README.md)
+[Compose](../10-docker-compose/README.md) |
+[Interview Prep](../99-interview-prep/README.md)
 
 # Docker Volumes
 
@@ -267,5 +268,35 @@ Container (code runs here)  ──>  Volume (data lives here)
 **Never forget:**
 Data in containers = temporary
 Data in volumes = permanent
+
+---
+
+## What Breaks
+
+| Symptom | Cause | First command to run |
+|---|---|---|
+| `docker: Error response from daemon: invalid mount config` | Bind mount path does not exist on the host | Create the host directory first: `mkdir -p /host/path` |
+| Data is gone after container restart | No volume attached — data was written to the container layer | `docker inspect CONTAINER_NAME \| grep Mounts` — if empty, no volume was used |
+| `docker volume rm` fails with `volume is in use` | A container (even stopped) still references the volume | `docker ps -a` to find it, `docker rm CONTAINER_NAME` first |
+| Changes on host not visible inside container | Bind mount path is wrong — host and container paths don't match | `docker inspect CONTAINER_NAME \| grep -A 10 Mounts` — verify the Source and Destination paths |
+| Named volume exists but data is missing | A new volume was created with the same name after the old one was deleted | `docker volume inspect VOLUME_NAME` — check `CreatedAt` to confirm it is the right volume |
+
+---
+
+## Daily Commands
+
+| Command | What it does |
+|---|---|
+| `docker volume create NAME` | Create a named volume |
+| `docker volume ls` | List all volumes on this host |
+| `docker volume inspect NAME` | Show volume location, driver, and mount path |
+| `docker volume rm NAME` | Delete a volume — container must be removed first |
+| `docker volume prune` | Delete all volumes not currently used by any container |
+| `docker run -v NAME:/container/path IMAGE` | Mount a named volume into a container |
+| `docker run -v /host/path:/container/path IMAGE` | Bind mount a host directory into a container |
+| `docker inspect CONTAINER \| grep -A 10 Mounts` | Show all volume and bind mount details for a container |
+
+---
+→ **Interview questions for this topic:** [99-interview-prep → Volumes · Named vs Bind · Data Persistence](../99-interview-prep/README.md#volumes--named-vs-bind--data-persistence)
 
 → Ready to practice? [Go to Lab 02](../docker-labs/02-networking-volumes-lab.md)

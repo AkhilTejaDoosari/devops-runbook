@@ -10,7 +10,8 @@
 [NAT](../07-nat/README.md) |
 [DNS](../08-dns/README.md) |
 [Firewalls](../09-firewalls/README.md) |
-[Complete Journey](../10-complete-journey/README.md)
+[Complete Journey](../10-complete-journey/README.md) |
+[Interview](../99-interview-prep/README.md)
 
 ---
 
@@ -703,5 +704,21 @@ How?
 ## What This Means for the Webstore
 
 When you deploy the webstore to a server environment, you decide what subnet it lives in. A single server on a `/24` subnet shares that network with 253 other possible addresses. When you need to separate webstore-api from webstore-db for security — putting the database in a private subnet with no internet route — you need two subnets: one public (`10.0.1.0/24`) for the frontend and API tier, one private (`10.0.2.0/24`) for the database. Postgres lives on `10.0.2.50`. A browser on the internet cannot reach postgres directly — not because of a firewall rule, but because there is no route to that subnet from outside. This is the network design pattern AWS VPC implements, and you will lay it out exactly this way when you get there.
+
+---
+
+## What Breaks
+
+| Symptom | Cause | First command to run |
+|---|---|---|
+| Two subnets overlap — AWS rejects the configuration | Miscalculated CIDR ranges | `ipcalc CIDR` on both — check if HostMin/HostMax ranges intersect |
+| Instance in private subnet cannot reach the internet | No NAT Gateway route in the route table | Check route table — private subnets need `0.0.0.0/0 → NAT Gateway` |
+| Instance in public subnet cannot reach the internet | No Internet Gateway route | Check route table — public subnets need `0.0.0.0/0 → IGW` |
+| Two instances in different subnets cannot communicate | Missing local VPC route or Security Group blocking | Confirm both are in the same VPC — intra-VPC traffic uses the `local` route automatically |
+| Database reachable from internet despite being private | Route table has `0.0.0.0/0 → IGW` — subnet is effectively public | Remove the IGW route from the db subnet's route table |
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → Subnets · CIDR · IP Math](../99-interview-prep/README.md#subnets--cidr--ip-math)
 
 → Ready to practice? [Go to Lab 02](../networking-labs/02-devices-subnets-lab.md)

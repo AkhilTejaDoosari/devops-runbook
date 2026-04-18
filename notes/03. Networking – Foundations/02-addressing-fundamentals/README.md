@@ -10,7 +10,8 @@
 [NAT](../07-nat/README.md) |
 [DNS](../08-dns/README.md) |
 [Firewalls](../09-firewalls/README.md) |
-[Complete Journey](../10-complete-journey/README.md)
+[Complete Journey](../10-complete-journey/README.md) |
+[Interview](../99-interview-prep/README.md)
 
 ---
 
@@ -1086,3 +1087,9 @@ ARP = Looking up "Who's driving truck to this address?"
 ## What This Means for the Webstore
 
 The webstore server has one IP address. Every service on that server shares it. What separates them is ports: nginx answers on port 80, the API on port 8080, postgres on port 5432. When the webstore-api connects to postgres, it connects to the server's own IP at port 5432 — not necessarily `localhost`, because postgres is configured with `listen_addresses` that controls which interfaces it binds to. When postgres is set to `127.0.0.1` only, the API can reach it from the same machine. When postgres is set to `0.0.0.0`, it is reachable from any interface including external ones. Reading an IP binding tells you immediately whether a service is reachable from outside or locked to the machine.
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → MAC vs IP · ARP · Addressing](../99-interview-prep/README.md#mac-vs-ip--arp--addressing)
+
+→ Ready to practice? [Go to Lab 01](../networking-labs/01-foundation-addressing-ip-lab.md)

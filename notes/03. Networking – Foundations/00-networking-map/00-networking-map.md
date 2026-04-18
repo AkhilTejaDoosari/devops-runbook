@@ -8,7 +8,8 @@
 [NAT](../07-nat/README.md) |
 [DNS](../08-dns/README.md) |
 [Firewalls](../09-firewalls/README.md) |
-[Complete Journey](../10-complete-journey/README.md)
+[Complete Journey](../10-complete-journey/README.md) |
+[Interview](../99-interview-prep/README.md)
 
 ---
 

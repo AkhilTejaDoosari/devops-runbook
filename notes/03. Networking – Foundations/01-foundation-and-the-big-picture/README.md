@@ -10,7 +10,8 @@
 [NAT](../07-nat/README.md) |
 [DNS](../08-dns/README.md) |
 [Firewalls](../09-firewalls/README.md) |
-[Complete Journey](../10-complete-journey/README.md)
+[Complete Journey](../10-complete-journey/README.md) |
+[Interview](../99-interview-prep/README.md)
 
 ---
 
@@ -819,3 +820,9 @@ Every step follows the same principles:
 ## What This Means for the Webstore
 
 The webstore is three processes on a Linux server — nginx on port 80, the API on port 8080, and postgres on port 5432. When a browser requests the webstore homepage, it sends a packet. That packet has a header at every layer: application (HTTP GET /), transport (TCP, destination port 80), network (the server's IP address), data link (MAC address of the next router hop). Each layer does exactly one job and hands off to the next. The webstore receives the request, nginx processes it, and the response travels back through the same stack in reverse. Everything in this series explains one piece of that journey.
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → OSI Model · Layers · Encapsulation](../99-interview-prep/README.md#osi-model--layers--encapsulation)
+
+→ Ready to practice? [Go to Lab 01](../networking-labs/01-foundation-addressing-ip-lab.md)

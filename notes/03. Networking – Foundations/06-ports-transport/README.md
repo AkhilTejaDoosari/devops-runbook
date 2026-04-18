@@ -10,7 +10,8 @@
 [NAT](../07-nat/README.md) |
 [DNS](../08-dns/README.md) |
 [Firewalls](../09-firewalls/README.md) |
-[Complete Journey](../10-complete-journey/README.md)
+[Complete Journey](../10-complete-journey/README.md) |
+[Interview](../99-interview-prep/README.md)
 
 ---
 
@@ -1272,5 +1273,9 @@ Mail delivery needs both:
 ## What This Means for the Webstore
 
 Three services, one server, three ports. nginx on 80, webstore-api on 8080, postgres on 5432. When a connection arrives at the server's IP, the OS reads the destination port and delivers it to the right process. When you check `ss -tlnp` on the webstore server, you will see `0.0.0.0:80` for nginx (listening on all interfaces), `0.0.0.0:8080` for the API, and `127.0.0.1:5432` for postgres (loopback only). That single difference in binding address tells you everything about what is and is not reachable from outside. Reading `ss` output is how you verify a service is actually listening before you debug anything else.
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → TCP vs UDP · Ports · Three-Way Handshake](../99-interview-prep/README.md#tcp-vs-udp--ports--three-way-handshake)
 
 → Ready to practice? [Go to Lab 03](../networking-labs/03-ports-transport-nat-lab.md)

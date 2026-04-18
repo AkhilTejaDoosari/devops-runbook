@@ -10,7 +10,8 @@
 [NAT](../07-nat/README.md) |
 [DNS](../08-dns/README.md) |
 [Firewalls](../09-firewalls/README.md) |
-[Complete Journey](../10-complete-journey/README.md)
+[Complete Journey](../10-complete-journey/README.md) |
+[Interview](../99-interview-prep/README.md)
 
 ---
 
@@ -1674,3 +1675,21 @@ From typing a URL to packets traveling the world, from Docker containers talking
 Everything else is just details.
 
 ---
+
+## What Breaks
+
+| Symptom | Cause | First command to run |
+|---|---|---|
+| DNS resolves but browser shows "connection refused" | Service is not listening — DNS and routing are fine but nothing answers on the port | `nc -zv IP PORT` — then `ss -tlnp \| grep PORT` on the server |
+| DNS resolves but connection times out | Firewall is dropping the packet before it reaches the service | `nc -zv IP PORT` — timeout means firewall, not the app |
+| `dig` returns an IP but the wrong one | Stale DNS cache — old A record still in resolver | `dig @8.8.8.8 DOMAIN` to bypass local cache and compare |
+| Service is running and port is open but still unreachable | App bound to `127.0.0.1` not `0.0.0.0` — only reachable locally | `ss -tlnp \| grep PORT` — check the address column |
+| Request reaches nginx but API returns 502 Bad Gateway | nginx can't reach upstream — webstore-api is down or on wrong port | `curl http://localhost:8080` from the server directly |
+| Everything works locally but fails from outside | Port not exposed or Security Group missing inbound rule | Check `docker ps` ports, iptables rules, and Security Group inbound rules |
+| High latency at one traceroute hop | Congestion at that router — not your server | `traceroute -n DESTINATION` — identify which hop introduces the spike |
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → The Complete Journey](../99-interview-prep/README.md#the-complete-journey)
+
+→ Ready to practice? [Go to Lab 05](../networking-labs/05-complete-journey-lab.md)

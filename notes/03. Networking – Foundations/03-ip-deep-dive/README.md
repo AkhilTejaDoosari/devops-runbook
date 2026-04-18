@@ -10,7 +10,8 @@
 [NAT](../07-nat/README.md) |
 [DNS](../08-dns/README.md) |
 [Firewalls](../09-firewalls/README.md) |
-[Complete Journey](../10-complete-journey/README.md)
+[Complete Journey](../10-complete-journey/README.md) |
+[Interview](../99-interview-prep/README.md)
 
 ---
 
@@ -1130,5 +1131,71 @@ DHCP Reservation = Reserved hotel room
 ## What This Means for the Webstore
 
 Postgres on the webstore server is configured with `listen_addresses` in `postgresql.conf`. If it is set to `localhost`, only processes on the same machine can connect — correct for a production server where the API runs locally. If it is set to `*` or the server's IP, processes on other machines can connect — necessary when the API and database run on separate servers. This is not a code change. It is an IP binding decision. Understanding that `127.0.0.1` means this machine only and `0.0.0.0` means all interfaces is what lets you read a database config file and immediately know whether it is reachable from outside. The webstore's nginx is bound to `0.0.0.0:80` — it must be, to serve browsers. Postgres is bound to `127.0.0.1:5432` — it must be, to block direct external access.
+
+---
+
+## On the Webstore
+
+The webstore server has one IP address — everything below maps IP concepts directly to it.
+
+```bash
+# Step 1 — confirm the server has a private IP (DHCP or static)
+ip addr show
+# Look for: inet 10.x.x.x or 192.168.x.x — this is your private IP
+# The /24 or /16 after the IP is your subnet mask
+
+# Step 2 — confirm your public IP is different (NAT in action)
+curl -s ifconfig.me
+# This is what webstore.example.com's A record will point to
+# Your private IP and public IP will not match — that's expected
+
+# Step 3 — confirm the three webstore services are bound to the right addresses
+ss -tlnp | grep -E '(:80|:8080|:5432)'
+# Expected:
+# 0.0.0.0:80     → nginx — listening on all interfaces, reachable from outside
+# 0.0.0.0:8080   → webstore-api — listening on all interfaces
+# 127.0.0.1:5432 → webstore-db — loopback only, NOT reachable from outside
+
+# Step 4 — confirm localhost means this machine only
+curl http://localhost:80
+# nginx responds — traffic never left the machine
+
+# Step 5 — confirm the server's interface and gateway
+ip route
+# Look for: default via X.X.X.X dev eth0
+# That gateway IP is where all non-local traffic exits
+
+# Step 6 — check the server's ARP table — who is on the same subnet
+arp -a
+# Your gateway's MAC will be here — every packet to the internet
+# goes to this MAC at Layer 2, even though the destination IP is far away
+
+# Step 7 — confirm webstore-db is NOT reachable from an external IP
+# From a different machine or using your public IP:
+nc -zv YOUR_PUBLIC_IP 5432
+# Expected: Connection refused or timed out — postgres is loopback-only
+
+# Step 8 — check DHCP lease details (what the server was assigned)
+cat /var/lib/dhcp/dhclient.leases 2>/dev/null | grep -E '(fixed-address|routers|domain-name-server)'
+# Shows: IP assigned, gateway, DNS server — the full DHCP assignment
+```
+
+The postgres `127.0.0.1` binding in step 3 is intentional security. It means postgres is only reachable from inside the same machine. When you containerize the webstore in Docker, this changes — postgres gets a container IP and webstore-api reaches it by container name across the Docker network, not via localhost.
+
+---
+
+## What Breaks
+
+| Symptom | Cause | First command to run |
+|---|---|---|
+| Service is running but unreachable from outside | Service is bound to `127.0.0.1` instead of `0.0.0.0` | `ss -tlnp \| grep PORT` — check the bind address column |
+| `curl ifconfig.me` returns the same IP as `ip addr show` | No NAT — machine has a public IP directly (common on cloud VMs) | This is normal on EC2 — the instance has a public IP, no router NAT |
+| DHCP assigned a new IP after reboot — configs broke | Dynamic IP changed | Set a static IP or DHCP reservation for server services |
+| `ping` works but service is unreachable | Firewall is blocking the port, not the host | `nc -zv HOST PORT` — if it times out, the firewall is the problem |
+| `nc -zv HOST PORT` says `Connection refused` not timeout | Host is reachable but nothing is listening on that port | `ss -tlnp \| grep PORT` on the server — is the service actually running? |
+
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → MAC vs IP · ARP · Addressing](../99-interview-prep/README.md#mac-vs-ip--arp--addressing)
 
 → Ready to practice? [Go to Lab 01](../networking-labs/01-foundation-addressing-ip-lab.md)

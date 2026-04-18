@@ -2,7 +2,18 @@
   <img src="../../assets/networking-banner.svg" alt="networking" width="100%"/>
 </p>
 
-[← devops-runbook](../../README.md)
+[← devops-runbook](../../README.md) |
+[Foundation](./01-foundation-and-the-big-picture/README.md) |
+[Addressing](./02-addressing-fundamentals/README.md) |
+[IP Deep Dive](./03-ip-deep-dive/README.md) |
+[Devices](./04-network-devices/README.md) |
+[Subnets & CIDR](./05-subnets-cidr/README.md) |
+[Ports & Transport](./06-ports-transport/README.md) |
+[NAT](./07-nat/README.md) |
+[DNS](./08-dns/README.md) |
+[Firewalls](./09-firewalls/README.md) |
+[Complete Journey](./10-complete-journey/README.md) |
+[Interview](./99-interview-prep/README.md)
 
 ---
 

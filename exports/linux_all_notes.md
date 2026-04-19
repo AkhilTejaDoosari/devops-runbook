@@ -1,6 +1,6 @@
 
 ---
-# FILE: 01. Linux – System Fundamentals/01-boot-process/README.md
+# SOURCE: 01. Linux – System Fundamentals/01-boot-process/README.md
 ---
 
 [Home](../README.md) |
@@ -331,7 +331,7 @@ file during boot and starts every enabled service. That process starts here.
 → **Interview questions for this topic:** [99-interview-prep → Boot Process](../99-interview-prep/README.md#boot-process)
 
 ---
-# FILE: 01. Linux – System Fundamentals/02-basics/README.md
+# SOURCE: 01. Linux – System Fundamentals/02-basics/README.md
 ---
 
 [Home](../README.md) |
@@ -641,7 +641,7 @@ The webstore directory structure now exists on disk. Every file from here onward
 → **Interview questions for this topic:** [99-interview-prep → Linux Basics](../99-interview-prep/README.md#linux-basics)
 
 ---
-# FILE: 01. Linux – System Fundamentals/03-working-with-files/README.md
+# SOURCE: 01. Linux – System Fundamentals/03-working-with-files/README.md
 ---
 
 [Home](../README.md) |
@@ -1017,7 +1017,7 @@ The webstore now has a real config file and placeholder log files. The backup ex
 → **Interview questions for this topic:** [99-interview-prep → Working with Files](../99-interview-prep/README.md#working-with-files)
 
 ---
-# FILE: 01. Linux – System Fundamentals/04-filter-commands/README.md
+# SOURCE: 01. Linux – System Fundamentals/04-filter-commands/README.md
 ---
 
 [Home](../README.md) |
@@ -1473,7 +1473,7 @@ find ~/webstore/logs -name "*.log" -exec grep -l '500' {} \;
 → **Interview questions for this topic:** [99-interview-prep → Filter Commands](../99-interview-prep/README.md#filter-commands)
 
 ---
-# FILE: 01. Linux – System Fundamentals/05-sed-stream-editor/README.md
+# SOURCE: 01. Linux – System Fundamentals/05-sed-stream-editor/README.md
 ---
 
 [Home](../README.md) |
@@ -1885,7 +1885,7 @@ grep 'env' ~/webstore/config/webstore.conf
 → **Interview questions for this topic:** [99-interview-prep → sed](../99-interview-prep/README.md#sed)
 
 ---
-# FILE: 01. Linux – System Fundamentals/06-awk/README.md
+# SOURCE: 01. Linux – System Fundamentals/06-awk/README.md
 ---
 
 [Home](../README.md) |
@@ -2316,7 +2316,7 @@ awk '
 → **Interview questions for this topic:** [99-interview-prep → awk](../99-interview-prep/README.md#awk)
 
 ---
-# FILE: 01. Linux – System Fundamentals/07-text-editor/README.md
+# SOURCE: 01. Linux – System Fundamentals/07-text-editor/README.md
 ---
 
 [Home](../README.md) |
@@ -2614,7 +2614,7 @@ grep 'db_host' ~/webstore/config/webstore.conf
 → **Interview questions for this topic:** [99-interview-prep → vim](../99-interview-prep/README.md#vim)
 
 ---
-# FILE: 01. Linux – System Fundamentals/08-user-and-group-management/README.md
+# SOURCE: 01. Linux – System Fundamentals/08-user-and-group-management/README.md
 ---
 
 [Home](../README.md) |
@@ -2913,7 +2913,7 @@ File 09 (Permissions) picks up from here — now that the right users and groups
 → **Interview questions for this topic:** [99-interview-prep → Users & Groups](../99-interview-prep/README.md#users-and-groups)
 
 ---
-# FILE: 01. Linux – System Fundamentals/09-file-ownership-and-permissions/README.md
+# SOURCE: 01. Linux – System Fundamentals/09-file-ownership-and-permissions/README.md
 ---
 
 [Home](../README.md) |
@@ -3264,7 +3264,7 @@ ls -lah ~/webstore/
 → **Interview questions for this topic:** [99-interview-prep → Permissions](../99-interview-prep/README.md#permissions)
 
 ---
-# FILE: 01. Linux – System Fundamentals/10-archiving-and-compression/README.md
+# SOURCE: 01. Linux – System Fundamentals/10-archiving-and-compression/README.md
 ---
 
 [Home](../README.md) |
@@ -3545,7 +3545,7 @@ ls -lh ~/webstore/logs/
 → **Interview questions for this topic:** [99-interview-prep → Archiving](../99-interview-prep/README.md#archiving)
 
 ---
-# FILE: 01. Linux – System Fundamentals/11-package-management/README.md
+# SOURCE: 01. Linux – System Fundamentals/11-package-management/README.md
 ---
 
 [Home](../README.md) |
@@ -3790,7 +3790,7 @@ sudo apt autoremove
 → **Interview questions for this topic:** [99-interview-prep → Package Management](../99-interview-prep/README.md#package-management)
 
 ---
-# FILE: 01. Linux – System Fundamentals/12-service-management/README.md
+# SOURCE: 01. Linux – System Fundamentals/12-service-management/README.md
 ---
 
 [Home](../README.md) |
@@ -4102,7 +4102,7 @@ systemctl is-enabled nginx
 → **Interview questions for this topic:** [99-interview-prep → Service Management](../99-interview-prep/README.md#service-management)
 
 ---
-# FILE: 01. Linux – System Fundamentals/13-networking/README.md
+# SOURCE: 01. Linux – System Fundamentals/13-networking/README.md
 ---
 
 [Home](../README.md) |
@@ -4486,7 +4486,7 @@ sudo tcpdump -A -i eth0 port 8080 -c 20
 → **Interview questions for this topic:** [99-interview-prep → Networking](../99-interview-prep/README.md#networking)
 
 ---
-# FILE: 01. Linux – System Fundamentals/14-logs-and-debug/README.md
+# SOURCE: 01. Linux – System Fundamentals/14-logs-and-debug/README.md
 ---
 
 [Home](../README.md) |
@@ -4842,7 +4842,7 @@ find /var/log/nginx/ -name "*.log" -mtime +7 -exec gzip {} \;
 → **Interview questions for this topic:** [99-interview-prep → Logs & Debug](../99-interview-prep/README.md#logs-and-debug)
 
 ---
-# FILE: 01. Linux – System Fundamentals/99-interview-prep/README.md
+# SOURCE: 01. Linux – System Fundamentals/99-interview-prep/README.md
 ---
 
 [Home](../README.md) |
@@ -5183,7 +5183,7 @@ nginx received the request and forwarded it to the upstream service (the API), b
 OOM stands for Out of Memory. When the Linux kernel runs out of RAM, it activates the OOM killer — it selects and kills processes to free memory. `dmesg | grep -i oom` shows if this happened and which processes were killed. A process that mysteriously disappeared without a trace was probably OOM killed.
 
 ---
-# FILE: 01. Linux – System Fundamentals/README.md
+# SOURCE: 01. Linux – System Fundamentals/README.md
 ---
 
 <p align="center">

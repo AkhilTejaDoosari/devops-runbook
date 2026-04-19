@@ -1,6 +1,6 @@
 
 ---
-# FILE: 02. Git & GitHub – Version Control/01-foundations/README.md
+# SOURCE: 02. Git & GitHub – Version Control/01-foundations/README.md
 ---
 
 [Home](../README.md) |
@@ -419,7 +419,7 @@ The webstore now has version control. Every change from here is tracked. File 02
 → **Interview questions for this topic:** [99-interview-prep → Git Foundations](../99-interview-prep/README.md#git-foundations)
 
 ---
-# FILE: 02. Git & GitHub – Version Control/02-stash-tags/README.md
+# SOURCE: 02. Git & GitHub – Version Control/02-stash-tags/README.md
 ---
 
 [Home](../README.md) |
@@ -681,7 +681,7 @@ File 03 picks up from here — building features in branches on top of this tagg
 → **Interview questions for this topic:** [99-interview-prep → Stash & Tags](../99-interview-prep/README.md#stash-and-tags)
 
 ---
-# FILE: 02. Git & GitHub – Version Control/03-history-branching/README.md
+# SOURCE: 02. Git & GitHub – Version Control/03-history-branching/README.md
 ---
 
 [Home](../README.md) |
@@ -1087,7 +1087,7 @@ File 04 picks up from here — pushing this feature branch to GitHub and opening
 → **Interview questions for this topic:** [99-interview-prep → History & Branching](../99-interview-prep/README.md#history-and-branching)
 
 ---
-# FILE: 02. Git & GitHub – Version Control/04-contribute/README.md
+# SOURCE: 02. Git & GitHub – Version Control/04-contribute/README.md
 ---
 
 [Home](../README.md) |
@@ -1435,7 +1435,7 @@ File 05 picks up from here — what happens when a commit needs to be undone aft
 → **Interview questions for this topic:** [99-interview-prep → Contribute](../99-interview-prep/README.md#contribute)
 
 ---
-# FILE: 02. Git & GitHub – Version Control/05-undo-recovery/README.md
+# SOURCE: 02. Git & GitHub – Version Control/05-undo-recovery/README.md
 ---
 
 [Home](../README.md) |
@@ -1768,7 +1768,7 @@ git log --oneline
 → **Interview questions for this topic:** [99-interview-prep → Undo & Recovery](../99-interview-prep/README.md#undo-and-recovery)
 
 ---
-# FILE: 02. Git & GitHub – Version Control/99-interview-prep/README.md
+# SOURCE: 02. Git & GitHub – Version Control/99-interview-prep/README.md
 ---
 
 [Home](../README.md) |
@@ -1917,7 +1917,7 @@ Has the commit been pushed? If not pushed — you can rewrite history with `amen
 First — rotate the secret immediately. Delete the API key, change the password, invalidate the token. Anyone who has already seen the repo may have the credential. Second — remove it from history using `git filter-branch` or the BFG Repo Cleaner, then force push. Third — add it to `.gitignore` so it cannot be committed again. The critical point: deleting the file and pushing a new commit is not enough. The secret is still in the commit history and anyone who clones the repo can find it.
 
 ---
-# FILE: 02. Git & GitHub – Version Control/README.md
+# SOURCE: 02. Git & GitHub – Version Control/README.md
 ---
 
 <p align="center">

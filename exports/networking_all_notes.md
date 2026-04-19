@@ -1,6 +1,6 @@
 
 ---
-# FILE: 03. Networking – Foundations/00-networking-map/00-networking-map.md
+# SOURCE: 03. Networking – Foundations/00-networking-map/00-networking-map.md
 ---
 
 [Home](../README.md) |
@@ -13,7 +13,8 @@
 [NAT](../07-nat/README.md) |
 [DNS](../08-dns/README.md) |
 [Firewalls](../09-firewalls/README.md) |
-[Complete Journey](../10-complete-journey/README.md)
+[Complete Journey](../10-complete-journey/README.md) |
+[Interview](../99-interview-prep/README.md)
 
 ---
 
@@ -198,7 +199,7 @@ Response  → Reverse path to browser
 ```
 
 ---
-# FILE: 03. Networking – Foundations/01-foundation-and-the-big-picture/README.md
+# SOURCE: 03. Networking – Foundations/01-foundation-and-the-big-picture/README.md
 ---
 
 # File 01: Foundation & The Big Picture
@@ -1025,7 +1026,13 @@ Every step follows the same principles:
 The webstore is three processes on a Linux server — nginx on port 80, the API on port 8080, and postgres on port 5432. When a browser requests the webstore homepage, it sends a packet. That packet has a header at every layer: application (HTTP GET /), transport (TCP, destination port 80), network (the server's IP address), data link (MAC address of the next router hop). Each layer does exactly one job and hands off to the next. The webstore receives the request, nginx processes it, and the response travels back through the same stack in reverse. Everything in this series explains one piece of that journey.
 
 ---
-# FILE: 03. Networking – Foundations/02-addressing-fundamentals/README.md
+
+→ **Interview questions for this topic:** [99-interview-prep → OSI Model · Layers · Encapsulation](../99-interview-prep/README.md#osi-model--layers--encapsulation)
+
+→ Ready to practice? [Go to Lab 01](../networking-labs/01-foundation-addressing-ip-lab.md)
+
+---
+# SOURCE: 03. Networking – Foundations/02-addressing-fundamentals/README.md
 ---
 
 # File 02: Addressing Fundamentals
@@ -2119,7 +2126,13 @@ ARP = Looking up "Who's driving truck to this address?"
 The webstore server has one IP address. Every service on that server shares it. What separates them is ports: nginx answers on port 80, the API on port 8080, postgres on port 5432. When the webstore-api connects to postgres, it connects to the server's own IP at port 5432 — not necessarily `localhost`, because postgres is configured with `listen_addresses` that controls which interfaces it binds to. When postgres is set to `127.0.0.1` only, the API can reach it from the same machine. When postgres is set to `0.0.0.0`, it is reachable from any interface including external ones. Reading an IP binding tells you immediately whether a service is reachable from outside or locked to the machine.
 
 ---
-# FILE: 03. Networking – Foundations/03-ip-deep-dive/README.md
+
+→ **Interview questions for this topic:** [99-interview-prep → MAC vs IP · ARP · Addressing](../99-interview-prep/README.md#mac-vs-ip--arp--addressing)
+
+→ Ready to practice? [Go to Lab 01](../networking-labs/01-foundation-addressing-ip-lab.md)
+
+---
+# SOURCE: 03. Networking – Foundations/03-ip-deep-dive/README.md
 ---
 
 # File 03: IP Deep Dive & Assignment
@@ -3325,7 +3338,7 @@ The postgres `127.0.0.1` binding in step 3 is intentional security. It means pos
 → Ready to practice? [Go to Lab 01](../networking-labs/01-foundation-addressing-ip-lab.md)
 
 ---
-# FILE: 03. Networking – Foundations/04-network-devices/README.md
+# SOURCE: 03. Networking – Foundations/04-network-devices/README.md
 ---
 
 # File 04: Network Devices
@@ -4436,10 +4449,14 @@ Default Gateway = Building exit
 
 The webstore server sits behind a router. When a request arrives from a browser in another city, it has been forwarded by 10-20 routers on the way — each one reading only the destination IP, making a routing decision, and passing the packet to the next hop. The MAC address on the packet changed at every single one of those hops. The destination IP never changed. When you run `traceroute` to the webstore server, you are watching those router hops and their latencies in real time. A latency spike at hop 8 means that is where the delay is introduced — not at your server, not in your application code.
 
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → MAC vs IP · ARP · Addressing](../99-interview-prep/README.md#mac-vs-ip--arp--addressing)
+
 → Ready to practice? [Go to Lab 02](../networking-labs/02-devices-subnets-lab.md)
 
 ---
-# FILE: 03. Networking – Foundations/05-subnets-cidr/README.md
+# SOURCE: 03. Networking – Foundations/05-subnets-cidr/README.md
 ---
 
 # File 05: Network Segmentation (Subnets & CIDR)
@@ -5168,7 +5185,7 @@ When you deploy the webstore to a server environment, you decide what subnet it 
 → Ready to practice? [Go to Lab 02](../networking-labs/02-devices-subnets-lab.md)
 
 ---
-# FILE: 03. Networking – Foundations/06-ports-transport/README.md
+# SOURCE: 03. Networking – Foundations/06-ports-transport/README.md
 ---
 
 # File 06: Ports & Transport Layer
@@ -6447,10 +6464,14 @@ Mail delivery needs both:
 
 Three services, one server, three ports. nginx on 80, webstore-api on 8080, postgres on 5432. When a connection arrives at the server's IP, the OS reads the destination port and delivers it to the right process. When you check `ss -tlnp` on the webstore server, you will see `0.0.0.0:80` for nginx (listening on all interfaces), `0.0.0.0:8080` for the API, and `127.0.0.1:5432` for postgres (loopback only). That single difference in binding address tells you everything about what is and is not reachable from outside. Reading `ss` output is how you verify a service is actually listening before you debug anything else.
 
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → TCP vs UDP · Ports · Three-Way Handshake](../99-interview-prep/README.md#tcp-vs-udp--ports--three-way-handshake)
+
 → Ready to practice? [Go to Lab 03](../networking-labs/03-ports-transport-nat-lab.md)
 
 ---
-# FILE: 03. Networking – Foundations/07-nat/README.md
+# SOURCE: 03. Networking – Foundations/07-nat/README.md
 ---
 
 # File 07: NAT & Translation
@@ -7164,10 +7185,14 @@ Router = Translator:
 
 The webstore server has a private IP on the network — `10.0.1.45` or similar. When it receives a request from a browser on the internet, that request arrived at the public IP of the router, which NAT-translated it inbound to `10.0.1.45`. The browser never knew the server's private IP. When the server responds, the router translates the source IP back to public before sending it out. This NAT process is invisible in both directions. When you later configure `docker run -p 8080:80`, Docker is creating a DNAT rule in iptables — the exact same mechanism described in this file, applied at the container level. The concept is identical. The scope is smaller.
 
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → NAT · Port Forwarding · Translation](../99-interview-prep/README.md#nat--port-forwarding--translation)
+
 → Ready to practice? [Go to Lab 03](../networking-labs/03-ports-transport-nat-lab.md)
 
 ---
-# FILE: 03. Networking – Foundations/08-dns/README.md
+# SOURCE: 03. Networking – Foundations/08-dns/README.md
 ---
 
 # File 08: DNS
@@ -8069,10 +8094,14 @@ Expires after TTL
 
 When you register `webstore.example.com` and create an A record pointing to the server's public IP, every browser goes through the full DNS resolution chain before it can connect. The TTL on that A record controls how long DNS caches the answer. If you move the webstore to a new server, old DNS caches will keep sending traffic to the old IP until the TTL expires — this is why DNS changes always require a propagation wait. On the server itself, adding an entry like `10.0.1.50 webstore-db` to `/etc/hosts` lets the API connect to the database by hostname without a real DNS server. The OS resolves it locally, the query never goes to a DNS server, and the connection works.
 
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → DNS · Resolution · Records](../99-interview-prep/README.md#dns--resolution--records)
+
 → Ready to practice? [Go to Lab 04](../networking-labs/04-dns-firewalls-lab.md)
 
 ---
-# FILE: 03. Networking – Foundations/09-firewalls/README.md
+# SOURCE: 03. Networking – Foundations/09-firewalls/README.md
 ---
 
 # File 09: Firewalls & Security
@@ -8908,10 +8937,14 @@ Use stateless only when you need explicit DENY rules.
 
 The webstore server needs exactly three inbound rules: allow port 80 (nginx), allow port 8080 (API), allow port 22 (SSH). Everything else is dropped by default. Postgres on port 5432 should never be reachable directly from outside — it accepts connections only from `127.0.0.1` or the server's local interface. A missing DROP rule on port 5432 means anyone on the internet can attempt to connect to the webstore database directly. The iptables setup from Linux Lab 05 enforces this: HTTP open to the world, SSH restricted to your IP, postgres not reachable from outside at all. This same logic is what AWS Security Groups enforce at the cloud level — different syntax, identical concept.
 
+---
+
+→ **Interview questions for this topic:** [99-interview-prep → Firewalls · iptables · Security Groups](../99-interview-prep/README.md#firewalls--iptables--security-groups)
+
 → Ready to practice? [Go to Lab 04](../networking-labs/04-dns-firewalls-lab.md)
 
 ---
-# FILE: 03. Networking – Foundations/10-complete-journey/README.md
+# SOURCE: 03. Networking – Foundations/10-complete-journey/README.md
 ---
 
 # File 10: Complete Journey & OSI Deep Dive
@@ -10611,7 +10644,7 @@ Everything else is just details.
 → Ready to practice? [Go to Lab 05](../networking-labs/05-complete-journey-lab.md)
 
 ---
-# FILE: 03. Networking – Foundations/99-interview-prep/README.md
+# SOURCE: 03. Networking – Foundations/99-interview-prep/README.md
 ---
 
 [Home](../README.md) |
@@ -10770,7 +10803,7 @@ DNS first — `dig webstore.example.com` — does the name resolve? Reachability
 ← [Back to Networking README](../README.md)
 
 ---
-# FILE: 03. Networking – Foundations/fix-networking-navbar.sh
+# SOURCE: 03. Networking – Foundations/fix-networking-navbar.sh
 ---
 
 #!/bin/bash
@@ -10845,7 +10878,7 @@ echo ""
 echo "verify with: head -15 01-foundation-and-the-big-picture/README.md"
 
 ---
-# FILE: 03. Networking – Foundations/networking-labs/01-foundation-addressing-ip-lab.md
+# SOURCE: 03. Networking – Foundations/networking-labs/01-foundation-addressing-ip-lab.md
 ---
 
 [Home](../README.md) |
@@ -11097,7 +11130,7 @@ Do not move to Lab 02 until every box is checked.
 - [ ] I identified what DHCP gave me: IP, subnet mask, gateway, DNS server
 
 ---
-# FILE: 03. Networking – Foundations/networking-labs/02-devices-subnets-lab.md
+# SOURCE: 03. Networking – Foundations/networking-labs/02-devices-subnets-lab.md
 ---
 
 [Home](../README.md) |
@@ -11429,7 +11462,7 @@ Do not move to Lab 03 until every box is checked.
 - [ ] I removed the default route temporarily and confirmed internet was unreachable, then restored it
 
 ---
-# FILE: 03. Networking – Foundations/networking-labs/03-ports-transport-nat-lab.md
+# SOURCE: 03. Networking – Foundations/networking-labs/03-ports-transport-nat-lab.md
 ---
 
 [Home](../README.md) |
@@ -11712,7 +11745,7 @@ Do not move to Lab 04 until every box is checked.
 - [ ] I produced "Address already in use", "Connection refused", and "Permission denied" errors on purpose — I can explain what each one means
 
 ---
-# FILE: 03. Networking – Foundations/networking-labs/04-dns-firewalls-lab.md
+# SOURCE: 03. Networking – Foundations/networking-labs/04-dns-firewalls-lab.md
 ---
 
 [Home](../README.md) |
@@ -12046,7 +12079,7 @@ Do not move to Lab 05 until every box is checked.
 - [ ] I noted that Docker DNS exercises are in Docker Lab 02
 
 ---
-# FILE: 03. Networking – Foundations/networking-labs/05-complete-journey-lab.md
+# SOURCE: 03. Networking – Foundations/networking-labs/05-complete-journey-lab.md
 ---
 
 [Home](../README.md) |
@@ -12320,7 +12353,7 @@ Time yourself. Aim for 90 seconds covering all key points without looking at not
 - [ ] I reviewed the networking map and understand every row
 
 ---
-# FILE: 03. Networking – Foundations/networking-labs/README.md
+# SOURCE: 03. Networking – Foundations/networking-labs/README.md
 ---
 
 [Home](../README.md) |
@@ -12382,7 +12415,7 @@ Every lab has a "Break It on Purpose" section. Do not skip it. These are the fai
 Do not move to the next lab until every box in the checklist is checked.
 
 ---
-# FILE: 03. Networking – Foundations/README.md
+# SOURCE: 03. Networking – Foundations/README.md
 ---
 
 <p align="center">

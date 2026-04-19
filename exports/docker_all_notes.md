@@ -1,6 +1,6 @@
 
 ---
-# FILE: 04. Docker – Containerization/01-history-and-motivation/README.md
+# SOURCE: 04. Docker – Containerization/01-history-and-motivation/README.md
 ---
 
 [Home](../README.md) |
@@ -275,7 +275,7 @@ A Kubernetes cluster does not know what your app is. It pulls container images f
 → **Interview questions for this topic:** [99-interview-prep → Image vs Container · Containers vs VMs](../99-interview-prep/README.md#image-vs-container--containers-vs-vms)
 
 ---
-# FILE: 04. Docker – Containerization/02-technology-overview/README.md
+# SOURCE: 04. Docker – Containerization/02-technology-overview/README.md
 ---
 
 [Home](../README.md) |
@@ -448,7 +448,7 @@ This is not Docker magic. It is Linux kernel features — namespaces, cgroups, o
 → **Interview questions for this topic:** [99-interview-prep → Namespaces · cgroups · How Docker Uses the Linux Kernel](../99-interview-prep/README.md#namespaces--cgroups--how-docker-uses-the-linux-kernel)
 
 ---
-# FILE: 04. Docker – Containerization/03-docker-containers/README.md
+# SOURCE: 04. Docker – Containerization/03-docker-containers/README.md
 ---
 
 [Home](../README.md) |
@@ -728,7 +728,7 @@ docker rm webstore-frontend webstore-db
 → **Interview questions for this topic:** [99-interview-prep → Container Lifecycle · Image vs Container · Debugging](../99-interview-prep/README.md#container-lifecycle--debugging)
 
 ---
-# FILE: 04. Docker – Containerization/04-docker-port-binding/README.md
+# SOURCE: 04. Docker – Containerization/04-docker-port-binding/README.md
 ---
 
 [Home](../README.md) |
@@ -903,7 +903,7 @@ webstore-db
 → Ready to practice? [Go to Lab 01](../docker-labs/01-containers-portbinding-lab.md)
 
 ---
-# FILE: 04. Docker – Containerization/05-docker-networking/README.md
+# SOURCE: 04. Docker – Containerization/05-docker-networking/README.md
 ---
 
 [Home](../README.md) |
@@ -1409,7 +1409,7 @@ docker run --network webstore-network --name webstore-db postgres:15
 → Ready to practice? [Go to Lab 02](../docker-labs/02-networking-volumes-lab.md)
 
 ---
-# FILE: 04. Docker – Containerization/06-docker-volumes/README.md
+# SOURCE: 04. Docker – Containerization/06-docker-volumes/README.md
 ---
 
 [Home](../README.md) |
@@ -1716,7 +1716,7 @@ Data in volumes = permanent
 → Ready to practice? [Go to Lab 02](../docker-labs/02-networking-volumes-lab.md)
 
 ---
-# FILE: 04. Docker – Containerization/07-docker-layers/README.md
+# SOURCE: 04. Docker – Containerization/07-docker-layers/README.md
 ---
 
 [Home](../README.md) |
@@ -2316,7 +2316,7 @@ Docker images are stacks of cached, read-only layers; changing one layer invalid
 → Ready to practice? [Go to Lab 03](../docker-labs/03-build-layers-lab.md)
 
 ---
-# FILE: 04. Docker – Containerization/08-docker-build-dockerfile/README.md
+# SOURCE: 04. Docker – Containerization/08-docker-build-dockerfile/README.md
 ---
 
 [Home](../README.md) |
@@ -2861,7 +2861,7 @@ OS package managers are Linux-specific.
 → Ready to practice? [Go to Lab 03](../docker-labs/03-build-layers-lab.md)
 
 ---
-# FILE: 04. Docker – Containerization/09-docker-registry/README.md
+# SOURCE: 04. Docker – Containerization/09-docker-registry/README.md
 ---
 
 [Home](../README.md) |
@@ -3317,7 +3317,7 @@ Then you understand container registries at the correct practical level.
 → Ready to practice? [Go to Lab 04](../docker-labs/04-registry-compose-lab.md)
 
 ---
-# FILE: 04. Docker – Containerization/10-docker-compose/README.md
+# SOURCE: 04. Docker – Containerization/10-docker-compose/README.md
 ---
 
 [Home](../README.md) |
@@ -3735,7 +3735,7 @@ Compose only automates the same configuration you already know.
 → Ready to practice? [Go to Lab 04](../docker-labs/04-registry-compose-lab.md)
 
 ---
-# FILE: 04. Docker – Containerization/99-interview-prep/README.md
+# SOURCE: 04. Docker – Containerization/99-interview-prep/README.md
 ---
 
 [Home](../README.md) |
@@ -3913,7 +3913,7 @@ It controls startup order — the listed service starts before the dependent one
 ← [Back to Docker README](../README.md)
 
 ---
-# FILE: 04. Docker – Containerization/docker-labs/01-containers-portbinding-lab.md
+# SOURCE: 04. Docker – Containerization/docker-labs/01-containers-portbinding-lab.md
 ---
 
 [Home](../README.md) |
@@ -4255,7 +4255,7 @@ Do not move to Lab 02 until every box is checked.
 - [ ] I deleted everything in the correct order: stop → rm → rmi — with zero errors
 
 ---
-# FILE: 04. Docker – Containerization/docker-labs/02-networking-volumes-lab.md
+# SOURCE: 04. Docker – Containerization/docker-labs/02-networking-volumes-lab.md
 ---
 
 [Home](../README.md) |
@@ -4863,7 +4863,7 @@ Do not move to Lab 03 until every box is checked.
 - [ ] I deleted everything in the correct order: stop → rm containers → rm network → rm volume → rmi images
 
 ---
-# FILE: 04. Docker – Containerization/docker-labs/03-build-layers-lab.md
+# SOURCE: 04. Docker – Containerization/docker-labs/03-build-layers-lab.md
 ---
 
 [Home](../README.md) |
@@ -5298,7 +5298,7 @@ Do not move to Lab 04 until every box is checked.
 - [ ] I proved `.dockerignore` reduces the COPY layer size by comparing builds with and without it
 
 ---
-# FILE: 04. Docker – Containerization/docker-labs/04-registry-compose-lab.md
+# SOURCE: 04. Docker – Containerization/docker-labs/04-registry-compose-lab.md
 ---
 
 [Home](../README.md) |
@@ -5681,7 +5681,7 @@ Do not move to Kubernetes until every box is checked.
 - [ ] I ran `docker compose down` and confirmed containers and network were removed cleanly
 
 ---
-# FILE: 04. Docker – Containerization/docker-labs/README.md
+# SOURCE: 04. Docker – Containerization/docker-labs/README.md
 ---
 
 [Home](../README.md) |
@@ -5725,7 +5725,7 @@ These four labs containerize the webstore from scratch — the same project that
 | [Lab 04](./04-registry-compose-lab.md) | Registry + Compose | [09](../09-docker-registry/README.md) · [10](../10-docker-compose/README.md) |
 
 ---
-# FILE: 04. Docker – Containerization/README.md
+# SOURCE: 04. Docker – Containerization/README.md
 ---
 
 <p align="center">

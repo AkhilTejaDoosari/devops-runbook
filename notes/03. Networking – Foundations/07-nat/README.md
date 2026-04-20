@@ -241,8 +241,8 @@ Laptop receives response. Communication successful!
 │  ┌─────────────────────────────────────────┐             │                   
 │  │  Router / NAT                           │             │                 
 │  │                                         │             │               
-│  │  LAN: 192.168.1.1                       │             │             
-│  │  WAN: 203.45.67.89                      │             │
+│  │  LAN: 192.168.1.1   (Private-IP)        │             │             
+│  │  WAN: 203.45.67.89  (Public-IP)         │             │
 │  │                                         │             │
 │  │  NAT Table:                             │             │
 │  │ 192.168.1.45:54321 ↔ 203.45.67.89:54321 │             │

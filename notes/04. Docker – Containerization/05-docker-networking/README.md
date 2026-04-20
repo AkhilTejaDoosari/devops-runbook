@@ -17,7 +17,12 @@
 
 Containers are isolated by design — they cannot talk to each other or the outside world unless you explicitly wire them together. This file covers how Docker networking works under the hood, why the localhost rule breaks beginners, how Docker DNS makes container name resolution automatic, and how port binding is just NAT in disguise. By the end you will understand not just the commands but exactly what happens at the network layer when containers communicate.
 
-> **Foundation:** This file builds on networking concepts covered in the Networking notes — specifically NAT (file 07), DNS (file 08), and how bridges and routing work (file 04). Read those first if anything here feels abstract.
+> **Foundation:** This file builds on networking concepts covered in the [Networking Foundations](https://github.com/AkhilTejaDoosari/devops-runbook/tree/main/notes/03.%20Networking%20%E2%80%93%20Foundations) section — specifically:
+> * **[NAT (Section 07)](https://github.com/AkhilTejaDoosari/devops-runbook/tree/main/notes/03.%20Networking%20%E2%80%93%20Foundations/07-nat)**
+> * **[DNS (Section 08)](https://github.com/AkhilTejaDoosari/devops-runbook/blob/main/notes/03.%20Networking%20%E2%80%93%20Foundations/08-dns/README.md)**
+> * **[Network Devices & Routing (Section 04)](https://github.com/AkhilTejaDoosari/devops-runbook/tree/main/notes/03.%20Networking%20%E2%80%93%20Foundations/04-network-devices)**
+>
+> Read those first if anything here feels abstract.
 
 ---
 

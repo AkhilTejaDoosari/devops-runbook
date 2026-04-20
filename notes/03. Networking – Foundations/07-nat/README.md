@@ -641,7 +641,7 @@ Changes BOTH IP and port
 Allows many devices to share one IP
 
 192.168.1.45:54321 → 203.45.67.89:49152
-192.168.1.67:51234 → 203.45.67.89:49153
+192.168.1.67:54321 → 203.45.67.89:49153
 
 Same public IP, different ports
 ```

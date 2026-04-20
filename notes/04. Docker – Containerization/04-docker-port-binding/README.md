@@ -25,7 +25,7 @@
 
 ## **3) The Only Command That Matters**
 ```bash
-docker run -p HOST_PORT:CONTAINER_PORT image
+docker run -p HOST_PORT:CONTAINER_PORT image_name
 ```
 
 **Example:**
@@ -63,7 +63,7 @@ It means the mapping is active and "listening" on all your laptop's network inte
 If the app is not loading:
 
 1. **Check Ports**: Run `docker ps`. If the port isn't listed, you forgot `-p`.
-2. **Check App**: Run `docker logs <container_id>`.   
+2. **Check App**: Run `docker logs <container_name>`.   
 If the port mapping exists but it fails, your app inside the container crashed or isn't listening on the right internal port.
 
 ## **7) One-Line Definition**

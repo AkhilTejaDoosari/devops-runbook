@@ -45,21 +45,34 @@ This file teaches **how devices with private IPs access the internet** and **how
 **Router's two faces:**
 
 ```
-┌─────────────────────────────────────┐
-│           Your Router               │
-│                                     │
-│  LAN Side (Internal):               │
-│    IP:  192.168.1.1                 │
-│    MAC: AA:BB:CC:DD:EE:FF           │
-│    Private, not internet-routable   │
-│                                     │
-│  WAN Side (External):               │
-│    IP:  203.45.67.89                │
-│    MAC: 11:22:33:44:55:66           │
-│    Public, internet-routable        │
-│    Assigned by ISP via DHCP         │
-│                                     │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                       YOUR ROUTER                           │
+│           (The Bridge Between Two Networks)                 │
+│                                                             │
+│   [ ROUTER HAS 2 IP ADDRESSES ]                             │
+│                                                             │
+│  1. LAN SIDE (Internal Interface)                           │
+│     ─────────────────────────────                           │
+│     IP:  192.168.1.1                                        │
+│     TYPE: Private (Local)                                   │
+│     MAC: AA:BB:CC:DD:EE:FF                                  │
+│     ROLE: Default Gateway for your home devices             │
+│     SCOPE: Not internet-routable                            │
+│                                                             │
+│                ||                                           │
+│                || <─── NAT (Network Address Translation)    │
+│                ||                                           │
+│                                                             │
+│  2. WAN SIDE (External Interface)                           │
+│     ─────────────────────────────                           │
+│     IP:  203.45.67.89                                       │
+│     TYPE: Public (Global)                                   │
+│     MAC: 11:22:33:44:55:66                                  │
+│     ROLE: Your "Face" on the internet                       │
+│     SCOPE: Internet-routable (Assigned by ISP)              │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
 ```
 
 ---

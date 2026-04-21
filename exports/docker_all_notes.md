@@ -1,4 +1,3 @@
-
 ---
 # SOURCE: 04. Docker – Containerization/01-history-and-motivation/README.md
 ---
@@ -1591,23 +1590,76 @@ docker run -d \
   postgres:15
 ```
 
-**What this does:**
-- `-v webstore-db-data:/var/lib/postgresql/data` → creates volume `webstore-db-data` and mounts it to PostgreSQL's data directory
-- PostgreSQL writes to `/var/lib/postgresql/data`
-- Data actually goes to the `webstore-db-data` volume
-- If you delete the container and create a new one with the same volume, **all data is still there**
+---
 
-**Verification flow:**
+### New commands introduced here
+
+**`docker exec` with a specific program (not a shell)**
+
+You've used `docker exec -it CONTAINER /bin/sh` before — that opens a generic shell. Here you run a specific program directly instead:
+
+```bash
+docker exec -it webstore-db psql -U admin -d webstore
+                               ↑             ↑
+                          the program    its own flags
+```
+
+`docker exec` doesn't require a shell. It runs **any binary installed inside the container**. `psql` is PostgreSQL's command-line client — it's already inside the `postgres:15` image.
+
+| Part | What it is | What it does |
+|---|---|---|
+| `docker exec -it webstore-db` | Docker command | Enter the running container named `webstore-db` |
+| `psql` | PostgreSQL binary (inside the container) | Launch the PostgreSQL client |
+| `-U admin` | psql flag | Connect as user `admin` |
+| `-d webstore` | psql flag | Connect to the `webstore` database |
+
+Once inside `psql`, you are no longer in Docker — you are in a PostgreSQL shell.
+
+---
+
+**Commands inside `psql`**
+
+These are SQL + psql-specific, not Docker commands:
+
+| Command | What it does |
+|---|---|
+| `CREATE TABLE products (id SERIAL, name TEXT);` | Creates a table with two columns |
+| `INSERT INTO products (name) VALUES ('Widget');` | Inserts one row |
+| `SELECT * FROM products;` | Reads all rows |
+| `\q` | Quits `psql` — returns you to the host terminal |
+
+`\q` is the psql quit shortcut. `\` commands are psql-internal — they don't go to the database.
+
+---
+
+**`-c` flag — run SQL without entering the shell**
+
+```bash
+docker exec -it webstore-db psql -U admin -d webstore -c "SELECT * FROM products;"
+```
+
+`-c` belongs to `psql`, not Docker. It means: **run this one SQL statement and exit immediately**. Useful when you want a quick check from the host without dropping into an interactive session.
+
+```
+Without -c → opens interactive psql shell → you type → \q to exit
+With -c    → runs the query → prints result → exits automatically
+```
+
+---
+
+### Verification flow
 
 | Step | Command | What happens |
 |---:|---|---|
-| 1 | Run webstore-db with volume | `docker run -d --name webstore-db -v webstore-db-data:/var/lib/postgresql/data -e POSTGRES_DB=webstore -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=secret postgres:15` | Container starts, volume created |
-| 2 | Connect and create data | `docker exec -it webstore-db psql -U admin -d webstore` | Enter PostgreSQL shell |
-| 3 | Insert test data | `CREATE TABLE products (id SERIAL, name TEXT);` then `INSERT INTO products (name) VALUES ('Widget');` | Data written |
-| 4 | Exit | `\q` | Back to host |
-| 5 | Stop and delete container | `docker stop webstore-db` then `docker rm webstore-db` | Container gone |
-| 6 | Start new container with same volume | `docker run -d --name webstore-db -v webstore-db-data:/var/lib/postgresql/data -e POSTGRES_DB=webstore -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=secret postgres:15` | Fresh container, same volume |
-| 7 | Check if data survived | `docker exec -it webstore-db psql -U admin -d webstore -c "SELECT * FROM products;"` | **Data still exists** ✅ |
+| 1 | `docker run -d --name webstore-db -v webstore-db-data:/var/lib/postgresql/data -e POSTGRES_DB=webstore -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=secret postgres:15` | Container starts, volume created |
+| 2 | `docker exec -it webstore-db psql -U admin -d webstore` | Opens PostgreSQL shell directly inside the container |
+| 3 | `CREATE TABLE products (id SERIAL, name TEXT);` → `INSERT INTO products (name) VALUES ('Widget');` | Data written to the volume |
+| 4 | `\q` | Exit psql, back to host |
+| 5 | `docker stop webstore-db` → `docker rm webstore-db` | Container deleted — volume survives |
+| 6 | `docker run -d --name webstore-db -v webstore-db-data:/var/lib/postgresql/data -e POSTGRES_DB=webstore -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=secret postgres:15` | Fresh container, same volume attached |
+| 7 | `docker exec -it webstore-db psql -U admin -d webstore -c "SELECT * FROM products;"` | Data still exists ✅ |
+
+**What step 7 proves:** the data lives in the volume, not the container. The container was completely deleted and recreated — the data didn't move.
 
 ---
 

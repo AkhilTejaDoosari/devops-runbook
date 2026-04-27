@@ -1,351 +1,329 @@
-[Home](../README.md) | [Setup](../00-setup/README.md) | [Architecture](../01-architecture/README.md) | [YAML & Pods](../02-yaml-pods/README.md) | [Deployments](../03-deployments/README.md) | [Networking](../03.5-networking/README.md) | [State & Config](../04-state/README.md) | [Troubleshooting](../05-troubleshooting/README.md) | [CI-CD](../06-cicd/README.md) | [Observability](../07-observability/README.md) | [Cloud & EKS](../08-cloud/README.md)
-
-# 02 — YAML Basics & The Pod
+[Home](../README.md) | [Setup](../00-setup/README.md) | [Architecture](../01-architecture/README.md) | [YAML & Pods](../02-yaml-pods/README.md) | [Deployments](../03-deployments/README.md) | [Networking](../03.5-networking/README.md) | [State](../04-state/README.md) | [Troubleshooting](../05-troubleshooting/README.md) | [Probes](../06-probes/README.md) | [Namespaces](../07-namespaces/README.md) | [kubectl Reference](../08-kubectl-reference/README.md) | [Interview Prep](../99-interview-prep/README.md)
 
 ---
 
-## What This File Is About
+# 02 — YAML & Pods
 
-In Phase 1, you learned the theory **how things work under the hood**. In Phase 2, you move to the **Language**.   
-This file covers YAML syntax, the anatomy of a Manifest, and how to deploy a Pod — the smallest unit of work in Kubernetes.
-
----
-
-## Table of Contents
-
-1. [The Concept — Declarative vs Imperative](#1-the-concept--declarative-vs-imperative)
-2. [The 4 Pillars of a Manifest](#2-the-4-pillars-of-a-manifest)
-3. [Labels and Selectors — The Glue](#3-labels-and-selectors--the-glue)
-4. [The Anatomy of a Pod](#4-the-anatomy-of-a-pod)
-5. [The DevOps Workflow — kubectl + vi](#5-the-devops-workflow--kubectl--vi)
-6. [Action Step](#6-action-step)
+> **Used in production when:** you are writing a new manifest from scratch, a Pod is stuck in a bad state and you need to read its birth certificate, or you need to understand why two objects are not connecting to each other.
 
 ---
 
-## 1. The Concept — Declarative vs Imperative
+## What this is
 
-In traditional IT, you give direct commands: *"Start this container."* That is **Imperative** — you describe the steps.
+A Pod is the smallest thing Kubernetes can deploy. Before you can write Deployments, Services, or anything else, you need to understand the object that everything in Kubernetes ultimately runs as — and the language you use to describe it. This file covers YAML manifest anatomy, the label and selector system that connects all Kubernetes objects, and the Pod itself. Every manifest you write in Week 2 starts with these four pillars.
 
-In Kubernetes, you use **Declarative Management**:
+---
 
-- **You:** Provide a YAML file saying, *"This is the Desired State I want."*
-- **Kubernetes:** The Control Plane constantly compares your file to the cluster and acts to match it.
+## How it fits the stack
+
+```
+Week 2 object hierarchy:
+
+  Deployment        ← you write this (Day 10)
+    └── ReplicaSet  ← Kubernetes creates this
+          └── Pod   ← you understand this today (Day 9)
+                └── Container  ← your actual app runs here
+```
+
+You learn Pods today specifically so you can feel what breaks when there is no Deployment watching them. The aha — deleting a bare Pod and watching it stay dead — is the reason Deployments exist.
+
+---
+
+## 1. Declarative vs Imperative
+
+In traditional infrastructure you give direct commands: *"Start this container."* That is imperative — you describe the steps.
+
+In Kubernetes you use **declarative management**:
+
+- **You:** Write a YAML file saying "this is the desired state I want."
+- **Kubernetes:** The control plane continuously compares your file to the cluster and acts to match it.
 
 You stop telling Kubernetes *how* to do things. You tell it *what* you want, and it figures out the rest.
 
+**The practical difference:**
+
+```bash
+# Imperative — you describe the action
+kubectl run shopstack-api --image=akhiltejadoosari/shopstack-api:1.0
+
+# Declarative — you describe the desired state
+kubectl apply -f infra/k8s/api-pod.yaml
+```
+
+In production you always use declarative. Imperative commands are for quick debugging only — they leave no record in version control and cannot be re-applied consistently.
+
 ---
 
-## 2. The 4 Pillars of a Manifest
+## 2. The four pillars of every manifest
 
-Every Kubernetes object starts with the same skeleton. Before you write a single container name or port number, you must declare these four fields. The API Server reads them first — if any one is missing or wrong, it rejects the entire file before even looking at the rest.
+Every Kubernetes object starts with the same skeleton. The API Server reads these four fields first — if any one is missing or wrong, it rejects the entire file before looking at anything else.
 
-A Kubernetes object is anything you can create, store, and manage in the cluster — every kind in your manifest table is an object, just a different type of record stored in etcd that the Control Plane works to keep alive.
-
-Here is a real webstore Pod manifest. Read the comments — every pillar is labelled inline:
 ```yaml
-apiVersion: v1          # PILLAR 1 — Which version of the K8s API dictionary to use.
-                        # 'v1' covers core objects: Pod, Service, ConfigMap, Secret.
-                        # Newer objects like Deployment use 'apps/v1'.
+apiVersion: v1          # PILLAR 1 — Which version of the K8s API to use.
+                        # v1 covers core objects: Pod, Service, ConfigMap, Secret.
+                        # Deployments use apps/v1 — added later in the apps group.
+                        # Wrong version = immediate rejection by the API Server.
 
 kind: Pod               # PILLAR 2 — What TYPE of object you are creating.
-                        # The API Server reads this first to know what rules apply.
-                        # Change this one word and you get a completely different object.
+                        # One word changes everything. Pod, Deployment, Service,
+                        # Secret, ConfigMap — each triggers a different controller.
+                        # Case sensitive. 'pod' ≠ 'Pod'. Always capitalise.
 
 metadata:
-  name: webstore-frontend         # PILLAR 3 — The identity card of this object. 
-                              # Naming convention: projectname-role
-                              # 'webstore' = the project
-                              # 'api' = this Pod's role — API stands for Application Programming Interface
-                              # It is the backend service that receives requests and returns data
-                              # e.g. "give me the list of movies" → API processes it → sends back the data
-                              # Other real examples: payments-api, auth-api, analytics-api
+  name: shopstack-api   # PILLAR 3 — The identity of this object in the cluster.
+                        # Must be unique within a namespace.
+                        # Convention: projectname-role
+                        # shopstack = project, api = this Pod's role
   labels:
-    app: webstore            # The badge. Services and controllers find this Pod using this.
-    env: dev                  # Environment tag — useful when you have dev/prod later
+    app: shopstack       # The badge. Services and controllers find this Pod using this.
+    tier: api            # Stack multiple labels — each one is a searchable filter.
 
-spec:                         # PILLAR 4 — The Blueprint. What should actually exist inside.
-  containers:
-    - name: api-container     # Container name inside the Pod.
-                              # Convention: role-container (matches the Pod's role above)
-      image: nginx:latest     # nginx = a real production web server, used here as a placeholder.
-                              # It starts instantly and stays running — perfect for practice.
-                              # In real webstore this becomes your actual app image:
-                              # e.g. your-registry/webstore-frontend:1.0
+spec:                   # PILLAR 4 — The blueprint. What should exist inside.
+  containers:           # Everything from here is specific to the kind above.
+    - name: api         # Container name inside the Pod.
+      image: akhiltejadoosari/shopstack-api:1.0
       ports:
-        - containerPort: 80   # Port the container listens on inside the Pod
+        - containerPort: 8080
 ```
 
-### The 4 Pillars — Explained
+**`apiVersion`** is the rulebook. It tells the API Server which version of the spec to validate against. `v1` for Pods, Services, ConfigMaps, Secrets. `apps/v1` for Deployments and ReplicaSets. Getting this wrong is the most common first error — the API Server rejects it immediately with a clear message.
 
-**`apiVersion`** is the version of the Kubernetes API you are targeting.   
-Think of it as telling the API Server which rulebook to open. Core objects like Pods and Services use `v1`. More advanced objects like Deployments and ReplicaSets live in the `apps/v1` group because they were added later. If you use the wrong version for a `kind`, the API Server rejects it immediately.
+**`kind`** is the single most important field. One word completely changes what the rest of the file means and which controller handles it. It is case sensitive — `pod` is not a valid kind. Always `Pod`.
 
-**`kind`** is the single most important field.   
-It tells Kubernetes *what* you are asking it to create. One word — `Pod`, `Deployment`, `Service` — completely changes what the rest of the file means. The API Server uses this to decide which controller should handle your request. `kind` is **case sensitive** — `pod` and `Pod` are not the same thing, the API Server will reject it. Always write it exactly as shown: first letter uppercase, rest lowercase.
+**`metadata`** is the identity card. The `name` must be unique within the namespace. The `labels` block is where you attach searchable tags — they live here, inside `metadata`, not inside `spec`.
 
-**`metadata`** is the identity card of the object.   
-The `name` field must be unique within a Namespace. The `labels` block is where you attach tags — covered fully in Section 3, but notice it lives here, inside `metadata`, not inside `spec`.
-
-**`spec`** is the blueprint — the "what should exist" section.   
-Everything from here down is specific to the `kind` you declared. A Pod's `spec` holds containers. A Service's `spec` holds ports and selectors. A Deployment's `spec` holds replicas and a template. Same pillar, completely different content depending on the `kind`.
+**`spec`** is the blueprint. Everything from here down is specific to the `kind` you declared. A Pod's `spec` holds containers. A Service's `spec` holds ports and selectors. Same pillar, completely different content.
 
 ---
 
-## 3. Labels and Selectors — The Glue
+## 3. Labels and selectors — the glue
 
-### Why "Label"? Why "Selector"?
+This is the system that connects every Kubernetes object to every other. Get this wrong and nothing finds anything.
 
-The names are exactly what they sound like.
+### Why the names are exactly right
 
-A **Label** is a stamp you press onto a Kubernetes object. Like a name badge at a conference — it does not change what the object *is*, it just gives it a tag that others can read. In Kubernetes, labels are simple key-value pairs you write in the `metadata` section: `app: webstore`, `env: production`, `tier: backend`.
+A **label** is a stamp you press onto a Kubernetes object. A simple key-value pair you write in the `metadata` section. It does not change what the object does — it just gives it a tag that other objects can search for.
 
-A **Selector** is a search filter. It does not create anything new — it just copies the same label value and uses it to hunt for matching objects. A Service with `selector: app: webstore` is saying *"go check etcd and bring me every Pod in the cluster that has `app: webstore` stamped on it."*
-
-**Same value. Two different roles:**
+A **selector** is a search filter. It does not create anything — it scans etcd for objects wearing a matching label. A Service with `selector: app: shopstack` is saying: *"find every Pod in the cluster that has `app: shopstack` stamped on it and send traffic to them."*
 
 ```yaml
-# POD — this is where the label is CREATED (you are stamping this onto the Pod)
+# THE POD — this is where the label is CREATED
 metadata:
   labels:
-    app: webstore      # ← THE LABEL. The stamp.
+    app: shopstack      # ← THE LABEL. The stamp on the Pod.
 
-# SERVICE — this is where the label is USED as a search filter
+# THE SERVICE — this is where the label is USED as a search filter
 spec:
   selector:
-    app: webstore      # ← SAME VALUE. "Find every Pod stamped with this."
+    app: shopstack      # ← SAME VALUE. "Find every Pod stamped with this."
 ```
 
-The reason this system exists is because **Pods are ephemeral**. Every time a Pod dies and gets replaced, it gets a brand new name and a brand new IP address. If a Service tracked Pods by IP, it would lose them constantly. Instead, every new Pod just wears the same label as the one it replaced — and everything watching for that label picks it up instantly with zero reconfiguration.
+**Why this system exists:** Pods are ephemeral. Every time a Pod dies and gets replaced, it gets a new name and a new IP address. If a Service tracked Pods by IP it would lose them constantly. Instead, every new Pod just wears the same label as the one it replaced — and the Service finds it instantly with no reconfiguration.
+
+### The rule
+
+The label on the Pod and the selector on the Service must be an **exact match**. One typo and they are completely invisible to each other. This is the most common misconfiguration in Kubernetes.
+
+### ShopStack — labels in practice
+
+```yaml
+# api Pod wears these labels
+labels:
+  app: shopstack
+  tier: api
+
+# api Service selects by these labels
+selector:
+  app: shopstack
+  tier: api
+
+# frontend Pod wears these labels
+labels:
+  app: shopstack
+  tier: frontend
+
+# frontend Service selects by these labels — different tier, different Pods
+selector:
+  app: shopstack
+  tier: frontend
+```
+
+Same `app: shopstack` across all five services. Different `tier` values to keep them separated. The Services know exactly which Pods belong to which service — not by name, not by IP, by label.
+
+### The three things labels unlock
+
+**1. Networking** — Services find Pods dynamically by label, not IP. Covered in `03.5-networking.md`.
+
+**2. Scaling and self-healing** — A ReplicaSet counts how many Pods are wearing its label. If the count drops below desired, it creates more. If it rises above, it terminates extras. Covered in `03-deployments.md`.
+
+**3. Filtering** — `kubectl get pods -l tier=api` returns only the API Pods. Useful when you have 20 Pods running and want to see just one tier.
 
 ---
 
-### The Full Picture — Pod + Service Together
+## 4. The anatomy of a Pod
 
-Here is the complete webstore setup. Read both files as one connected system:
+A Pod is the smallest deployable unit in Kubernetes. Think of it as a sealed shipping container — a protective shell that carries your app into the cluster and gives it everything it needs: an identity, a network address, and access to storage.
+
+Kubernetes never runs a naked container. It always wraps it in a Pod first.
 
 ```yaml
-# FILE 1 — webstore-frontend-pod.yaml
-# The Pod is the laborer. It wears the name badge.
-
 apiVersion: v1
 kind: Pod
 metadata:
-  name: webstore-frontend
+  name: shopstack-api          # Unique name inside the cluster.
+                               # When this Pod dies, the replacement gets a new name.
+                               # Never rely on the name to find Pods — use labels.
   labels:
-    app: webstore      # STAMP — this Pod is wearing the "webstore" badge
+    app: shopstack             # The badge. Services find this Pod using this.
+    tier: api
+
 spec:
   containers:
-    - name: api-container
-      image: nginx:latest
+    - name: api                # The name of this container inside the Pod.
+      image: akhiltejadoosari/shopstack-api:1.0
+                               # The Docker image to pull. Always pin to a specific
+                               # version tag in production. Never use latest —
+                               # you cannot roll back latest to latest.
       ports:
-        - containerPort: 80
+        - containerPort: 8080  # The port this container listens on INSIDE the Pod.
+                               # This is documentation only — it does not open or
+                               # block ports. The Service's targetPort routes here.
+      env:
+        - name: DB_HOST
+          value: "db"          # Same service name used in Docker Compose.
+                               # Kubernetes DNS resolves this to the db Service IP.
+        - name: DB_NAME
+          value: "shopstack"
+        - name: DB_USER
+          value: "shopstack"
+        - name: DB_PASSWORD
+          value: "shopstack_dev"
+                               # In production this moves to a Secret. Covered Day 12.
 ```
 
-```yaml
-# FILE 2 — webstore-service.yaml
-# The Service is the router. It finds Pods by their badge.
+**One IP per Pod.** Every Pod gets its own internal cluster IP when it starts. That IP is destroyed with the Pod. This is why you never hardcode Pod IPs — you use Service names and labels.
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: webstore-service
-spec:
-  type: LoadBalancer    # HOW the Service is exposed to the world
-                        # (LoadBalancer, NodePort, ClusterIP — covered in Phase 3.5)
+**Shared environment.** All containers listed in the `spec` share the same network namespace — they share one IP and communicate via `localhost`. They also share storage volumes. This is the foundation of the Sidecar pattern — one container runs the app, another handles logs or proxying, both in the same Pod.
 
-  selector:             # WHO this Service sends traffic TO
-    app: webstore      # "Find every Pod wearing this badge and route traffic to them"
-
-  ports:
-    - port: 80          # WHAT port this Service listens on from the outside
-      targetPort: 80    # What port to forward to inside the Pod
-```
-
-Think of it like a delivery service:
-
-- **`type`** = the delivery method. Internal office mail only (ClusterIP)? A side door with a specific number (NodePort)? A full public address anyone on the internet can reach (LoadBalancer)?
-- **`selector`** = the address label on the package. The delivery service does not care how many people live at that address — it just drops the package wherever it sees the matching label.
-- **`ports`** = the door number. Knock on port 80 from outside, it gets forwarded to port 80 inside the Pod.
-
-These three are completely independent. Change `type` without touching `selector`. Point `selector` at a different app without touching `ports`.
+**Ephemeral by design.** If a bare Pod dies it stays dead. Kubernetes does not resurrect it — a controller detects the death and creates a brand new replacement with a new name and new IP. Self-healing is not a Pod feature. It is a Deployment feature.
 
 ---
 
-### The Real-World Example — webstore Goes Viral
+## 5. ShopStack — what each service looks like as a Pod
 
-It is 2 AM. webstore gets a traffic spike. Kubernetes scales from 1 Pod to 5. All 5 get completely random names and brand new IP addresses:
+Before you write the real Deployment manifests on Day 10, you write bare Pods on Day 9. This is intentional — you need to feel the Pod fail to self-heal before Deployments make sense.
 
 ```
-webstore-frontend-x7k2p   →  IP: 10.0.0.4
-webstore-frontend-m9nq1   →  IP: 10.0.0.7
-webstore-frontend-p3vc8   →  IP: 10.0.0.11
-webstore-frontend-h6zt4   →  IP: 10.0.0.15
-webstore-frontend-r2bw9   →  IP: 10.0.0.19
+shopstack/infra/k8s/          ← all manifests live here
+├── api-pod.yaml              ← Day 9 only, replaced by api-deployment.yaml on Day 10
+├── frontend-pod.yaml         ← Day 9 only
+└── db-pod.yaml               ← Day 9 only
 ```
 
-The Service does not track names. Does not track IPs. It looks for `app: webstore`. All 5 Pods are wearing that badge — so the Service finds all 5 instantly and load balances across them. When traffic drops and 4 Pods get terminated, the Service stops seeing their badges and stops routing to them. No config change. No restart.
+**What each Pod needs:**
 
-**What breaks without labels:** Two apps in the same cluster — webstore API and an admin dashboard. Both running Pods. Without labels, the Service has no way to know which Pods belong to which app. User shopping traffic goes to the admin dashboard. Admin traffic goes to the frontend. Everything breaks.
+| Service | Image | Port | Key env vars |
+|---|---|---|---|
+| api | `akhiltejadoosari/shopstack-api:1.0` | 8080 | `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` |
+| frontend | `akhiltejadoosari/shopstack-frontend:1.0` | 80 | none |
+| db | `postgres:15-alpine` | 5432 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` |
+| worker | `akhiltejadoosari/shopstack-worker:1.0` | none | `API_HOST` |
+| adminer | `adminer` | 8080 | none |
 
-That one line — `app: webstore` — is what keeps them separated.
-
-> **The Rule:** The label on the Pod and the selector on the Service must be an **exact match**. One typo and they are completely invisible to each other. This is the most common beginner misconfiguration in Kubernetes.
+> **Note on db:** Postgres crashes immediately without its required env vars (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`). This is intentional on Day 9 — you will see `CrashLoopBackOff`, read the logs, understand why, and fix it. The permanent fix (Secrets) comes on Day 12.
 
 ---
 
-### The 3 Superpowers Labels Unlock
+## 6. The dev workflow — write, lint, apply, inspect
 
-**1. Networking — Services find Pods dynamically** (shown above) → Phase 3.5
-
-**2. Scaling and Self-Healing — ReplicaSets count by label**
-When you tell a ReplicaSet *"I want 3 copies running"*, it does not track Pod names — it counts how many Pods are currently wearing its label. If it counts 2, it creates a new one. If it counts 4, it terminates one. → Phase 3
-
-**3. Node Placement — Labels on Nodes, not just Pods**
-You can label Worker Nodes too. Label two nodes `storage: ssd`. Then tell a database Pod *"only schedule me on a Node with storage: ssd"*. The Scheduler reads that and guarantees the Pod only lands on the right hardware. → Phase 6
-
-> **The architectural reality:** Labels and Selectors are not running software. They are pure text metadata stored in etcd. When a Service needs its Pods, it asks the API Server: *"Check etcd, give me the IPs of every Pod with this label."* The Control Plane does the rest.
-
----
-
-## 4. The Anatomy of a Pod
-
-A Pod is the smallest deployable unit in Kubernetes. Think of it as a **Space Shuttle** — a protective shell that carries your containers into the cluster and gives them everything they need to survive: an identity, a network, and storage.
-
-Kubernetes never runs a naked container. It always wraps it in a Pod first. Here is why that wrapper exists and what every line inside it actually does:
-
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: webstore-frontend       # The unique name of this Pod inside the cluster.
-                            # When this Pod dies, the replacement gets a new random name.
-                            # You never rely on this name to find Pods — you use labels.
-  labels:
-    app: webstore          # The badge. Services and controllers find this Pod using this.
-    env: dev                # You can stack multiple labels on one Pod.
-
-spec:
-  containers:               # A Pod can hold MORE than one container.
-                            # All containers in this list share the same IP and storage.
-    - name: api-container   # The name of THIS container inside the Pod.
-      image: nginx:latest   # The Docker image to pull. This is what actually runs.
-                            # 'latest' means always pull the newest version.
-                            # In production you pin this to a specific version e.g. nginx:1.25
-      ports:
-        - containerPort: 80 # The port THIS container listens on INSIDE the Pod.
-                            # This is documentation — it does not actually open or block ports.
-                            # The Service's targetPort is what routes traffic here.
-```
-
-**The Shared Environment** is the whole reason the Pod abstraction exists. All containers listed in the `spec` share the same network namespace — meaning they share one IP address and talk to each other via `localhost`. They also share the same storage volumes. This is how the Sidecar pattern works — one container runs the app, another runs alongside it handling logs or proxying — both living in the same Pod, sharing everything. → Sidecar covered in Phase 3.5.
-
-**One IP per Pod** — every Pod gets its own internal cluster IP the moment it is born. That IP dies with the Pod. This is exactly why you never hardcode IPs anywhere — you use labels and selectors instead.
-
-**Ephemeral (Temporary)** — Pods are disposable by design. If a standalone Pod dies, it stays dead. Kubernetes does not resurrect it — a Controller detects the death and creates a brand new replacement Pod with a new name and new IP. The old Pod is gone forever. Self-healing is not a Pod feature — it is a Controller feature. → Covered in Phase 3.
-
-> **webstore angle:** Every webstore API request — browsing products, adding to cart, checking out — is handled inside a Pod. That Pod is the isolated unit of compute that owns the job. When traffic spikes and Kubernetes needs 5 copies, it does not clone the Pod — it creates 5 fresh ones, all wearing the same `app: webstore` badge, all picked up instantly by the Service.
-
----
-
-## 5. The DevOps Workflow — kubectl + vi
-
-The professional toolkit has no GUIs. You write manifests in the terminal, apply them, and read the cluster's response directly. Here is the full loop from writing a file to verifying it is healthy:
+The professional loop. Run it every time you touch a manifest. Build it into reflex.
 
 ```bash
 # Step 1 — Write the manifest
-vi webstore-frontend-pod.yaml
-# Use 'i' to enter insert mode, write your YAML, then ':wq' to save and exit.
+vi infra/k8s/api-pod.yaml
 
-# Step 2 — Apply it (send your Desired State to the API Server)
-kubectl apply -f webstore-frontend-pod.yaml
-# Expected output:
-# pod/webstore-frontend created
+# Step 2 — Apply it (send desired state to the API Server)
+kubectl apply -f infra/k8s/api-pod.yaml
+# Expected: pod/shopstack-api created
 
-# Step 3 — Check the Pod status
+# Step 3 — Check status
 kubectl get pods
-# Expected output when healthy:
-# NAME             READY   STATUS    RESTARTS   AGE
-# webstore-frontend    1/1     Running   0          10s
+# NAME            READY   STATUS    RESTARTS   AGE
+# shopstack-api   1/1     Running   0          10s
 #
 # READY 1/1   = 1 container running out of 1 total
-# STATUS      = Running means Pod is alive and healthy
+# STATUS      = Running means the Pod is alive
 # RESTARTS 0  = nothing has crashed yet
 
 # Step 4 — Read the birth certificate (when something looks wrong)
-kubectl describe pod webstore-frontend
-# This prints the full event log of the Pod's life.
-# Scroll to the EVENTS section at the bottom — this is where errors appear.
-# Common things you will see here:
-#   "Pulling image nginx:latest"      → K8s is downloading the image
-#   "Started container api-container" → container came up clean
-#   "Back-off pulling image"          → image name is wrong or does not exist
-#   "CrashLoopBackOff"                → container starts then immediately dies
+kubectl describe pod shopstack-api
+# Scroll to the EVENTS section at the bottom.
+# This is where errors appear. Always read this before anything else.
 
-# Step 5 — Monitor everything in real time
-k9s
-# Your live cockpit. Press 0 to see all namespaces.
-# Arrow keys to navigate, 'd' to describe, 'l' to see logs, 'ctrl+d' to delete.
+# Step 5 — Read what the container printed
+kubectl logs shopstack-api
+# This is stdout from the container. Application errors appear here.
+# If the Pod is in CrashLoopBackOff — logs shows what it printed before dying.
 ```
 
-| Tool | What it does | When you use it |
-|---|---|---|
-| `vi` | Write and edit YAML manifests in the terminal | Every time you create or change a manifest |
-| `kubectl apply -f` | Send Desired State to the API Server | After every save |
-| `kubectl get pods` | Quick health check — status and restart count | After applying, or when something feels off |
-| `kubectl describe pod` | Full event log — the Pod's birth certificate | When status is not `Running` or restarts are climbing |
-| `kubectl logs [pod]` | Print what the container printed to stdout | When the Pod is running but the app inside is broken |
-| `k9s` | Real-time visual cockpit for the whole cluster | Keep this open in Tab 2 at all times |
+**What a healthy Events section looks like:**
+
+```
+Events:
+  Normal  Scheduled  5s    default-scheduler  Successfully assigned default/shopstack-api
+  Normal  Pulling    4s    kubelet            Pulling image "akhiltejadoosari/shopstack-api:1.0"
+  Normal  Pulled     2s    kubelet            Successfully pulled image
+  Normal  Created    2s    kubelet            Created container api
+  Normal  Started    2s    kubelet            Started container api
+```
+
+Read this sequence until you can spot a break in it instantly. Pulling → Pulled → Created → Started is healthy. Any `Failed`, `BackOff`, or `Error` entry is where you diagnose.
 
 ---
 
-## 6. Action Step
+## 7. The kubectl debug loop for Pods
 
-Deploy the webstore API Pod and verify it is healthy. This is the full loop — write, apply, inspect:
+| Tool | What it shows | When to use it |
+|---|---|---|
+| `kubectl get pods` | Status and restart count at a glance | After every apply, or when something feels off |
+| `kubectl describe pod <n>` | Full event log — the Pod's birth certificate | When status is not `Running` or restarts are climbing |
+| `kubectl logs <n>` | What the container printed to stdout | When Pod is running but the app inside is broken |
+| `kubectl logs <n> --previous` | Logs from the previous crash | When the Pod is in CrashLoopBackOff |
+| `kubectl exec -it <n> -- /bin/sh` | Enter the running container | When logs are not enough — you need to poke around inside |
 
-```yaml
-# webstore-frontend-pod.yaml
-# Your first real manifest. Every field here maps to a concept in this file.
+---
 
-apiVersion: v1                # Core object — uses v1
-kind: Pod                     # Creating a Pod (the smallest unit)
-metadata:
-  name: webstore-frontend         # The Pod's identity inside the cluster
-  labels:
-    app: webstore            # The badge — Services will use this to find it
-    env: dev                  # Environment tag — useful when you have dev/prod later
-spec:
-  containers:
-    - name: api-container     # Container name inside the Pod
-      image: nginx:latest     # The image to run — swap this for your actual app later
-      ports:
-        - containerPort: 80   # Port the container listens on inside the Pod
-```
+## ⚠️ What Breaks
 
-```bash
-# Deploy it
-kubectl apply -f webstore-frontend-pod.yaml
+| Symptom | Cause | First command |
+|---|---|---|
+| `ImagePullBackOff` | Image name is wrong, tag does not exist, or DockerHub is unreachable | `kubectl describe pod <n>` → Events → find the exact pull error |
+| `CrashLoopBackOff` | Container starts then immediately exits | `kubectl logs <n> --previous` → read what it printed before dying |
+| `Pending` — never starts | Scheduler cannot find a node (usually not enough CPU/RAM on EC2) | `kubectl describe pod <n>` → Events → look for `Insufficient` |
+| `Error: ImagePullBackOff` on db Pod | Postgres started without required env vars | `kubectl logs <n>` → Postgres prints exactly what is missing |
+| Pod is `Running` but app returns errors | App is up but something inside is broken (wrong DB_HOST, missing table) | `kubectl logs <n>` → read application error output |
+| Label typo — Service sends no traffic | `selector` on Service does not match `labels` on Pod | `kubectl describe service <n>` → check Endpoints field — should not be `<none>` |
 
-# Verify it came up healthy
-kubectl get pods
+---
 
-# What you should see:
-# NAME             READY   STATUS    RESTARTS   AGE
-# webstore-frontend    1/1     Running   0          <10s
+## Daily Commands
 
-# Open your cockpit and watch it live
-k9s
-```
+| What it does | Command | Example |
+|---|---|---|
+| Send manifest to the API Server — create or update the object | `kubectl apply -f <file>` | `kubectl apply -f infra/k8s/api-pod.yaml` |
+| Apply every manifest in the folder at once | `kubectl apply -f <folder>` | `kubectl apply -f infra/k8s/` |
+| Check Pod status and restart count | `kubectl get pods` | `kubectl get pods` |
+| Filter by label — show only matching Pods | `kubectl get pods -l <label>` | `kubectl get pods -l tier=api` |
+| Full event log — always read Events section | `kubectl describe pod <n>` | `kubectl describe pod shopstack-api` |
+| Container stdout — application errors appear here | `kubectl logs <n>` | `kubectl logs shopstack-api` |
+| Logs from the last crash — for CrashLoopBackOff | `kubectl logs <n> --previous` | `kubectl logs shopstack-api --previous` |
+| Follow logs live — Ctrl+C to stop | `kubectl logs -f <n>` | `kubectl logs -f shopstack-api` |
+| Enter a running container | `kubectl exec -it <n> -- /bin/sh` | `kubectl exec -it shopstack-api -- /bin/sh` |
+| Delete a Pod — if a Deployment owns it, it comes back | `kubectl delete pod <n>` | `kubectl delete pod shopstack-api` |
+| Delete the object defined in the manifest | `kubectl delete -f <file>` | `kubectl delete -f infra/k8s/api-pod.yaml` |
 
-**What success looks like in K9s:**
-- Status column shows `Running` in green
-- Ready shows `1/1`
-- Restarts shows `0`
+---
 
-**What a broken Pod looks like:**
-- `ImagePullBackOff` → the image name is wrong or does not exist
-- `CrashLoopBackOff` → the container starts and immediately crashes
-- `Pending` → the Scheduler cannot find a Node to place it on
+→ **Interview questions for this topic:** `99-interview-prep.md` — What is a Pod? Why not run bare Pods in production? What is a label? What is a selector?
 
-If you see any of these, run `kubectl describe pod webstore-frontend` and scroll to the Events section at the bottom. The answer is always there. → Full troubleshooting toolkit in Phase 5.
-
-→ Ready to practice? [Go to Lab 02](../k8s-labs/02-yaml-pods-lab.md)
+→ Next: [03 — Deployments](./03-deployments.md)

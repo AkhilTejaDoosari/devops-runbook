@@ -1,246 +1,327 @@
-[Home](../README.md) | [Setup](../00-setup/README.md) | [Architecture](../01-architecture/README.md) | [YAML & Pods](../02-yaml-pods/README.md) | [Deployments](../03-deployments/README.md) | [Networking](../03.5-networking/README.md) | [State & Config](../04-state/README.md) | [Troubleshooting](../05-troubleshooting/README.md) | [CI-CD](../06-cicd/README.md) | [Observability](../07-observability/README.md) | [Cloud & EKS](../08-cloud/README.md)
-
-# 01 — Architecture & Theory
-
-## What This File Is About
-
-Before touching a single command, you need the mental model.   
-This file covers **why Kubernetes exists**, **what problem it solves over Docker alone**, and **how every component in the architecture communicates** — so that when you run `kubectl apply`, you know exactly what happens under the hood.
+[Home](../README.md) | [Setup](../00-setup/README.md) | [Architecture](../01-architecture/README.md) | [YAML & Pods](../02-yaml-pods/README.md) | [Deployments](../03-deployments/README.md) | [Networking](../03.5-networking/README.md) | [State](../04-state/README.md) | [Troubleshooting](../05-troubleshooting/README.md) | [Probes](../06-probes/README.md) | [Namespaces](../07-namespaces/README.md) | [kubectl Reference](../08-kubectl-reference/README.md) | [Interview Prep](../99-interview-prep/README.md)
 
 ---
 
-## Table of Contents
+# 01 — Architecture & Why Kubernetes Exists
 
-1. [The Core Problem — Before and After](#1-the-core-problem--before-and-after)
-2. [The Analogy — Conductor and Orchestra](#2-the-analogy--conductor-and-orchestra)
-3. [Docker vs Kubernetes](#3-docker-vs-kubernetes)
-4. [The Architecture](#4-the-architecture)
-5. [How a Deployment Request Flows](#5-how-a-deployment-request-flows)
-6. [Cluster Setup Options](#6-cluster-setup-options)
-7. [Action Step](#7-action-step)
+> **Used in production when:** someone asks why the company uses Kubernetes instead of just Docker Compose, or you need to explain what the control plane is doing when a Pod mysteriously comes back after you deleted it.
 
 ---
 
-## 1. The Core Problem — Before and After
+## What this is
 
-### The Nightmare (Before)
+Before touching a single command, you need the mental model. This file covers why Kubernetes exists, what problem it solves that Docker Compose cannot, and how every component in the architecture communicates — so that when you run `kubectl apply`, you know exactly what happens under the hood.
 
-Companies started with **monolithic apps** on massive physical servers. Then came **VMs** — better, but wasteful (allocating 10 GB RAM when the app needed 2 GB). Then came **Docker containers** — lightweight, isolated, perfect.
+---
 
-But Docker created a new problem. As teams broke their monolith into hundreds of tiny **microservices**, each running in its own container, the chaos began:
-
-- Traffic spike at 2 AM → someone manually starts 200 new containers
-- Server crashes at 3 AM → someone manually restarts every dead container
-- New version to deploy → system goes offline while you swap it out
-
-### The Solution (After)
-
-**Kubernetes is a container orchestration platform.** You hand it a *desired state*:
+## How it fits the stack
 
 ```
-"Always keep 5 copies of my web app running."
+Week 1 — Docker Compose
+  ShopStack ran as 5 containers on one EC2.
+  You typed docker compose up. You got a stack.
+  One machine. One command. Simple.
+
+Week 2 — Kubernetes
+  ShopStack runs as Pods managed by Deployments,
+  wired by Services, with state in PVCs and Secrets.
+  One cluster. Manifests declare desired state.
+  Kubernetes enforces it 24/7 without your involvement.
 ```
 
-Kubernetes watches the cluster 24/7 and enforces that state automatically.
+The app is identical. The infrastructure layer underneath it changed.
 
-| Problem | Kubernetes Solution |
+---
+
+## 1. The core problem — what Docker Compose cannot solve
+
+Docker Compose is excellent for running a stack on one machine. ShopStack on Compose works perfectly for development. But Compose has hard limits that appear the moment real traffic hits.
+
+**The nightmare scenario:**
+
+ShopStack goes live. Traffic spikes at 2 AM. The single API container cannot handle the load — requests slow down, some time out. You need more copies of the API running.
+
+With Docker Compose:
+- SSH into EC2
+- Manually start a second EC2 instance
+- Clone the repo
+- Start another container
+- Put a load balancer in front
+- Do this for every service that needs scaling
+- Every container crash requires manual restart
+- Every deployment requires manual steps on every machine
+
+This is not sustainable. At 5 services it is painful. At 50 it is impossible.
+
+**What Kubernetes solves:**
+
+| Problem | Kubernetes solution |
 |---|---|
-| Container crashes at 3 AM | **Self-Healing** — detects crash, spins up replacement instantly |
-| Traffic spike | **Auto-Scaling** — creates more copies to handle the load |
-| Deploying new version | **Rolling Updates** — swaps containers one by one, zero downtime |
-| Traffic distribution | **Load Balancing** — spreads requests across all running containers |
+| Container crashes at 3 AM | Self-healing — detects crash, creates replacement instantly |
+| Traffic spike on the API | Scaling — create more Pod replicas to handle the load |
+| Deploying a new image | Rolling update — swaps containers one by one, zero downtime |
+| Traffic distribution across replicas | Load balancing — Service spreads requests across all healthy Pods |
 
-> **Webstore angle:** The webstore serves customers 24/7. If the frontend Pod crashes at peak hours, Kubernetes detects it and replaces it before a single user notices the blip.
-
----
-
-## 2. The Analogy — Conductor and Orchestra
-
-Think of Kubernetes as the **Conductor of a massive Symphony Orchestra.**
-
-- The **musicians** = your application containers (each knows how to do one job perfectly)
-- The **sheet music** = your YAML configuration files (the desired state)
-- The **Conductor (Kubernetes)** = manages the big picture, never plays an instrument itself
-
-| Scenario | Orchestra | Kubernetes |
-|---|---|---|
-| Music needs to get louder | Conductor waves in 10 more violinists | Scales up — spins up more Pods |
-| Trumpet player passes out | Backup trumpet player fills the seat instantly | Self-heals — replaces the crashed container |
-| New piece of music introduced | Players swap parts one at a time, no silence | Rolling update — zero downtime deployment |
-
-The key insight: **Kubernetes doesn't run your app. It manages the things that run your app.**
+**ShopStack angle:** The API container is the bottleneck under load — it handles every product query, every order, every health check from the worker. With Kubernetes you declare `replicas: 3` and Kubernetes runs 3 API Pods, load balances across all three, and replaces any that crash — automatically, continuously, without SSH.
 
 ---
 
-## 3. Docker vs Kubernetes
+## 2. The desired state mental model — the aha that makes everything click
 
-People often ask: *"Why not just use Docker?"*
+This is the single most important concept in Kubernetes. Everything else is an implementation detail.
 
-| | Docker | Kubernetes |
-|---|---|---|
-| **What it is** | Containerization platform | Orchestration platform |
-| **What it does** | Packages your app + dependencies into a container | Manages containers at scale |
-| **Scope** | Single container on one machine | Thousands of containers across many machines |
-| **Self-healing** | ❌ No | ✅ Yes |
-| **Auto-scaling** | ❌ No | ✅ Yes |
-| **Load balancing** | ❌ No | ✅ Yes |
+Kubernetes is not a system that runs commands. It is a system that continuously reconciles reality with your declared intention.
 
-> **The rule:** Docker *runs* the container. Kubernetes *manages* everything that runs containers.
+You write a manifest — a YAML file — that says:
+
+```
+"I want 3 replicas of the ShopStack API running at all times."
+```
+
+Kubernetes stores this as the **desired state**. It then watches **actual state** — what is really running. Every few seconds a control loop runs:
+
+```
+Desired state:  3 API replicas
+Actual state:   2 API replicas  (one crashed)
+
+Gap detected:   1
+Action taken:   create 1 new Pod
+
+Desired state:  3 API replicas
+Actual state:   3 API replicas
+
+Gap:            0
+Action taken:   nothing
+```
+
+This loop never stops. That is why a crashed Pod comes back — not because Kubernetes ran a restart command, but because the controller detected a gap between desired and actual and closed it.
+
+**The rule:** The manifest is not a command. It is a declaration. "This is the world I want." Kubernetes reads it, compares it to what exists, and works to close any gap.
+
+Once this lands, every Kubernetes behaviour makes sense:
+
+| Behaviour | Why it happens |
+|---|---|
+| Deleted Pod comes back | Deployment detects gap, closes it |
+| CrashLoopBackOff | Gap keeps reopening, Kubernetes keeps closing it |
+| Rolling update | Kubernetes transitions actual state toward new desired state, Pod by Pod |
+| Pod stuck Pending | No node has enough resources to close the gap |
 
 ---
 
-## 4. The Architecture
+## 3. The architecture — control plane and worker nodes
 
-A Kubernetes cluster has two sides: the **Control Plane** (the manager) and the **Worker Nodes** (the laborers).
+A Kubernetes cluster has two sides: the **control plane** (the brain) and the **worker nodes** (the laborers).
 
 ```
                     ┌─────────────────────────────────────────┐
-                    │           CONTROL PLANE (Manager)       │
+                    │           CONTROL PLANE (Brain)         │
                     │                                         │
-  kubectl (CLI) ──▶ │  ┌─────────────┐    ┌────────────────┐  │
-                    │  │  API Server │    │      etcd      │  │
-  UI / REST    ───▶ │  │(Entry Point)│◀─▶ │  (Source of    │  │
-                    │  └──────┬──────┘    │    Truth DB)   │  │
-                    │         │           └────────────────┘  │
-                    │  ┌──────▼──────┐   ┌────────────────┐   │
-                    │  │  Scheduler  │   │   Controller   │   │
-                    │  │(Assigns Pod │   │    Manager     │   │
-                    │  │  to Node)   │   │(Watches State) │   │
-                    │  └─────────────┘   └────────────────┘   │
+  kubectl (Mac) ───▶│  ┌─────────────┐   ┌────────────────┐  │
+                    │  │  API Server  │   │      etcd      │  │
+                    │  │ (Entry Point)│◀─▶│ (Source of     │  │
+                    │  └──────┬──────┘   │  Truth DB)     │  │
+                    │         │          └────────────────┘  │
+                    │  ┌──────▼──────┐   ┌────────────────┐  │
+                    │  │  Scheduler  │   │   Controller   │  │
+                    │  │(Assigns Pod │   │    Manager     │  │
+                    │  │  to Node)   │   │(Watches State) │  │
+                    │  └─────────────┘   └────────────────┘  │
                     └──────────────┬──────────────────────────┘
                                    │ assigns work
-                    ┌──────────────▼──────────────────┐
-                    │                                 │
-          ┌─────────▼───────┐            ┌────────────▼───────────┐
-          │  Worker Node 1  │            │    Worker Node 2       │
-          │                 │            │                        │
-          │ ┌─────────────┐ │            │ ┌──────────────────┐   │
-          │ │   kubelet   │ │            │ │     kubelet      │   │
-          │ │(Node Agent) │ │            │ │  (Node Agent)    │   │
-          │ └──────┬──────┘ │            │ └────────┬─────────┘   │
-          │        │        │            │          │             │
-          │ ┌──────▼──────┐ │            │ ┌────────▼─────────┐   │
-          │ │  containerd │ │            │ │   containerd     │   │
-          │ │ (Runtime) * │ │            │ │   (Runtime) *    │   │
-          │ └──────┬──────┘ │            │ └────────┬─────────┘   │
-          │        │        │            │          │             │
-          │  ┌─────▼──────┐ │            │  ┌───────▼──────────┐  │
-          │  │  Pod  Pod  │ │            │  │  Pod   Pod  Pod  │  │
-          │  │ [C1]  [C2] │ │            │  │ [C1]  [C1]  [C2] │  │
-          │  └────────────┘ │            │  └──────────────────┘  │
-          │                 │            │                        │
-          │ ┌─────────────┐ │            │ ┌──────────────────┐   │
-          │ │  Kube Proxy │ │            │ │   Kube Proxy     │   │
-          │ │(Networking) │ │            │ │  (Networking)    │   │
-          │ └─────────────┘ │            │ └──────────────────┘   │
-          └─────────────────┘            └────────────────────────┘                      
+                          ┌────────▼────────┐
+                          │  Worker Node    │
+                          │  (EC2 t3.micro) │
+                          │                 │
+                          │ ┌─────────────┐ │
+                          │ │   kubelet   │ │
+                          │ │(Node Agent) │ │
+                          │ └──────┬──────┘ │
+                          │        │        │
+                          │ ┌──────▼──────┐ │
+                          │ │  containerd │ │
+                          │ │ (Runtime)   │ │
+                          │ └──────┬──────┘ │
+                          │        │        │
+                          │  ┌─────▼──────┐ │
+                          │  │  Pod  Pod  │ │
+                          │  │ [API][DB]  │ │
+                          │  └────────────┘ │
+                          │ ┌─────────────┐ │
+                          │ │  Kube Proxy │ │
+                          │ │(Networking) │ │
+                          │ └─────────────┘ │
+                          └─────────────────┘
 ```
 
-### Control Plane Components (The "Manager")
-These components run on the Master node and manage the cluster.
-
-*   **API Server (`kube-apiserver`):**  
-       The central entry point and communication hub for the entire cluster. It handles authentication, authorization, and processes all API requests from you (via kubectl), internal controllers, and external tools.    
-
-      **Job 1:** The Broadcaster (Communication): It provides the live event stream for the entire cluster. Instead of components trying to talk to each other, they all just tune into the API Server's broadcast to see if the desired state has changed and if there is any new work for them to do.
-
-      **Job 2:** The Gatekeeper (Security & Storage): It is the absolute protector of the etcd database.
-      Because it is the only component allowed to interact directly with etcd, it acts as the ultimate "Bouncer." It forces every single request (whether from you typing kubectl or an internal controller) to prove who they are (Authentication) and what they are allowed to do (Authorization) before it ever opens the vault to read or write data
-.
-.The Central Hub & Database Gatekeeper.   
-
-*   **etcd:** 
-      A distributed key-value database. It acts as the cluster's single source of truth, holding the exact state, configuration, and secrets of your entire system.
-*   **Scheduler (`kube-scheduler`):**   
-      Actively watches the API Server for new, unassigned "Pod requests".   
-      It determines the optimal Worker Node by evaluating resource availability (CPU/memory), hardware constraints, persistent storage availability, and custom affinity rules.   
-      (Note: It does NOT physically create the pod; it only assigns the node).
-*   **Controller Manager (`kube-controller-manager`):**   
-      Runs continuous background loops that constantly compare the cluster's actual state to your desired state and make corrections to maintain it. 
-    *   *Analogy for understanding:* Think of it like a thermostat. If you set the temperature to 72 degrees (your desired state: "I want 3 Pods") and a window opens causing the temperature to drop (a Pod crashes), the thermostat detects the mismatch and turns on the heater (creates a new Pod) to fix it.
----
-
-###  Worker Node Components (The "Laborers")
-These components run on every server that executes your application code.
-
-*   **Kubelet:**   
-     The primary node agent. It continuously watches the API Server for new Pod requests assigned to its specific node, and commands the Container Runtime to physically start them.   
-     It also reports node health back to the Control Plane.
-*   **Container Runtime:**   
-     The underlying software (such as containerd, CRI-O, or Docker Engine) that actually pulls the images and physically runs the containers.
-*   **Kube Proxy:**   
-     Handles the networking rules on the node, ensuring that network traffic is routed to the correct Pods.
-    *   *Analogy for understanding:* Because Pods are constantly dying and being recreated with brand new IP addresses, Kube Proxy acts like a dynamic switchboard operator. It constantly updates the internal network rules so that when user traffic enters the cluster, it always gets routed to the correct, currently living Pods.
-*   **Pod:**   
-     The absolute smallest deployable object in Kubernetes. 
-    *   *Analogy for understanding:* Kubernetes does not run naked containers. It wraps your container inside a "Pod." Think of it exactly like a pea pod: the container is the pea, and the Pod is the protective shell around it that gives it an IP address and shared storage.
+> **Your k3s setup:** On your EC2 t3.micro, the control plane and worker node run on the same machine. k3s combines them. On EKS (Week 5), AWS manages the control plane separately and you only see the worker nodes.
 
 ---
 
-## 5. How a Deployment Request Flows
+## 4. Control plane components — the brain
 
-When you run `kubectl apply -f webstore-frontend-deployment.yaml`, here is the exact sequence:
+### API Server
+
+The single entry point for everything. Every `kubectl` command you run on your Mac hits the API Server on EC2 first. Every internal component (Scheduler, Controller Manager, kubelet) communicates through the API Server — never directly to each other.
+
+**The gatekeeper rule:** The API Server is the only component that reads from and writes to etcd. Everything else talks to the API Server.
+
+### etcd
+
+A distributed key-value database. The cluster's single source of truth. Every object you create — every Pod, every Deployment, every Service, every Secret — is a record stored in etcd. If etcd is lost, the cluster state is lost.
+
+You never interact with etcd directly. The API Server owns it.
+
+### Scheduler
+
+Watches the API Server for new Pods that have no node assigned yet. Evaluates every worker node's available CPU and RAM. Picks the best fit and writes the assignment back to the API Server.
+
+**The scheduler does not start Pods.** It only decides which node gets them. The kubelet on that node does the actual work.
+
+### Controller Manager
+
+Runs a set of continuous control loops — one per object type. The Deployment controller, the ReplicaSet controller, the Node controller. Each loop watches the API Server for its object type and acts when desired state diverges from actual state.
+
+**The thermostat analogy:** You set the temperature to 3 replicas. The thermostat (Controller Manager) watches the room. A Pod crashes — temperature drops to 2. The thermostat detects the gap and turns on the heat — creates a new Pod. It never stops watching.
+
+---
+
+## 5. Worker node components — the laborers
+
+### kubelet
+
+The node agent. Runs on every worker node. Watches the API Server for Pods assigned to its node. When it sees one, it tells containerd to pull the image and start the container. Reports back to the API Server: Pod is running, Pod crashed, node is healthy.
+
+### containerd
+
+The container runtime. The actual software that pulls images from Docker Hub and starts containers. kubectl and Kubernetes never touch containers directly — containerd does.
+
+> **Note:** You may see Docker mentioned as a Kubernetes runtime in older materials. Docker was deprecated as a Kubernetes runtime in v1.24 (2022). containerd is what Docker itself used under the hood all along. k3s uses containerd directly.
+
+### Kube Proxy
+
+Handles networking rules on the node. Pods are constantly dying and being recreated with new IP addresses. Kube Proxy acts like a dynamic switchboard — it continuously updates the internal routing rules so traffic always reaches the correct, currently-running Pods.
+
+### Pod
+
+The smallest deployable unit in Kubernetes. A wrapper around one or more containers. Kubernetes never runs a naked container — it always wraps it in a Pod first. Every Pod gets its own IP address. That IP dies with the Pod — which is exactly why Services exist (covered in `03.5-networking.md`).
+
+---
+
+## 6. How a request flows — kubectl apply to Pod running
+
+When you run `kubectl apply -f infra/k8s/api-deployment.yaml` from your Mac:
+
 ```
-You  
- │  
- │  kubectl apply -f webstore-frontend-deployment.yaml 
- ▼
-API Server  ──── stores request as "PENDING" ────▶ etcd
+Your Mac
  │
- │  Scheduler detects unscheduled Pod, evaluates CPU/RAM on all nodes
+ │  kubectl apply -f api-deployment.yaml
  ▼
-Scheduler  ──────────────────────────────────────────▶ picks Worker Node 1
+API Server (EC2)  ──── stores Deployment as "PENDING" ────▶ etcd
+ │
+ │  Controller Manager detects: desired=2 API pods, current=0
+ ▼
+Scheduler  ──── evaluates CPU/RAM on EC2 node ────▶ picks the node
  │
  │  writes assignment back to API Server ──▶ etcd updated
  ▼
-kubelet (on Node 1)  ──── watching API Server, sees its assignment
+kubelet (on EC2)  ──── watching API Server, sees its assignment
  │
- │  tells containerd to pull the image
+ │  tells containerd: pull akhiltejadoosari/shopstack-api:1.0
  ▼
-containerd  ──── pulls image, starts container inside Pod
+containerd  ──── pulls image from Docker Hub, starts container inside Pod
  │
  ▼
-Kube Proxy  ──── assigns network/IP so Pod can communicate
+Kube Proxy  ──── assigns network rules so Pod can be reached by Services
  │
  ▼
 Pod is RUNNING ✅
 
-─────────────────── Later, if a Pod crashes ─────────────────
-Controller Manager  ──── detects drift (desired=3, current=2)
+─────────────── Later, if a Pod crashes ───────────────
+Controller Manager  ──── detects drift (desired=2, actual=1)
  │
  │  notifies API Server to create a new Pod
  ▼
-Scheduler picks a node → kubelet → containerd → Pod RUNNING ✅
+Scheduler → kubelet → containerd → Pod RUNNING ✅
 ```
 
-> **The API Server is the only component that talks to etcd. Everything else talks to the API Server.**
+**The rule that ties it together:** The API Server is the only component that talks to etcd. Everything else talks to the API Server. Every action in the cluster is ultimately a read from or write to etcd via the API Server.
 
 ---
 
-## 6. Cluster Setup Options
+## 7. ShopStack — Compose vs Kubernetes side by side
 
-| Option | What it is | Use Case |
+Same app. Different layer underneath.
+
+| ShopStack concept | Docker Compose | Kubernetes |
 |---|---|---|
-| **Minikube** | Single-node cluster on your laptop | Learning and local practice ✅ |
-| **Kubeadm** | Self-managed multi-node cluster | Full control, you handle everything |
-| **EKS / AKS / GKE** | Provider-managed cluster | Production (AWS/Azure/GCP handle the Control Plane) |
+| Run the API | `services: api:` in compose file | `kind: Deployment` with `replicas: 2` |
+| API crashes | Stays down until manual restart | Deployment detects gap, creates new Pod |
+| Scale the API | Manual: edit compose, restart | `kubectl scale deploy/shopstack-api --replicas=5` |
+| API talks to DB | `DB_HOST=db` resolves via Docker DNS | `DB_HOST=db` resolves via Kubernetes DNS (Service name) |
+| Expose frontend to browser | `ports: "80:80"` | Service with `type: NodePort` on port 30080 |
+| Postgres data persists | `volumes: db-data` in compose | `kind: PersistentVolumeClaim` bound to the db Pod |
+| DB password | `POSTGRES_PASSWORD=shopstack_dev` in env | `kind: Secret` injected as env var |
 
-> **Where you are now:** Minikube on your laptop. EKS comes in Phase 6.
+The environment variables your app reads (`DB_HOST`, `DB_PASSWORD`, `DB_NAME`) do not change between Compose and Kubernetes. Only how Kubernetes delivers them changes.
 
 ---
 
-## 7. Action Step
+## 8. Cluster setup options — where you are now
 
-With Minikube running, open your terminal and run these two commands:
+| Option | What it is | Use case |
+|---|---|---|
+| **k3s on EC2** | Lightweight K8s on a single VM | Learning — your setup in Week 2 |
+| **Kubeadm** | Self-managed multi-node cluster | Full control, you handle everything |
+| **EKS** | AWS-managed cluster | Production — your setup in Week 5 |
+| **Minikube** | Single-node cluster on your laptop | Learning on a Mac without EC2 — not your setup |
 
-```bash
-# See your running node
-kubectl get nodes
+> **Where you are:** k3s on EC2 t3.micro. The control plane and worker node are the same machine. EKS comes in Week 5 — same manifests, different cluster behind `~/.kube/config`.
 
-# See the Control Plane components running as system Pods
-kubectl get pods -n kube-system
-```
+---
 
-The second command is the key one — you will literally see `etcd`, `kube-apiserver`, `kube-scheduler`, and `kube-controller-manager` running as Pods in the `kube-system` namespace. That is the Manager, alive.
+## Final compression
 
-→ Ready to practice? [Go to Lab 01](../k8s-labs/01-architecture-lab.md)
+| Concept | Remember it as |
+|---|---|
+| Why K8s exists | Docker runs containers. K8s manages them at scale so you don't have to |
+| Desired state | You declare what you want. K8s watches reality and closes any gap. Always. |
+| Control plane | The brain — API Server, etcd, Scheduler, Controller Manager |
+| Worker node | The laborer — kubelet, containerd, Kube Proxy, Pods |
+| API Server | The single entry point. All components talk through it. Only one that touches etcd. |
+| etcd | The database. Cluster's source of truth. API Server owns it. |
+| Scheduler | Picks which node gets the Pod. Does not start Pods. |
+| Controller Manager | The watchdog. Compares desired to actual. Fixes every gap. |
+| kubelet | The node's ears. Receives orders from API Server. Tells containerd what to run. |
+| containerd | What actually pulls the image and runs the container. Not Docker. |
+| Pod | The smallest thing K8s knows about. Containers live inside Pods. IP dies with the Pod. |
+| k3s | Lightweight K8s for learning. Control plane + worker on one machine. Replaced by EKS in production. |
+
+---
+
+## ⚠️ What Breaks
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `kubectl apply` succeeds but Pod never appears | Scheduler cannot find a node with enough CPU/RAM | `kubectl describe pod <name>` → read Events → look for `Insufficient cpu` |
+| Pod appears then immediately disappears | CrashLoopBackOff — container crashes on start | `kubectl logs <pod>` → read what the container printed before dying |
+| Pod stuck in `Pending` forever | No node available, or PVC not bound | `kubectl describe pod <name>` → Events section |
+| Deleted a Pod, it came back | A Deployment is managing it — this is correct behaviour | If you want it gone, delete the Deployment, not the Pod |
+| Deleted a Pod, it did NOT come back | It was a bare Pod with no Deployment — also correct | Create a Deployment if you want self-healing |
+
+---
+
+## Daily Commands
+
+| What it does | Command | Example |
+|---|---|---|
+| Confirm node is Ready | `kubectl get nodes` | `kubectl get nodes` |
+| Full cluster health scan — all namespaces | `kubectl get pods -A` | `kubectl get pods -A` |
+| See control plane components running as Pods | `kubectl get pods -n kube-system` | `kubectl get pods -n kube-system` |
+| Full node profile — CPU, RAM, conditions | `kubectl describe node <n>` | `kubectl describe node ip-172-31-14-5` |
+| Confirm API Server address and status | `kubectl cluster-info` | `kubectl cluster-info` |
+---
+
+→ **Interview questions for this topic:** `99-interview-prep.md` — What is Kubernetes? What is a Pod? What is the control plane? What does kubectl apply do?
+
+→ Next: [02 — YAML & Pods](./02-yaml-pods.md)

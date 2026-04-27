@@ -2,12 +2,12 @@
   <img src="../../assets/kubernetes-banner.svg" alt="kubernetes" width="100%"/>
 </p>
 
-[← devops-runbook](../../README.md)
+[← devops-runbook](../../README.md) | [Setup](./00-setup/README.md) | [Architecture](./01-architecture/README.md) | [YAML & Pods](./02-yaml-pods/README.md) | [Deployments](./03-deployments/README.md) | [Networking](./03.5-networking/README.md) | [State](./04-state/README.md) | [Troubleshooting](./05-troubleshooting/README.md) | [Probes](./06-probes/README.md) | [Namespaces](./07-namespaces/README.md) | [kubectl Reference](./08-kubectl-reference/README.md) | [Interview Prep](./99-interview-prep/README.md)
 
 ---
 
-A phase-by-phase learning path for Kubernetes — from local cluster to production on AWS EKS.
-Every tool and concept here transfers directly from a Minikube laptop to a 1,000-node cluster.
+A phase-by-phase learning path for Kubernetes — from k3s on EC2 to production on AWS EKS.
+Every tool and concept here transfers directly from a single EC2 instance to a 1,000-node cluster.
 
 ---
 
@@ -29,55 +29,45 @@ Kubernetes orchestrates containers. If you do not understand what a container is
 
 ---
 
-## The Running Example
+## The Running Example — ShopStack
 
-Every phase, every manifest, every command is built around the webstore app.
+Every phase, every manifest, every command is built around ShopStack — the same 5-service app you ran on Docker Compose in Week 1.
 
 | Service | Image | Port |
 |---|---|---|
-| webstore-frontend | nginx:1.24 | 80 |
-| webstore-api | nginx:1.24 (placeholder → custom) | 8080 |
-| webstore-db | postgres:15 | 5432 |
+| frontend | `akhiltejadoosari/shopstack-frontend:1.0` | 80 |
+| api | `akhiltejadoosari/shopstack-api:1.0` | 8080 |
+| worker | `akhiltejadoosari/shopstack-worker:1.0` | — |
+| db | `postgres:15-alpine` | 5432 |
+| adminer | `adminer` | 8080 |
 
 ---
 
-## Where You Take the Webstore
+## Where You Take ShopStack
 
-You arrive at Kubernetes with the webstore running as three Docker containers on your laptop, brought up with `docker compose up`.
+You arrive at Kubernetes with ShopStack running as 5 containers on one EC2 instance, brought up with `docker compose up`.
 
-You leave with the webstore running on a real cluster — self-healing Deployments for all three tiers, postgres persisted to a PersistentVolumeClaim, credentials stored in Secrets, non-sensitive config in ConfigMaps, readiness probes preventing traffic before the database is ready, and the full stack deployed to AWS EKS in the final phase.
+You leave with ShopStack running on a real k3s cluster — self-healing Deployments for all tiers, Postgres persisted to a PersistentVolumeClaim, credentials stored in Secrets, non-sensitive config in ConfigMaps, readiness probes preventing traffic before the database is ready, and the full stack accessible from a browser at `http://YOUR_EC2_IP:30080`.
 
-The same manifests you write for Minikube deploy to EKS. That is the point of writing them correctly from the start.
+The same manifests you write for k3s deploy to EKS in Week 5. That is the point of writing them correctly from the start.
 
 ---
 
 ## Phases
 
-| # | Phase | Topics | Lab |
-|---|---|---|---|
-| 00 | [Setup](./00-setup/README.md) | Job-legal toolkit — Minikube, kubectl, K9s, Helm, kubectx | [Lab 00](./k8s-labs/00-setup-lab.md) |
-| 01 | [Architecture](./01-architecture/README.md) | Control Plane, etcd, Scheduler, Controller Manager, Worker Nodes, request flow | [Lab 01](./k8s-labs/01-architecture-lab.md) |
-| 02 | [YAML & Pods](./02-yaml-pods/README.md) | YAML syntax, 4 pillars of a manifest, Pods, Labels, Selectors | [Lab 02](./k8s-labs/02-yaml-pods-lab.md) |
-| 03 | [Deployments](./03-deployments/README.md) | ReplicaSets, Deployments, rolling updates, rollbacks, scaling | [Lab 03](./k8s-labs/03-deployments-lab.md) |
-| 03.5 | [Networking](./03.5-networking/README.md) | Services (ClusterIP, NodePort, LoadBalancer), kube-dns, Sidecar pattern, Namespaces | [Lab 03.5](./k8s-labs/03.5-networking-lab.md) |
-| 04 | [State & Config](./04-state/README.md) | PersistentVolumes, PVCs, StorageClass, ConfigMaps, Secrets | [Lab 04](./k8s-labs/04-state-lab.md) |
-| 05 | [Troubleshooting](./05-troubleshooting/README.md) | Liveness, Readiness, Startup probes, Jobs, CronJobs, DaemonSets, full debug loop | [Lab 05](./k8s-labs/05-troubleshooting-lab.md) |
-| 06 | [Cloud & EKS](./06-cloud/README.md) | eksctl, EBS CSI driver, ECR, LoadBalancer Services on EKS, Ingress Controller, HPA | [Lab 06](./k8s-labs/06-cloud-lab.md) |
-
----
-
-## Labs
-
-| Lab | Topics Covered | What You Practice |
+| # | Phase | Topics |
 |---|---|---|
-| [Lab 00](./k8s-labs/00-setup-lab.md) | Setup | Verify every tool, cold start drill, K9s cockpit, yamllint habit |
-| [Lab 01](./k8s-labs/01-architecture-lab.md) | Architecture | Find every control plane component running live, map it to the theory |
-| [Lab 02](./k8s-labs/02-yaml-pods-lab.md) | YAML & Pods | Write manifests from scratch, apply, describe, debug the full loop |
-| [Lab 03](./k8s-labs/03-deployments-lab.md) | Deployments | All 3 webstore tiers as Deployments, self-healing proof, rolling update, rollback, scale |
-| [Lab 03.5](./k8s-labs/03.5-networking-lab.md) | Networking | Wire the tiers with Services, expose frontend, test kube-dns, enforce namespace isolation |
-| [Lab 04](./k8s-labs/04-state-lab.md) | State & Config | PVC for webstore-db, Secret for credentials, ConfigMap for non-sensitive config |
-| [Lab 05](./k8s-labs/05-troubleshooting-lab.md) | Troubleshooting | Readiness probe on webstore-api, CronJob DB backup, DaemonSet log collector, full debug drill |
-| [Lab 06](./k8s-labs/06-cloud-lab.md) | Cloud & EKS | Create EKS cluster with eksctl, migrate webstore manifests, LoadBalancer Service, ECR |
+| 00 | [Setup](./00-setup/README.md) | k3s on EC2, kubeconfig on Mac, kubectl connection, daily opening sequence |
+| 01 | [Architecture](./01-architecture/README.md) | Control Plane, etcd, Scheduler, Controller Manager, Worker Nodes, request flow, desired state |
+| 02 | [YAML & Pods](./02-yaml-pods/README.md) | YAML syntax, 4 pillars of a manifest, Pods, Labels, Selectors, debug loop |
+| 03 | [Deployments](./03-deployments/README.md) | ReplicaSets, Deployments, rolling updates, rollbacks, scaling |
+| 03.5 | [Networking](./03.5-networking/README.md) | Services (ClusterIP, NodePort, LoadBalancer), Kubernetes DNS, port fields |
+| 04 | [State & Config](./04-state/README.md) | PersistentVolumeClaims, ConfigMaps, Secrets, base64 encoding |
+| 05 | [Troubleshooting](./05-troubleshooting/README.md) | CrashLoopBackOff, kubectl describe, logs, exec, get events, ShopStack break sequence |
+| 06 | [Probes](./06-probes/README.md) | Liveness probe, readiness probe, the difference, httpGet vs tcpSocket |
+| 07 | [Namespaces](./07-namespaces/README.md) | What namespaces are, the four built-in namespaces, DNS across namespaces |
+| 08 | [kubectl Reference](./08-kubectl-reference/README.md) | Full command combat sheet — every command with ShopStack example |
+| 99 | [Interview Prep](./99-interview-prep/README.md) | 10 questions, toggle answers, rapid-fire round |
 
 ---
 
@@ -86,20 +76,19 @@ The same manifests you write for Minikube deploy to EKS. That is the point of wr
 - Write production-quality Kubernetes manifests from scratch without documentation
 - Explain what happens inside the cluster when you run `kubectl apply`
 - Deploy, update, and roll back applications with zero downtime
-- Wire multi-tier applications together using Services and kube-dns
-- Persist database data correctly using PVCs and StorageClasses
+- Wire multi-tier applications together using Services and Kubernetes DNS
+- Persist database data correctly using PVCs
 - Store credentials safely using Secrets and config using ConfigMaps
 - Gate traffic with readiness probes so broken Pods never receive requests
 - Debug any cluster issue using the full get → describe → logs → exec loop
-- Deploy a production workload to AWS EKS
+- Deploy a production workload to AWS EKS (Week 5)
 
 ---
 
 ## How to Use This
 
 Read phases in order. Each one builds on the previous.
-After each phase do the lab before moving on.
-The checklist at the end of every lab is not optional.
+The daily checklist in `devops-journey/` is your hands-on work — these notes are the depth-on-demand layer you open when a concept does not click during a session.
 
 ---
 
@@ -107,4 +96,4 @@ The checklist at the end of every lab is not optional.
 
 → [06. CI-CD – Pipelines & GitOps](../06.%20CI-CD%20–%20Pipelines%20%26%20GitOps/README.md)
 
-Kubernetes gives you the cluster. CI-CD automates what you have been doing manually — building images, pushing them, applying manifests. Every `kubectl apply` you ran in these labs becomes a step in a pipeline that runs itself on every code push.
+Kubernetes gives you the cluster. CI-CD automates what you have been doing manually — building images, pushing them, applying manifests. Every `kubectl apply` you ran in these phases becomes a step in a pipeline that runs itself on every code push.

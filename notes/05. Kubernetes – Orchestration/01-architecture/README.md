@@ -321,7 +321,7 @@ The environment variables your app reads (`DB_HOST`, `DB_PASSWORD`, `DB_NAME`) d
 | **EKS** | AWS-managed cluster | Production — your setup in Week 5 |
 | **Minikube** | Single-node cluster on your laptop | Learning on a Mac without EC2 — not your setup |
 
-> **Where you are:** k3s on EC2 t3.micro. The control plane and worker node are the same machine. EKS comes in Week 5 — same manifests, different cluster behind `~/.kube/config`.
+> **Where you are:** k3s on EC2 t3.small. The control plane and worker node are the same machine. EKS comes in Week 5 — same manifests, different cluster behind `~/.kube/config`.
 
 ---
 

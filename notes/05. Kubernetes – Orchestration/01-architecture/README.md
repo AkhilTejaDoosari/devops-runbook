@@ -156,7 +156,7 @@ A Kubernetes cluster has two sides: the **control plane** (the Manager) and the 
           │ └─────────────┘ │            │ └──────────────────┘   │
           └─────────────────┘            └────────────────────────┘                      
 ```
-**Here is the architecute that fix shopstack**
+**Here is the architecute that fits shopstack**
 
 ```
                     ┌─────────────────────────────────────────┐

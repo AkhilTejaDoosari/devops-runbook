@@ -160,7 +160,7 @@ A Kubernetes cluster has two sides: the **control plane** (the Manager) and the 
 
 ```
                     ┌─────────────────────────────────────────┐
-                    │           CONTROL PLANE (Brain)         │
+                    │           CONTROL PLANE (Manager)       │
                     │                                         │
   kubectl (Mac) ───▶│  ┌──────────────┐   ┌────────────────┐  │
                     │  │  API Server  │   │      etcd      │  │

@@ -175,8 +175,9 @@ A Kubernetes cluster has two sides: the **control plane** (the Manager) and the 
                     └──────────────┬──────────────────────────┘
                                    │ assigns work
                           ┌────────▼────────┐
-                          │  Worker Node    │
-                          │  (EC2 t3.micro) │
+                          │  Worker Node.   |
+                          |      k3s on     │
+                          │  (EC2 t3.small) │
                           │                 │
                           │ ┌─────────────┐ │
                           │ │   kubelet   │ │
